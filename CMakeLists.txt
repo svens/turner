@@ -65,12 +65,12 @@ include(turner/list.cmake)
 add_library(turner ${turner})
 
 # turner_client executable
-include(turner_client/list.cmake)
+include(client/list.cmake)
 add_executable(turner_client ${turner_client})
 target_link_libraries(turner_client turner)
 
 # turner_server executable
-include(turner_server/list.cmake)
+include(server/list.cmake)
 add_executable(turner_server ${turner_server})
 target_link_libraries(turner_server turner)
 

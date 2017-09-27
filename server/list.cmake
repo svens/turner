@@ -1,3 +1,3 @@
 list(APPEND turner_server
-  turner_server/main.cpp
+  server/main.cpp
 )
