@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8.10)
 
 # optional features
 option(TURNER_UNITTESTS "Build unittests" ON)
-option(TURNER_DOCS "Generate documentation" OFF)
+option(TURNER_DOCS "Generate documentation" ON)
 
 if(CMAKE_BUILD_TYPE MATCHES Coverage)
   # special case for coverage build
@@ -85,38 +85,7 @@ target_link_libraries(turner_server turner)
 # Testing {{{1
 if(TURNER_UNITTESTS)
   message(STATUS "Building unittests")
-
-  # configure gtest
-  find_package(Threads)
-  find_package(GTest QUIET)
-  if(NOT GTEST_FOUND)
-    message(STATUS "Building own gtest")
-
-    include(ExternalProject)
-    ExternalProject_Add(gtest
-      URL https://github.com/google/googletest/archive/release-1.7.0.zip
-      URL_HASH SHA256=b58cb7547a28b2c718d1e38aee18a3659c9e3ff52440297e965f5edffe34b6d0
-      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest-1.7.0
-      CMAKE_ARGS
-        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      INSTALL_COMMAND ""
-      LOG_DOWNLOAD ON
-      LOG_CONFIGURE ON
-      LOG_BUILD ON
-    )
-
-    ExternalProject_Get_Property(gtest source_dir)
-    set(GTEST_INCLUDE_DIRS ${source_dir}/include)
-
-    ExternalProject_Get_Property(gtest binary_dir)
-    link_directories(${binary_dir})
-    set(GTEST_BOTH_LIBRARIES
-      ${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}
-      ${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
-  endif()
+  include(cmake/gtest.cmake)
 
   # build turner tests
   enable_testing()
