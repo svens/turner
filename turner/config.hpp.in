@@ -1,0 +1,13 @@
+#pragma once
+
+/**
+ * \file turner/config.hpp
+ * Turner library building configuration
+ */
+
+
+namespace turner {
+
+constexpr const char *version = "turner/@version@";
+
+} // namespace turner
