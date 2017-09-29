@@ -1,10 +1,12 @@
-set(turner "")
-set(turner_unittests "")
-
-include(turner/protocol/list.cmake)
-include(turner/client/list.cmake)
-include(turner/server/list.cmake)
+list(APPEND turner
+  turner/stun.hpp
+  turner/stun.cpp
+)
 
 list(APPEND turner_unittests
   turner/common.test.hpp
+  turner/stun.test.cpp
 )
+
+include(turner/client/list.cmake)
+include(turner/server/list.cmake)
