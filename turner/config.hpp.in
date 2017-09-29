@@ -6,8 +6,12 @@
  */
 
 
-namespace turner {
+#define __turner_begin  namespace turner { inline namespace v0 {
+#define __turner_end    }} // namespace turner::v0
+
+
+__turner_begin
 
 constexpr const char *version = "turner/@version@";
 
-} // namespace turner
+__turner_end
