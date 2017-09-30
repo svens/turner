@@ -18,7 +18,9 @@ __turner_begin
  */
 enum class errc
 {
-  illegal_byte_sequence = 1,
+  insufficient_data = 1,
+  invalid_message_header,
+  invalid_message_length,
 };
 
 

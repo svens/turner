@@ -7,6 +7,7 @@
 
 #include <turner/config.hpp>
 #include <turner/message.hpp>
+#include <array>
 
 
 __turner_begin
@@ -18,12 +19,14 @@ namespace stun {
 /**
  * STUN Binding request
  */
-inline constexpr message_type_t binding = method_v<0x001>;
+__turner_inline_var constexpr message_type_t
+  binding = request_v<0x001>;
 
 /**
  * STUN Binding success
  */
-inline constexpr message_type_t binding_success = success_response_v<binding>;
+__turner_inline_var constexpr message_type_t
+  binding_success = success_response_v<binding>;
 
 
 /**
@@ -32,20 +35,28 @@ struct protocol_t
 {
   /**
    */
-  static inline constexpr size_t transaction_id_size = 12;
+  static constexpr bool is_valid_message_type (message_type_t type) noexcept
+  {
+    type &= ~__bits::class_mask;
+    return type == binding;
+  }
 
   /**
    */
-  static inline constexpr size_t transaction_id_offset = 4;
-
+  static __turner_inline_var constexpr size_t header_size = 20;
 
   /**
    */
-  static basic_message_t<protocol_t> message (
-    const uint8_t *first,
-    const uint8_t *last,
-    std::error_code &error
-  ) noexcept;
+  static __turner_inline_var constexpr std::array<uint8_t, 4> cookie =
+  {
+    { 0x21, 0x12, 0xa4, 0x42 }
+  };
+  static __turner_inline_var constexpr size_t cookie_offset = 4;
+
+  /**
+   */
+  static __turner_inline_var constexpr size_t transaction_id_size = 12;
+  static __turner_inline_var constexpr size_t transaction_id_offset = 8;
 };
 
 
@@ -59,7 +70,7 @@ using message_t = basic_message_t<protocol_t>;
 template <typename Data>
 inline message_t message (const Data &data, std::error_code &error) noexcept
 {
-  return protocol_t::message(data.data(), data.data() + data.size(), error);
+  return message_t::make(data.begin(), data.end(), error);
 }
 
 

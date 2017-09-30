@@ -2,6 +2,7 @@ list(APPEND turner
   turner/error.hpp
   turner/error.cpp
   turner/message.hpp
+  turner/message.cpp
 
   # STUN
   turner/stun.hpp

@@ -11,8 +11,12 @@ inline constexpr const char *to_message (errc e) noexcept
 {
   switch (e)
   {
-    case errc::illegal_byte_sequence:
-      return "illegal byte sequence";
+    case errc::insufficient_data:
+      return "insufficient data";
+    case errc::invalid_message_header:
+      return "invalid message header";
+    case errc::invalid_message_length:
+      return "invalid message length";
   }
   return "unknown error";
 }

@@ -36,20 +36,20 @@ private:
 template <typename T>
 class with_type
   : public fixture
-{
-};
+{};
 
 
 template <typename T>
 class with_value
   : public fixture
   , public ::testing::WithParamInterface<T>
-{
-};
+{};
 
+
+using STUN = turner::stun::protocol_t;
 
 using protocol_types = testing::Types<
-  turner::stun::protocol_t
+  STUN
 >;
 
 
@@ -58,34 +58,121 @@ using protocol_types = testing::Types<
 //
 
 
-// Protocol independent {{{1
+// STUN {{{1
 
 
-template <typename Protocol> bool valid_message = {};
-template <typename Protocol> bool invalid_message = {};
-template <typename Protocol> bool expected_transaction_id = {};
-
-
-// STUN specializations {{{1
-
-
-template <>
-inline uint8_t valid_message<turner::stun::protocol_t>[] =
+inline constexpr auto expected_request (STUN)
 {
-  1
-};
+  return turner::stun::binding;
+}
 
-template <>
-inline uint8_t invalid_message<turner::stun::protocol_t>[] =
-{
-  2
-};
 
-template <>
-inline turner::stun::message_t::transaction_id_t
-  expected_transaction_id<turner::stun::protocol_t> =
+inline constexpr auto expected_success_response (STUN)
 {
-};
+  return turner::stun::binding_success;
+}
+
+
+inline constexpr uint16_t expected_length (STUN)
+{
+  return 0U;
+}
+
+
+inline constexpr auto request (STUN)
+{
+  return std::array<uint8_t, 20>
+  {{
+    0x00, 0x01,                   // STUN Binding
+    0x00, 0x00,                   // length
+    0x21, 0x12, 0xa4, 0x42,       // cookie
+    0x01, 0x02, 0x03, 0x04,       // transaction id
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+ }};
+}
+
+
+inline constexpr auto success_response (STUN)
+{
+  return std::array<uint8_t, 20>
+  {{
+    0x01, 0x01,                   // STUN Binding succes response
+    0x00, 0x00,                   // length
+    0x21, 0x12, 0xa4, 0x42,       // cookie
+    0x01, 0x02, 0x03, 0x04,       // transaction id
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+  }};
+}
+
+
+inline constexpr auto expected_transaction_id (STUN)
+{
+  return turner::stun::message_t::transaction_id_t
+  {{
+    0x01, 0x02, 0x03, 0x04,
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+  }};
+}
+
+
+inline constexpr auto message_with_bad_type (STUN)
+{
+  return std::array<uint8_t, 20>
+  {{
+    0x00, 0x02,                   // invalid STUN method
+    0x00, 0x00,                   // length
+    0x21, 0x12, 0xa4, 0x42,       // cookie
+    0x01, 0x02, 0x03, 0x04,       // transaction id
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+  }};
+}
+
+
+inline constexpr auto message_with_bad_length (STUN)
+{
+  return std::array<uint8_t, 20>
+  {{
+    0x00, 0x01,                   // STUN Binding
+    0x00, 0x11,                   // bad length
+    0x21, 0x12, 0xa4, 0x42,       // cookie
+    0x01, 0x02, 0x03, 0x04,       // transaction id
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+  }};
+}
+
+
+inline constexpr auto message_with_valid_length_and_insufficient_data (STUN)
+{
+  return std::array<uint8_t, 22>
+  {{
+    0x00, 0x01,                   // STUN Binding
+    0x00, 0x04,                   // length
+    0x21, 0x12, 0xa4, 0x42,       // cookie
+    0x01, 0x02, 0x03, 0x04,       // transaction id
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+    0x01, 0x02,                   // insufficient data
+  }};
+}
+
+
+inline constexpr auto message_with_bad_cookie (STUN)
+{
+  return std::array<uint8_t, 20>
+  {{
+    0x00, 0x01,                   // STUN Binding
+    0x00, 0x00,                   // length
+    0x12, 0x12, 0xa4, 0x42,       // invalid cookie
+    0x01, 0x02, 0x03, 0x04,       // transaction id
+    0x05, 0x06, 0x07, 0x08,
+    0x09, 0x10, 0x11, 0x12,
+  }};
+}
 
 
 // }}}1

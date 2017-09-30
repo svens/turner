@@ -8,6 +8,15 @@ namespace turner_test { namespace {
 using turner_error = turner_test::with_value<turner::errc>;
 
 
+INSTANTIATE_TEST_CASE_P(turner, turner_error,
+  testing::Values(
+    turner::errc::insufficient_data,
+    turner::errc::invalid_message_header,
+    turner::errc::invalid_message_length
+  )
+);
+
+
 TEST_F(turner_error, category_name)
 {
   EXPECT_STREQ("turner", turner::category().name());
@@ -41,13 +50,6 @@ TEST_F(turner_error, make_error_code_invalid)
   EXPECT_STREQ("turner", error.category().name());
   EXPECT_EQ("unknown error", error.message());
 }
-
-
-INSTANTIATE_TEST_CASE_P(turner, turner_error,
-  testing::Values(
-    turner::errc::illegal_byte_sequence
-  )
-);
 
 
 }} // namespace turner_test
