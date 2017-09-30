@@ -7,7 +7,10 @@ list(APPEND turner
   # STUN
   turner/stun.hpp
   turner/stun/message.hpp
-  turner/stun/message.cpp
+
+  # TURN
+  turner/turn.hpp
+  turner/turn/message.hpp
 )
 
 list(APPEND turner_unittests
@@ -17,6 +20,9 @@ list(APPEND turner_unittests
 
   # STUN
   turner/stun/message.test.cpp
+
+  # TURN
+  turner/turn/message.test.cpp
 )
 
 include(turner/client/list.cmake)

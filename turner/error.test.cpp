@@ -5,10 +5,10 @@
 namespace turner_test { namespace {
 
 
-using turner_error = turner_test::with_value<turner::errc>;
+using error = turner_test::with_value<turner::errc>;
 
 
-INSTANTIATE_TEST_CASE_P(turner, turner_error,
+INSTANTIATE_TEST_CASE_P(turner, error,
   testing::Values(
     turner::errc::insufficient_data,
     turner::errc::invalid_message_header,
@@ -17,13 +17,13 @@ INSTANTIATE_TEST_CASE_P(turner, turner_error,
 );
 
 
-TEST_F(turner_error, category_name)
+TEST_F(error, category_name)
 {
   EXPECT_STREQ("turner", turner::category().name());
 }
 
 
-TEST_P(turner_error, make_error_code)
+TEST_P(error, make_error_code)
 {
   auto error = turner::make_error_code(GetParam());
   ASSERT_TRUE(bool(error));
@@ -39,7 +39,7 @@ TEST_P(turner_error, make_error_code)
 }
 
 
-TEST_F(turner_error, make_error_code_invalid)
+TEST_F(error, make_error_code_invalid)
 {
   auto error = turner::make_error_code(static_cast<turner::errc>(-1));
   ASSERT_TRUE(bool(error));

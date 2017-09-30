@@ -29,7 +29,7 @@ TYPED_TEST(turner_message, make)
     buf.data(), buf.data() + buf.size(), error
   );
 
-  ASSERT_TRUE(!error);
+  ASSERT_TRUE(!error) << error.message();
   ASSERT_TRUE(message.is_valid());
 
   EXPECT_EQ(expected_request(TypeParam()), message);
@@ -60,7 +60,7 @@ TYPED_TEST(turner_message, make_success_response)
     buf.data(), buf.data() + buf.size(), error
   );
 
-  ASSERT_TRUE(!error);
+  ASSERT_TRUE(!error) << error.message();
   ASSERT_TRUE(message.is_valid());
 
   EXPECT_EQ(expected_success_response(TypeParam()), message);

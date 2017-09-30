@@ -9,10 +9,17 @@ namespace stun = turner::stun;
 using STUN = stun::protocol_t;
 
 
-using turner_stun_message = turner_test::fixture;
+using stun_message = turner_test::with_value<turner::message_type_t>;
 
 
-TEST_F(turner_stun_message, ctor)
+INSTANTIATE_TEST_CASE_P(turner, stun_message,
+  testing::Values(
+    turner::stun::binding
+  )
+);
+
+
+TEST_F(stun_message, ctor)
 {
   stun::message_t message;
   EXPECT_FALSE(message.is_valid());
@@ -20,10 +27,13 @@ TEST_F(turner_stun_message, ctor)
 }
 
 
-TEST_F(turner_stun_message, basic)
+TEST_P(stun_message, request)
 {
-  std::error_code error;
+  // get request and turn it into test type
   auto buf = request(STUN());
+  buf[1] = static_cast<uint8_t>(GetParam());
+
+  std::error_code error;
   auto message = stun::message(buf, error);
   ASSERT_TRUE(!error);
   ASSERT_TRUE(message.is_valid());
@@ -51,7 +61,7 @@ TEST_F(turner_stun_message, basic)
 }
 
 
-TEST_F(turner_stun_message, with_insufficient_data)
+TEST_F(stun_message, with_insufficient_data)
 {
   std::array<uint8_t, 1> data = {{ 0x01 }};
   std::error_code error;
@@ -66,7 +76,7 @@ TEST_F(turner_stun_message, with_insufficient_data)
 }
 
 
-TEST_F(turner_stun_message, with_bad_type)
+TEST_F(stun_message, with_bad_type)
 {
   std::error_code error;
   auto buf = message_with_bad_type(STUN());
@@ -81,7 +91,7 @@ TEST_F(turner_stun_message, with_bad_type)
 }
 
 
-TEST_F(turner_stun_message, with_bad_length)
+TEST_F(stun_message, with_bad_length)
 {
   std::error_code error;
   auto buf = message_with_bad_length(STUN());
@@ -96,7 +106,7 @@ TEST_F(turner_stun_message, with_bad_length)
 }
 
 
-TEST_F(turner_stun_message, with_valid_length_and_insufficient_dat)
+TEST_F(stun_message, with_valid_length_and_insufficient_dat)
 {
   std::error_code error;
   auto buf = message_with_valid_length_and_insufficient_data(STUN());
@@ -111,7 +121,7 @@ TEST_F(turner_stun_message, with_valid_length_and_insufficient_dat)
 }
 
 
-TEST_F(turner_stun_message, with_bad_cookie)
+TEST_F(stun_message, with_bad_cookie)
 {
   std::error_code error;
   auto buf = message_with_bad_cookie(STUN());
