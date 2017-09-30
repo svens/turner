@@ -17,10 +17,10 @@ __turner_begin
 namespace __bits {
 
 __turner_inline_var constexpr uint16_t
-  class_mask = 0b0000'0001'0001'0000,
-  indication_class = 0b0000'0000'0001'0000,
+  class_mask =             0b0000'0001'0001'0000,
+  indication_class =       0b0000'0000'0001'0000,
   success_response_class = 0b0000'0001'0000'0000,
-  error_response_class = 0b0000'0001'0001'0000;
+  error_response_class =   0b0000'0001'0001'0000;
 
 } // namespace __bits
 
@@ -142,7 +142,7 @@ protected:
 
   bool has_class (uint16_t c) const noexcept
   {
-    return (type() & c) == c;
+    return (type() & __bits::class_mask) == c;
   }
 };
 

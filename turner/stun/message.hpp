@@ -37,8 +37,8 @@ struct protocol_t
    */
   static constexpr bool is_valid_message_type (message_type_t type) noexcept
   {
-    type &= ~__bits::class_mask;
-    return type == binding;
+    return type == binding
+      || type == binding_success;
   }
 
   /**

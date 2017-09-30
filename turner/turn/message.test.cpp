@@ -1,6 +1,11 @@
 #include <turner/common.test.hpp>
 #include <turner/turn/message.hpp>
 
+#if __sal_os_windows
+  #include <winsock2.h>
+  #pragma comment(lib, "ws2_32")
+#endif
+
 
 namespace turner_test { namespace {
 
@@ -41,7 +46,7 @@ TEST_P(turn_request, request)
 
   std::error_code error;
   auto message = turn::message(buf, error);
-  ASSERT_TRUE(!error);
+  ASSERT_TRUE(!error) << error.message();
   ASSERT_TRUE(message.is_valid());
 
   EXPECT_EQ(GetParam(), message);
@@ -67,15 +72,76 @@ TEST_P(turn_request, request)
 }
 
 
-TEST_P(turn_indication, request)
+TEST_P(turn_request, success_response)
 {
   // get request and turn it into test type
   auto buf = request(TURN());
-  buf[1] = static_cast<uint8_t>(GetParam());
+  *reinterpret_cast<uint16_t *>(buf.data()) =
+    htons(GetParam() | turner::__bits::success_response_class);
 
   std::error_code error;
   auto message = turn::message(buf, error);
-  ASSERT_TRUE(!error);
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_TRUE(message.is_valid());
+
+  EXPECT_FALSE(message.is_indication());
+  EXPECT_TRUE(message.is_success_response());
+  EXPECT_FALSE(message.is_error_response());
+
+  EXPECT_EQ(expected_length(TURN()), message.length());
+  EXPECT_EQ(buf.size(), message.size());
+
+  EXPECT_EQ(expected_transaction_id(TURN()), message.transaction_id());
+
+  EXPECT_NO_THROW(
+    turn::message(buf)
+  );
+}
+
+
+TEST_P(turn_request, error_response)
+{
+  if (GetParam() == turner::stun::binding)
+  {
+    // no STUN Binding error response
+    return;
+  }
+
+  // get request and turn it into test type
+  auto buf = request(TURN());
+  *reinterpret_cast<uint16_t *>(buf.data()) =
+    htons(GetParam() | turner::__bits::error_response_class);
+
+  std::error_code error;
+  auto message = turn::message(buf, error);
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_TRUE(message.is_valid());
+
+  EXPECT_FALSE(message.is_indication());
+  EXPECT_FALSE(message.is_success_response());
+  EXPECT_TRUE(message.is_error_response());
+
+  EXPECT_EQ(expected_length(TURN()), message.length());
+  EXPECT_EQ(buf.size(), message.size());
+
+  EXPECT_EQ(expected_transaction_id(TURN()), message.transaction_id());
+
+  EXPECT_NO_THROW(
+    turn::message(buf)
+  );
+}
+
+
+TEST_P(turn_indication, indication)
+{
+  // get request and turn it into test type
+  auto buf = request(TURN());
+  *reinterpret_cast<uint16_t *>(buf.data()) =
+    htons(GetParam() | turner::__bits::indication_class);
+
+  std::error_code error;
+  auto message = turn::message(buf, error);
+  ASSERT_TRUE(!error) << error.message();
   ASSERT_TRUE(message.is_valid());
 
   EXPECT_EQ(GetParam(), message);
@@ -85,10 +151,6 @@ TEST_P(turn_indication, request)
   EXPECT_TRUE(message.is_indication());
   EXPECT_FALSE(message.is_success_response());
   EXPECT_FALSE(message.is_error_response());
-
-  EXPECT_NE(expected_success_response(TURN()), message);
-  EXPECT_NE(message, expected_success_response(TURN()));
-  EXPECT_NE(expected_success_response(TURN()), message.type());
 
   EXPECT_EQ(expected_length(TURN()), message.length());
   EXPECT_EQ(buf.size(), message.size());
@@ -114,7 +176,7 @@ TEST_F(turn_message, with_insufficient_data)
   std::array<uint8_t, 1> data = {{ 0x01 }};
   std::error_code error;
   auto message = turn::message(data, error);
-  ASSERT_FALSE(!error);
+  ASSERT_FALSE(!error) << error.message();
   ASSERT_TRUE(!message);
 
   EXPECT_THROW(
@@ -129,7 +191,7 @@ TEST_F(turn_message, with_bad_type)
   std::error_code error;
   auto buf = message_with_bad_type(TURN());
   auto message = turn::message(buf, error);
-  ASSERT_FALSE(!error);
+  ASSERT_FALSE(!error) << error.message();
   ASSERT_TRUE(!message);
 
   EXPECT_THROW(
@@ -144,7 +206,7 @@ TEST_F(turn_message, with_bad_length)
   std::error_code error;
   auto buf = message_with_bad_length(TURN());
   auto message = turn::message(buf, error);
-  ASSERT_FALSE(!error);
+  ASSERT_FALSE(!error) << error.message();
   ASSERT_TRUE(!message);
 
   EXPECT_THROW(
@@ -159,7 +221,7 @@ TEST_F(turn_message, with_valid_length_and_insufficient_dat)
   std::error_code error;
   auto buf = message_with_valid_length_and_insufficient_data(TURN());
   auto message = turn::message(buf, error);
-  ASSERT_FALSE(!error);
+  ASSERT_FALSE(!error) << error.message();
   ASSERT_TRUE(!message);
 
   EXPECT_THROW(
@@ -174,7 +236,7 @@ TEST_F(turn_message, with_bad_cookie)
   std::error_code error;
   auto buf = message_with_bad_cookie(TURN());
   auto message = turn::message(buf, error);
-  ASSERT_FALSE(!error);
+  ASSERT_FALSE(!error) << error.message();
   ASSERT_TRUE(!message);
 
   EXPECT_THROW(
