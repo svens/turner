@@ -18,12 +18,12 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty
+      - llvm-toolchain-trusty-5.0
       - kalakris-cmake
     packages:
-      - clang-3.9
+      - clang-5.0
       - cmake
-      - g++-6
+      - g++-7
 
 install:
   source scripts/travis_install.sh
