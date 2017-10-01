@@ -12,7 +12,7 @@ $arguments = @( "/trustlevel:0x20000", """ctest --config $Config""" );
 Start-Process $exe $arguments -Wait -NoNewWindow;
 
 [xml]$test_details = Get-Content "$Output";
-if ($test_details.testsuites.failure -ne 0)
+if ($test_details.testsuites.failures -ne 0)
 {
   exit 1;
 }
