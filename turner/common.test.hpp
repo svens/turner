@@ -1,5 +1,6 @@
 #pragma once
 
+#include <turner/msturn.hpp>
 #include <turner/stun.hpp>
 #include <turner/turn.hpp>
 
@@ -47,10 +48,12 @@ class with_value
 {};
 
 
+using MSTURN = turner::msturn::protocol_t;
 using STUN = turner::stun::protocol_t;
 using TURN = turner::turn::protocol_t;
 
 using protocol_types = testing::Types<
+  MSTURN,
   STUN,
   TURN
 >;
@@ -59,6 +62,142 @@ using protocol_types = testing::Types<
 //
 // Test data
 //
+
+
+// MS-TURN {{{1
+
+
+inline constexpr auto expected_request (MSTURN)
+{
+  return turner::msturn::allocate;
+}
+
+
+inline constexpr auto expected_success_response (MSTURN)
+{
+  return turner::msturn::allocate_success;
+}
+
+
+inline constexpr uint16_t expected_length (MSTURN)
+{
+  return 0U;
+}
+
+
+inline constexpr auto request (MSTURN)
+{
+  return std::array<uint8_t, 28>
+  {{
+    0x00, 0x03,                   // MS-TURN Allocate
+    0x00, 0x00,                   // length
+    0x00, 0x01, 0x02, 0x03,       // transaction id
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    0x00, 0x0f,                   // cookie as TLV
+    0x00, 0x04,
+    0x72, 0xc6, 0x4b, 0xc6,
+ }};
+}
+
+
+inline constexpr auto success_response (MSTURN)
+{
+  return std::array<uint8_t, 28>
+  {{
+    0x01, 0x03,                   // MS-TURN Allocate success response
+    0x00, 0x00,                   // length
+    0x00, 0x01, 0x02, 0x03,       // transaction id
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    0x00, 0x0f,                   // cookie as TLV
+    0x00, 0x04,
+    0x72, 0xc6, 0x4b, 0xc6,
+  }};
+}
+
+
+inline constexpr auto expected_transaction_id (MSTURN)
+{
+  return turner::msturn::message_t::transaction_id_t
+  {{
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+  }};
+}
+
+
+inline constexpr auto message_with_bad_type (MSTURN)
+{
+  return std::array<uint8_t, 28>
+  {{
+    0x00, 0x02,                   // invalid MS-TURN method
+    0x00, 0x00,                   // length
+    0x00, 0x01, 0x02, 0x03,       // transaction id
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    0x00, 0x0f,                   // cookie as TLV
+    0x00, 0x04,
+    0x72, 0xc6, 0x4b, 0xc6,
+  }};
+}
+
+
+inline constexpr auto message_with_bad_length (MSTURN)
+{
+  return std::array<uint8_t, 28>
+  {{
+    0x00, 0x03,                   // MS-TURN Allocate
+    0x00, 0x11,                   // length
+    0x00, 0x01, 0x02, 0x03,       // transaction id
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    0x00, 0x0f,                   // cookie as TLV
+    0x00, 0x04,
+    0x72, 0xc6, 0x4b, 0xc6,
+  }};
+}
+
+
+inline constexpr auto message_with_valid_length_and_insufficient_data (MSTURN)
+{
+  return std::array<uint8_t, 30>
+  {{
+    0x00, 0x03,                   // MS-TURN Allocate
+    0x00, 0x04,                   // length
+    0x00, 0x01, 0x02, 0x03,       // transaction id
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    0x00, 0x0f,                   // cookie as TLV
+    0x00, 0x04,
+    0x72, 0xc6, 0x4b, 0xc6,
+    0x01, 0x02,                   // insufficient data
+  }};
+}
+
+
+inline constexpr auto message_with_bad_cookie (MSTURN)
+{
+  return std::array<uint8_t, 28>
+  {{
+    0x00, 0x03,                   // MS-TURN Allocate
+    0x00, 0x00,                   // length
+    0x00, 0x01, 0x02, 0x03,       // transaction id
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+    0x0c, 0x0d, 0x0e, 0x0f,
+    0x01, 0x0f,                   // bad cookie as TLV
+    0x00, 0x04,
+    0x72, 0xc6, 0x4b, 0xc6,
+  }};
+}
 
 
 // STUN {{{1
