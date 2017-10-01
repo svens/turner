@@ -1,0 +1,24 @@
+version: 0.1.0.{build}
+
+branches:
+  except:
+    - gh-pages
+
+image:
+  - Visual Studio 2017
+
+configuration:
+  - Debug
+  - Release
+
+before_build:
+  - cmake . -DTURNER_UNITTESTS=yes -G "Visual Studio 15 2017 Win64"
+
+build_script:
+  - cmake --build . --config %CONFIGURATION%
+
+test_script:
+  - ps: scripts\appveyor_test_script.ps1 -Config %CONFIGURATION% -Output unittests.xml
+
+on_finish:
+  - ps: (New-Object "Net.WebClient").UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\unittests.xml))
