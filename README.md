@@ -1,5 +1,8 @@
 # STUN/TURN client/server
 
+[![Build Status](https://travis-ci.org/svens/turner.svg?branch=master)](https://travis-ci.org/svens/turner)
+[![Coverage](https://coveralls.io/repos/github/svens/turner/badge.svg?branch=master)](https://coveralls.io/github/svens/turner?branch=master)
+
 Turner is multiplatform (Linux, MacOS, Windows) STUN/TURN protocol based
 relay.
 
