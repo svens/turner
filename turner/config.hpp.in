@@ -6,8 +6,18 @@
  */
 
 
-namespace turner {
+#define __turner_begin  namespace turner { inline namespace v0 {
+#define __turner_end    }} // namespace turner::v0
+
+// TODO: drop once MSVC supports inline variables
+#if _MSC_VER
+  #define __turner_inline_var
+#else
+  #define __turner_inline_var inline
+#endif
+
+__turner_begin
 
 constexpr const char *version = "turner/@version@";
 
-} // namespace turner
+__turner_end

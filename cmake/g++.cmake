@@ -55,7 +55,7 @@ if(TURNER_COVERAGE)
     COMMAND ${CMAKE_COMMAND} --build . --target test
     COMMAND ${LCOV} ${LCOV_ARGS} --capture --no-external --derive-func-data --output-file turner-tests.info
     COMMAND ${LCOV} ${LCOV_ARGS} --add-tracefile turner-base.info --add-tracefile turner-tests.info --output-file turner.info
-    COMMAND ${LCOV} ${LCOV_ARGS} --remove turner.info '*.test.?pp' 'client/*' 'server/*' '*/gtest/*' --output-file turner.info
+    COMMAND ${LCOV} ${LCOV_ARGS} --remove turner.info '*.test.?pp' 'client/*' 'server/*' '*/sal/*' '*/gtest/*' --output-file turner.info
     COMMAND ${LCOV} ${LCOV_ARGS} --list turner.info
     COMMAND ${LCOV} ${LCOV_ARGS} --summary turner.info
   )
