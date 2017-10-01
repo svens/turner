@@ -4,6 +4,8 @@
 #if __sal_os_windows
   #include <winsock2.h>
   #pragma comment(lib, "ws2_32")
+#elif __sal_os_linux
+  #include <arpa/inet.h>
 #endif
 
 

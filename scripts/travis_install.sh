@@ -1,7 +1,7 @@
 case "${TRAVIS_OS_NAME}-${CC}" in
   linux-clang)
-    export CC=clang-5.0
-    export CXX=clang++-5.0
+    export CC=clang-3.9
+    export CXX=clang++-3.9
     ;;
 
   linux-gcc)

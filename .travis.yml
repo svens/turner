@@ -18,10 +18,10 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-5.0
+      - llvm-toolchain-trusty
       - kalakris-cmake
     packages:
-      - clang-5.0
+      - clang-3.9
       - cmake
       - g++-6
 
