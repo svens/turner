@@ -18,11 +18,11 @@ relay.
 
 The source tree is organised as follows:
 
-    .                   Root directory
+    .                   root directory
     |-- cmake           CMake helpers
-    |-- scripts         Helper scripts
-    |-- turner          Protocol parser library
+    |-- scripts         helper scripts
+    |-- turner          protocol parser library
     |   |-- client        embeddable client
     |   `-- server        embeddable server
-    |-- turner_client   client executable
-    `-- turner_server   server executable
+    |-- client          client executable
+    `-- server          server executable
