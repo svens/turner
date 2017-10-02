@@ -42,7 +42,7 @@ addons:
       - cmake
       - g++-7
 
-before_install:
+before_install: |
   if test "${BUILD_TYPE}" = "Coverity"; then
     if test "${TRAVIS_BRANCH}" != "${COVERITY_SCAN_BRANCH_PATTERN}"; then
       exit 0
@@ -52,11 +52,11 @@ before_install:
     fi
   fi
 
-install:
+install: |
   source scripts/travis_install.sh
 
-script:
+script: |
   source scripts/travis_script.sh
 
-after_success:
+after_success: |
   source scripts/travis_success.sh
