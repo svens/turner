@@ -130,4 +130,10 @@ if(TURNER_UNITTESTS)
 endif()
 
 
+# Documentation {{{1
+if(TURNER_DOCS)
+  include(cmake/doxygen.cmake)
+endif()
+
+
 # }}}1
