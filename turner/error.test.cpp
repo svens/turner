@@ -5,25 +5,35 @@
 namespace turner_test { namespace {
 
 
-using error = turner_test::with_value<turner::errc>;
-
-
-INSTANTIATE_TEST_CASE_P(turner, error,
-  testing::Values(
-    turner::errc::insufficient_data,
-    turner::errc::invalid_message_header,
-    turner::errc::invalid_message_length
-  )
-);
-
-
-TEST_F(error, category_name)
+TEST(error, category_name)
 {
   EXPECT_STREQ("turner", turner::category().name());
 }
 
 
-TEST_P(error, make_error_code)
+TEST(error, make_error_code_invalid)
+{
+  auto error = turner::make_error_code(static_cast<turner::errc>(-1));
+  ASSERT_TRUE(bool(error));
+
+  EXPECT_EQ(-1, error.value());
+  EXPECT_EQ(turner::category(), error.category());
+
+  EXPECT_STREQ("turner", error.category().name());
+  EXPECT_EQ("unknown error", error.message());
+}
+
+
+using errc = turner_test::with_value<turner::errc>;
+
+INSTANTIATE_TEST_CASE_P(error, errc,
+  testing::Values(
+    turner::errc::unexpected_message_type
+  )
+);
+
+
+TEST_P(errc, make_error_code)
 {
   auto error = turner::make_error_code(GetParam());
   ASSERT_TRUE(bool(error));
@@ -36,19 +46,6 @@ TEST_P(error, make_error_code)
 
   EXPECT_FALSE(error.message().empty());
   EXPECT_NE("unknown error", error.message());
-}
-
-
-TEST_F(error, make_error_code_invalid)
-{
-  auto error = turner::make_error_code(static_cast<turner::errc>(-1));
-  ASSERT_TRUE(bool(error));
-
-  EXPECT_EQ(-1, error.value());
-  EXPECT_EQ(turner::category(), error.category());
-
-  EXPECT_STREQ("turner", error.category().name());
-  EXPECT_EQ("unknown error", error.message());
 }
 
 
