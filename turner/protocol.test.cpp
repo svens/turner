@@ -5,74 +5,64 @@
 namespace turner_test { namespace {
 
 
-using protocol = turner_test::fixture;
+extern const char protocol_name[] = "TestProtocol";
+
+struct protocol
+  : public turner_test::fixture
+  , public turner::basic_protocol_t<protocol, protocol_name>
+{};
+
+struct unnamed_protocol_t
+  : public turner::basic_protocol_t<unnamed_protocol_t>
+{};
 
 
-struct traits_t
-{
-  // cookie
-  static __turner_inline_var constexpr std::array<uint8_t, 6> cookie =
-  {{
-    'c', 'o', 'o', 'k', 'i', 'e',
-  }};
-  static __turner_inline_var constexpr size_t cookie_size = cookie.size();
-  static __turner_inline_var constexpr size_t cookie_offset = 5;
-
-  // transaction id
-  static __turner_inline_var constexpr size_t transaction_id_size = 11;
-  static __turner_inline_var constexpr size_t transaction_id_offset = 12;
-};
-
-using my_protocol_t = turner::basic_protocol_t<traits_t>;
-
-__turner_inline_var constexpr const auto my_protocol = my_protocol_t{};
-
-
-__turner_inline_var std::string_view my_protocol_message =
-  "\00\01\00\07_cookie_transaction_Payload";
-
-
-TEST_F(protocol, traits)
-{
-  ::testing::StaticAssertTypeEq<
-    my_protocol_t::traits_t,
-    traits_t
-  >();
-}
+const char message[] =
+  "\00\01\00\07"
+  "_"
+  "cookie"
+  "_"
+  "transaction"
+  "_"
+  "Payload";
 
 
 TEST_F(protocol, type)
 {
   uint16_t expected = 1;
-  EXPECT_EQ(expected, my_protocol.type(my_protocol_message.begin()));
-  EXPECT_NE(expected, my_protocol.type(my_protocol_message.begin() + 1));
+  EXPECT_EQ(expected, type(message));
+  EXPECT_NE(expected, type(message + 1));
 }
 
 
 TEST_F(protocol, length)
 {
   uint16_t expected = 7;
-  EXPECT_EQ(expected, my_protocol.length(my_protocol_message.begin()));
-  EXPECT_NE(expected, my_protocol.length(my_protocol_message.begin() + 1));
+  EXPECT_EQ(expected, length(message));
+  EXPECT_NE(expected, length(message + 1));
 }
 
 
-TEST_F(protocol, cookie)
+TEST_F(protocol, ostream)
 {
-  auto expected = traits_t::cookie;
-  EXPECT_EQ(expected, my_protocol.cookie(my_protocol_message.begin()));
-  EXPECT_NE(expected, my_protocol.cookie(my_protocol_message.begin() + 1));
+  std::ostringstream oss;
+  oss << *this;
+  EXPECT_EQ(protocol_name, oss.str());
 }
 
 
-TEST_F(protocol, transaction_id)
+TEST_F(protocol, ostream_unnamed)
 {
-  static constexpr const std::array<uint8_t, 11> expected =
-  {{
-     't', 'r', 'a', 'n', 's', 'a', 'c', 't', 'i', 'o', 'n',
-  }};
-  EXPECT_EQ(expected, my_protocol.transaction_id(my_protocol_message.begin()));
-  EXPECT_NE(expected, my_protocol.transaction_id(my_protocol_message.begin() + 1));
+  std::ostringstream oss;
+  oss << 'a' << unnamed_protocol_t{} << 'b';
+  EXPECT_EQ("ab", oss.str());
+}
+
+
+TEST_F(protocol, name)
+{
+  EXPECT_STREQ(protocol_name, name());
+  EXPECT_EQ(nullptr, unnamed_protocol_t::name());
 }
 
 

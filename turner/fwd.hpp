@@ -12,7 +12,8 @@ __turner_begin
 
 
 // turner/protocol.hpp
-template <typename Protocol> class basic_protocol_t;
+template <typename Protocol, const char *Name = nullptr>
+class basic_protocol_t;
 
 
 __turner_end
