@@ -83,6 +83,22 @@ public:
 
 
   /**
+   * Return instance of \a MessageType belonging to \a Protocol (with optional
+   * \a MessageName)
+   */
+  template <uint16_t MessageType, const char *MessageName = nullptr>
+  static constexpr const basic_message_type_t<Protocol, MessageType, MessageName>
+    message_type () noexcept
+  {
+    static_assert(
+      (MessageType & __bits::class_mask) == 0,
+      "not a valid message type"
+    );
+    return {};
+  }
+
+
+  /**
    * Write to \a stream \a Protocol \a Name. If \a Name is not specified,
    * nothing is written.
    */

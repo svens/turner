@@ -1,5 +1,6 @@
 #include <turner/common.test.hpp>
 #include <turner/protocol.hpp>
+#include <turner/message_type.hpp>
 
 
 namespace turner_test { namespace {
@@ -63,6 +64,26 @@ TEST_F(protocol, name)
 {
   EXPECT_STREQ(protocol_name, name());
   EXPECT_EQ(nullptr, unnamed_protocol_t::name());
+}
+
+
+extern const char msg_type_name[] = "message_type";
+
+TEST_F(protocol, message_type)
+{
+  auto msg_type = message_type<0x001, msg_type_name>();
+
+  ::testing::StaticAssertTypeEq<
+    decltype(msg_type)::protocol_t,
+    protocol
+  >();
+
+  EXPECT_EQ(uint16_t(0x001), msg_type);
+  EXPECT_STREQ(msg_type_name, msg_type.name());
+
+  std::ostringstream oss;
+  oss << msg_type;
+  EXPECT_EQ(msg_type_name, oss.str());
 }
 
 
