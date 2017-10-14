@@ -10,11 +10,11 @@ extern const char protocol_name[] = "TestProtocol";
 
 struct protocol
   : public turner_test::fixture
-  , public turner::basic_protocol_t<protocol, protocol_name>
+  , public turner::protocol_t<protocol, protocol_name>
 {};
 
 struct unnamed_protocol_t
-  : public turner::basic_protocol_t<unnamed_protocol_t>
+  : public turner::protocol_t<unnamed_protocol_t>
 {};
 
 

@@ -25,11 +25,11 @@ __turner_inline_var constexpr uint16_t
 
 // turner/protocol.hpp
 template <typename Protocol, const char *Name = nullptr>
-class basic_protocol_t;
+class protocol_t;
 
 // turner/message_type.hpp
 template <typename Protocol, uint16_t Type, const char *Name = nullptr>
-class basic_message_type_t;
+class message_type_t;
 
 
 __turner_end

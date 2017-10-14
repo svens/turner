@@ -17,7 +17,7 @@ __turner_begin
  * Define \a Protocol message \a Type (with optional \a Name)
  */
 template <typename Protocol, uint16_t Type, const char *Name>
-class basic_message_type_t
+class message_type_t
 {
 public:
 
@@ -49,7 +49,7 @@ public:
    * Success response message type for this \a Type.
    */
   template <const char *MessageName = nullptr>
-  using success_response_t = basic_message_type_t<Protocol,
+  using success_response_t = message_type_t<Protocol,
     Type | __bits::success_response_class,
     MessageName
   >;
@@ -71,7 +71,7 @@ public:
    * Error response message type for this \a Type.
    */
   template <const char *MessageName = nullptr>
-  using error_response_t = basic_message_type_t<Protocol,
+  using error_response_t = message_type_t<Protocol,
     Type | __bits::error_response_class,
     MessageName
   >;
@@ -93,7 +93,7 @@ public:
    * Indication message type for this \a Type.
    */
   template <const char *MessageName = nullptr>
-  using indication_t = basic_message_type_t<Protocol,
+  using indication_t = message_type_t<Protocol,
     Type | __bits::indication_class,
     MessageName
   >;
@@ -115,7 +115,7 @@ public:
    * Return true if this message \a Type is same as \a OtherType.
    */
   template <uint16_t OtherType, const char *OtherName>
-  constexpr bool operator== (basic_message_type_t<Protocol, OtherType, OtherName>)
+  constexpr bool operator== (message_type_t<Protocol, OtherType, OtherName>)
     const noexcept
   {
     return Type == OtherType;
@@ -126,7 +126,7 @@ public:
    * Return true if this message \a Type is not same as \a OtherType.
    */
   template <uint16_t OtherType, const char *OtherName>
-  constexpr bool operator!= (basic_message_type_t<Protocol, OtherType, OtherName>)
+  constexpr bool operator!= (message_type_t<Protocol, OtherType, OtherName>)
     const noexcept
   {
     return Type != OtherType;
@@ -138,7 +138,7 @@ public:
    * write numeric type() instead (with optional \a Protocol name if it is not
    * nullptr).
    */
-  friend std::ostream &operator<< (std::ostream &stream, basic_message_type_t)
+  friend std::ostream &operator<< (std::ostream &stream, message_type_t)
   {
     if constexpr (Name != nullptr)
     {
@@ -169,7 +169,7 @@ private:
  * Return true if message \a Type is same as numeric \a type.
  */
 template <typename Protocol, uint16_t Type, const char *Name>
-inline constexpr bool operator== (basic_message_type_t<Protocol, Type, Name>,
+inline constexpr bool operator== (message_type_t<Protocol, Type, Name>,
   uint16_t type) noexcept
 {
   return Type == type;
@@ -181,7 +181,7 @@ inline constexpr bool operator== (basic_message_type_t<Protocol, Type, Name>,
  */
 template <typename Protocol, uint16_t Type, const char *Name>
 inline constexpr bool operator== (uint16_t type,
-  basic_message_type_t<Protocol, Type, Name>) noexcept
+  message_type_t<Protocol, Type, Name>) noexcept
 {
   return Type == type;
 }
@@ -191,7 +191,7 @@ inline constexpr bool operator== (uint16_t type,
  * Return true if message \a Type is not same as numeric \a type.
  */
 template <typename Protocol, uint16_t Type, const char *Name>
-inline constexpr bool operator!= (basic_message_type_t<Protocol, Type, Name>,
+inline constexpr bool operator!= (message_type_t<Protocol, Type, Name>,
   uint16_t type) noexcept
 {
   return Type != type;
@@ -203,7 +203,7 @@ inline constexpr bool operator!= (basic_message_type_t<Protocol, Type, Name>,
  */
 template <typename Protocol, uint16_t Type, const char *Name>
 inline constexpr bool operator!= (uint16_t type,
-  basic_message_type_t<Protocol, Type, Name>) noexcept
+  message_type_t<Protocol, Type, Name>) noexcept
 {
   return Type != type;
 }

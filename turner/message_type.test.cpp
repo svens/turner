@@ -10,28 +10,28 @@ using message_type = turner_test::fixture;
 
 extern const char foo_name[] = "foo";
 struct foo_t
-  : public turner::basic_protocol_t<foo_t, foo_name>
+  : public turner::protocol_t<foo_t, foo_name>
 {};
 
 extern const char a_name[] = "a";
-using a_t = turner::basic_message_type_t<foo_t, 0x001, a_name>;
+using a_t = turner::message_type_t<foo_t, 0x001, a_name>;
 constexpr const a_t a{};
 
 extern const char b_name[] = "b";
-using b_t = turner::basic_message_type_t<foo_t, 0x001, b_name>;
+using b_t = turner::message_type_t<foo_t, 0x001, b_name>;
 constexpr const b_t b{};
 
-using c_t = turner::basic_message_type_t<foo_t, 0x002>;
+using c_t = turner::message_type_t<foo_t, 0x002>;
 constexpr const c_t c{};
 
-using d_t = turner::basic_message_type_t<foo_t, 0x002>;
+using d_t = turner::message_type_t<foo_t, 0x002>;
 constexpr const d_t d{};
 
 struct bar_t
-  : public turner::basic_protocol_t<bar_t>
+  : public turner::protocol_t<bar_t>
 {};
 
-using e_t = turner::basic_message_type_t<bar_t, 0x001>;
+using e_t = turner::message_type_t<bar_t, 0x001>;
 constexpr const e_t e{};
 
 

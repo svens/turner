@@ -64,11 +64,11 @@ private:
 /**
  * Generalised protocol description class.
  *
- * Specific Protocol defines own trait and wrap it into basic_protocol_t which
+ * Specific Protocol defines own trait and wrap it into protocol_t which
  * provides common API for message parsing.
  */
 template <typename Protocol, const char *Name>
-class basic_protocol_t
+class protocol_t
   : public protocol_base_t
 {
 public:
@@ -87,7 +87,7 @@ public:
    * \a MessageName)
    */
   template <uint16_t MessageType, const char *MessageName = nullptr>
-  static constexpr const basic_message_type_t<Protocol, MessageType, MessageName>
+  static constexpr const message_type_t<Protocol, MessageType, MessageName>
     message_type () noexcept
   {
     static_assert(
@@ -102,8 +102,7 @@ public:
    * Write to \a stream \a Protocol \a Name. If \a Name is not specified,
    * nothing is written.
    */
-  friend std::ostream &operator<< (std::ostream &stream,
-    const basic_protocol_t &)
+  friend std::ostream &operator<< (std::ostream &stream, const protocol_t &)
   {
     if constexpr (Name != nullptr)
     {
