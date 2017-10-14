@@ -87,7 +87,7 @@ public:
    * \a MessageName)
    */
   template <uint16_t MessageType, const char *MessageName = nullptr>
-  static constexpr const message_type_t<Protocol, MessageType, MessageName>
+  static constexpr message_type_t<Protocol, MessageType, MessageName>
     message_type () noexcept
   {
     static_assert(

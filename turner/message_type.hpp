@@ -59,8 +59,7 @@ public:
    * Return instance of message \a Type success response.
    */
   template <const char *MessageName = nullptr>
-  static constexpr const success_response_t<MessageName> success_response ()
-    noexcept
+  static constexpr success_response_t<MessageName> success_response () noexcept
   {
     ensure_message_class_is_request();
     return {};
@@ -81,8 +80,7 @@ public:
    * Return instance of message \a Type error response.
    */
   template <const char *MessageName = nullptr>
-  static constexpr const error_response_t<MessageName> error_response ()
-    noexcept
+  static constexpr error_response_t<MessageName> error_response () noexcept
   {
     ensure_message_class_is_request();
     return {};
@@ -103,8 +101,7 @@ public:
    * Return instance of message \a Type indication.
    */
   template <const char *MessageName = nullptr>
-  static constexpr const indication_t<MessageName> indication ()
-    noexcept
+  static constexpr indication_t<MessageName> indication () noexcept
   {
     ensure_message_class_is_request();
     return {};
