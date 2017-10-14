@@ -16,7 +16,7 @@ __turner_begin
 /**
  * Define \a Protocol message \a Type (with optional \a Name)
  */
-template <typename Protocol, uint16_t Type, const char *Name = nullptr>
+template <typename Protocol, uint16_t Type, const char *Name>
 class basic_message_type_t
 {
 public:
@@ -42,6 +42,72 @@ public:
   static constexpr uint16_t type () noexcept
   {
     return Type;
+  }
+
+
+  /**
+   * Success response message type for this \a Type.
+   */
+  template <const char *MessageName = nullptr>
+  using success_response_t = basic_message_type_t<Protocol,
+    Type | __bits::success_response_class,
+    MessageName
+  >;
+
+
+  /**
+   * Return instance of message \a Type success response.
+   */
+  template <const char *MessageName = nullptr>
+  static constexpr const success_response_t<MessageName> success_response ()
+    noexcept
+  {
+    ensure_message_class_is_request();
+    return {};
+  }
+
+
+  /**
+   * Error response message type for this \a Type.
+   */
+  template <const char *MessageName = nullptr>
+  using error_response_t = basic_message_type_t<Protocol,
+    Type | __bits::error_response_class,
+    MessageName
+  >;
+
+
+  /**
+   * Return instance of message \a Type error response.
+   */
+  template <const char *MessageName = nullptr>
+  static constexpr const error_response_t<MessageName> error_response ()
+    noexcept
+  {
+    ensure_message_class_is_request();
+    return {};
+  }
+
+
+  /**
+   * Indication message type for this \a Type.
+   */
+  template <const char *MessageName = nullptr>
+  using indication_t = basic_message_type_t<Protocol,
+    Type | __bits::indication_class,
+    MessageName
+  >;
+
+
+  /**
+   * Return instance of message \a Type indication.
+   */
+  template <const char *MessageName = nullptr>
+  static constexpr const indication_t<MessageName> indication ()
+    noexcept
+  {
+    ensure_message_class_is_request();
+    return {};
   }
 
 
@@ -87,6 +153,14 @@ public:
       stream << Type;
     }
     return stream;
+  }
+
+
+private:
+
+  static constexpr void ensure_message_class_is_request () noexcept
+  {
+    static_assert((Type & __bits::class_mask) == 0);
   }
 };
 

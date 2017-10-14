@@ -146,4 +146,85 @@ TEST_F(message_type, name)
 }
 
 
+extern const char a_success_response_name[] = "a_ok";
+
+TEST_F(message_type, success_response_typedef)
+{
+  using a_ok_t = a_t::success_response_t<a_success_response_name>;
+  a_ok_t a_ok;
+
+  EXPECT_EQ(a.type() | turner::__bits::success_response_class, a_ok.type());
+
+  std::ostringstream oss;
+  oss << a_ok_t{};
+  EXPECT_EQ(a_success_response_name, oss.str());
+}
+
+
+TEST_F(message_type, success_response)
+{
+  auto a_ok = a.success_response<a_success_response_name>();
+
+  EXPECT_EQ(a.type() | turner::__bits::success_response_class, a_ok.type());
+
+  std::ostringstream oss;
+  oss << a_ok;
+  EXPECT_EQ(a_success_response_name, oss.str());
+}
+
+
+extern const char a_error_response_name[] = "a_fail";
+
+TEST_F(message_type, error_response_typedef)
+{
+  using a_fail_t = a_t::error_response_t<a_error_response_name>;
+  a_fail_t a_fail;
+
+  EXPECT_EQ(a.type() | turner::__bits::error_response_class, a_fail.type());
+
+  std::ostringstream oss;
+  oss << a_fail_t{};
+  EXPECT_EQ(a_error_response_name, oss.str());
+}
+
+
+TEST_F(message_type, error_response)
+{
+  auto a_fail = a.error_response<a_error_response_name>();
+
+  EXPECT_EQ(a.type() | turner::__bits::error_response_class, a_fail.type());
+
+  std::ostringstream oss;
+  oss << a_fail;
+  EXPECT_EQ(a_error_response_name, oss.str());
+}
+
+
+extern const char a_indication_name[] = "a_ind";
+
+TEST_F(message_type, indication_typedef)
+{
+  using a_ind_t = a_t::indication_t<a_indication_name>;
+  a_ind_t a_ind;
+
+  EXPECT_EQ(a.type() | turner::__bits::indication_class, a_ind.type());
+
+  std::ostringstream oss;
+  oss << a_ind_t{};
+  EXPECT_EQ(a_indication_name, oss.str());
+}
+
+
+TEST_F(message_type, indication)
+{
+  auto a_ind = a.indication<a_indication_name>();
+
+  EXPECT_EQ(a.type() | turner::__bits::indication_class, a_ind.type());
+
+  std::ostringstream oss;
+  oss << a_ind;
+  EXPECT_EQ(a_indication_name, oss.str());
+}
+
+
 }} // namespace turner_test
