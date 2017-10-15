@@ -28,7 +28,8 @@ using errc = turner_test::with_value<turner::errc>;
 
 INSTANTIATE_TEST_CASE_P(error, errc,
   testing::Values(
-    turner::errc::insufficient_data,
+    turner::errc::insufficient_header_data,
+    turner::errc::insufficient_payload_data,
     turner::errc::invalid_message_type,
     turner::errc::invalid_message_length,
     turner::errc::invalid_message_cookie

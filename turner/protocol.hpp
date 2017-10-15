@@ -8,18 +8,11 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
-#include <sal/byte_order.hpp>
+#include <ostream>
 #include <type_traits>
 
 
 __turner_begin
-
-
-/**
- * Common base class for protocol classes.
- */
-class protocol_base_t
-{};
 
 
 /**
@@ -30,19 +23,33 @@ class protocol_base_t
  */
 template <typename Protocol>
 class basic_protocol_t
-  : public protocol_base_t
 {
 public:
 
   /**
+   * Cookie type for \a Protocol message.
    */
   using cookie_t = std::remove_reference_t<decltype(Protocol::cookie())>;
 
+  /**
+   * Transaction ID type for \a Protocol message.
+   */
+  using transaction_id_t = std::array<uint8_t, Protocol::transaction_id_size()>;
+
 
   /**
+   * Return pointer to message instance wrapping raw network format in range
+   * [\a first, \a last).
+   *
+   * Returned pointed object is not actually instantiated but overlayed onto
+   * specified memory range [\a first, \a last). Each time any of
+   * any_message_t method is invocated, it parses fields relative to \a this.
+   *
+   * If during call to from_wire() message validation fails, nullptr is
+   * returned and error is set to code describing failure.
    */
   template <typename It>
-  static constexpr any_message_t<Protocol> from_wire (It first, It last,
+  static constexpr const any_message_t<Protocol> *from_wire (It first, It last,
     std::error_code &error) noexcept
   {
     return from_wire(__bits::to_ptr(first), __bits::to_ptr(last), error);
@@ -50,9 +57,18 @@ public:
 
 
   /**
+   * Return pointer to message instance wrapping raw network format in range
+   * [\a first, \a last).
+   *
+   * Returned pointed object is not actually instantiated but overlayed onto
+   * specified memory range [\a first, \a last). Each time any of
+   * any_message_t method is invocated, it parses fields relative to \a this.
+   *
+   * \throws std::system_error if during call to from_wire() message
+   * validation fails.
    */
   template <typename It>
-  static constexpr any_message_t<Protocol> from_wire (It first, It last)
+  static constexpr const any_message_t<Protocol> *from_wire (It first, It last)
   {
     return from_wire(__bits::to_ptr(first), __bits::to_ptr(last),
       sal::throw_on_error("basic_protocol_t::from_wire")
@@ -76,7 +92,7 @@ public:
 
 private:
 
-  static constexpr any_message_t<Protocol> from_wire (
+  static constexpr const any_message_t<Protocol> *from_wire (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error
@@ -85,7 +101,7 @@ private:
 
 
 template <typename Protocol>
-constexpr any_message_t<Protocol> basic_protocol_t<Protocol>::from_wire (
+constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
   const uint8_t *first,
   const uint8_t *last,
   std::error_code &error) noexcept
@@ -98,27 +114,35 @@ constexpr any_message_t<Protocol> basic_protocol_t<Protocol>::from_wire (
   }
   if (last - first < Protocol::header_size())
   {
-    error = make_error_code(errc::insufficient_data);
+    error = make_error_code(errc::insufficient_header_data);
     return {};
   }
 
+  // passed initial checks, overlay any_message_t on top of specified area
+  static_assert(std::is_trivially_destructible_v<any_message_t<Protocol>>);
+  auto message = reinterpret_cast<const any_message_t<Protocol> *>(first);
+
   // message type (2 highest bits must be 00, RFC5389, section 6)
-  any_message_t<Protocol> message(first, last);
-  if ((message.type() & 0b1100'0000'0000'0000) != 0)
+  if ((message->type() & 0b1100'0000'0000'0000) != 0)
   {
     error = make_error_code(errc::invalid_message_type);
     return {};
   }
 
   // message length (must be padded to 4B boundary)
-  if (message.length() % 4 != 0)
+  if (message->length() % 4 != 0)
   {
     error = make_error_code(errc::invalid_message_length);
     return {};
   }
+  if (first + Protocol::header_size() + message->length() > last)
+  {
+    error = make_error_code(errc::insufficient_payload_data);
+    return {};
+  }
 
   // cookie
-  if (message.cookie() != Protocol::cookie())
+  if (message->cookie() != Protocol::cookie())
   {
     error = make_error_code(errc::invalid_message_cookie);
     return {};

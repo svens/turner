@@ -27,6 +27,16 @@ struct unnamed_protocol_t
       { 'C', 'o', 'o', 'k', 'i', 'e', }
     };
   }
+
+  static constexpr size_t transaction_id_offset () noexcept
+  {
+    return 12;
+  }
+
+  static constexpr size_t transaction_id_size () noexcept
+  {
+    return 11;
+  }
 };
 
 
@@ -58,6 +68,8 @@ const char raw[] =
   "Payload"
   "\00";        // Padding
 
+const char *raw_end = raw + sizeof(raw) - 1;
+
 
 TEST_F(protocol, ostream)
 {
@@ -79,9 +91,9 @@ TEST_F(protocol, ostream_unnamed)
 TEST_F(protocol, from_wire)
 {
   std::error_code error;
-  auto msg = from_wire(raw, raw + sizeof(raw), error);
+  auto msg = from_wire(raw, raw_end, error);
   ASSERT_TRUE(!error);
-  EXPECT_FALSE(!msg);
+  ASSERT_TRUE(msg);
 }
 
 
@@ -90,7 +102,7 @@ TEST_F(protocol, from_wire_first_nullptr)
   std::error_code error;
   auto msg = from_wire((const char *)0, raw, error);
   EXPECT_EQ(std::errc::invalid_argument, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
     from_wire((const char *)0, raw),
@@ -104,7 +116,7 @@ TEST_F(protocol, from_wire_last_nullptr)
   std::error_code error;
   auto msg = from_wire(raw, (const char *)0, error);
   EXPECT_EQ(std::errc::invalid_argument, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
     from_wire(raw, (const char *)0),
@@ -116,23 +128,23 @@ TEST_F(protocol, from_wire_last_nullptr)
 TEST_F(protocol, from_wire_first_gt_last)
 {
   std::error_code error;
-  auto msg = from_wire(raw + sizeof(raw), raw, error);
+  auto msg = from_wire(raw_end, raw, error);
   EXPECT_EQ(std::errc::invalid_argument, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
-    from_wire(raw + sizeof(raw), raw),
+    from_wire(raw_end, raw),
     std::system_error
   );
 }
 
 
-TEST_F(protocol, from_wire_insufficient_data)
+TEST_F(protocol, from_wire_insufficient_header_data)
 {
   std::error_code error;
   auto msg = from_wire(raw, raw + protocol_t::header_size() / 2, error);
-  EXPECT_EQ(turner::errc::insufficient_data, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_EQ(turner::errc::insufficient_header_data, error);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
     from_wire(raw, raw + protocol_t::header_size() / 2),
@@ -144,25 +156,26 @@ TEST_F(protocol, from_wire_insufficient_data)
 TEST_F(protocol, from_wire_type)
 {
   std::error_code error;
-  auto msg = from_wire(raw, raw + sizeof(raw), error);
+  auto msg = from_wire(raw, raw_end, error);
   ASSERT_TRUE(!error);
-  EXPECT_EQ(1, msg.type());
+  ASSERT_TRUE(msg);
+  EXPECT_EQ(1, msg->type());
 }
 
 
 TEST_F(protocol, from_wire_invalid_type)
 {
   char data[sizeof(raw)];
-  std::uninitialized_copy(raw, raw + sizeof(raw), data);
+  auto data_end = std::uninitialized_copy(raw, raw_end, data);
   data[0] |= 0b1100'0000;
 
   std::error_code error;
-  auto msg = from_wire(data, data + sizeof(data), error);
+  auto msg = from_wire(data, data_end, error);
   EXPECT_EQ(turner::errc::invalid_message_type, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
-    from_wire(data, data + sizeof(data)),
+    from_wire(data, data_end),
     std::system_error
   );
 }
@@ -171,25 +184,39 @@ TEST_F(protocol, from_wire_invalid_type)
 TEST_F(protocol, from_wire_length)
 {
   std::error_code error;
-  auto msg = from_wire(raw, raw + sizeof(raw), error);
+  auto msg = from_wire(raw, raw_end, error);
   ASSERT_TRUE(!error);
-  EXPECT_EQ(8, msg.length());
+  EXPECT_EQ(8, msg->length());
 }
 
 
 TEST_F(protocol, from_wire_invalid_length)
 {
   char data[sizeof(raw)];
-  std::uninitialized_copy(raw, raw + sizeof(raw), data);
+  auto data_end = std::uninitialized_copy(raw, raw_end, data);
   data[3] += 1;
 
   std::error_code error;
-  auto msg = from_wire(data, data + sizeof(data), error);
+  auto msg = from_wire(data, data_end, error);
   EXPECT_EQ(turner::errc::invalid_message_length, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
-    from_wire(data, data + sizeof(data)),
+    from_wire(data, data_end),
+    std::system_error
+  );
+}
+
+
+TEST_F(protocol, from_wire_insufficient_payload_data)
+{
+  std::error_code error;
+  auto msg = from_wire(raw, raw_end - 1, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+  EXPECT_FALSE(msg);
+
+  EXPECT_THROW(
+    from_wire(raw, raw_end - 1),
     std::system_error
   );
 }
@@ -198,18 +225,34 @@ TEST_F(protocol, from_wire_invalid_length)
 TEST_F(protocol, from_wire_invalid_cookie)
 {
   char data[sizeof(raw)];
-  std::uninitialized_copy(raw, raw + sizeof(raw), data);
+  auto data_end = std::uninitialized_copy(raw, raw_end, data);
   data[protocol_t::cookie_offset()] += 1;
 
   std::error_code error;
-  auto msg = from_wire(data, data + sizeof(data), error);
+  auto msg = from_wire(data, data_end, error);
   EXPECT_EQ(turner::errc::invalid_message_cookie, error);
-  EXPECT_TRUE(!msg);
+  EXPECT_FALSE(msg);
 
   EXPECT_THROW(
-    from_wire(data, data + sizeof(data)),
+    from_wire(data, data_end),
     std::system_error
   );
+}
+
+
+TEST_F(protocol, from_wire_transaction_id)
+{
+  std::error_code error;
+  auto msg = from_wire(raw, raw_end, error);
+  ASSERT_TRUE(!error);
+  ASSERT_TRUE(msg);
+
+  const std::array<uint8_t, 11> expected =
+  {{
+    'T', 'r', 'a', 'n', 's', 'a', 'c', 't', 'i', 'o', 'n',
+  }};
+
+  EXPECT_EQ(expected, msg->transaction_id());
 }
 
 
