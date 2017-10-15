@@ -2,13 +2,11 @@ list(APPEND turner
   turner/error.hpp
   turner/error.cpp
   turner/fwd.hpp
-  turner/message_type.hpp
   turner/protocol.hpp
 )
 
 list(APPEND turner_unittests
   turner/common.test.hpp
   turner/error.test.cpp
-  turner/message_type.test.cpp
   turner/protocol.test.cpp
 )

@@ -1,21 +1,21 @@
 #include <turner/common.test.hpp>
 #include <turner/protocol.hpp>
-#include <turner/message_type.hpp>
+#include <string_view>
 
 
 namespace turner_test { namespace {
 
 
-extern const char protocol_name[] = "TestProtocol";
-
 struct protocol
   : public turner_test::fixture
-  , public turner::protocol_t<protocol, protocol_name>
-{};
-
-struct unnamed_protocol_t
-  : public turner::protocol_t<unnamed_protocol_t>
-{};
+  , public turner::basic_protocol_t<protocol>
+{
+  static constexpr std::string_view name () noexcept
+  {
+    using namespace std::string_view_literals;
+    return "Protocol"sv;
+  }
+};
 
 
 const char message[] =
@@ -48,42 +48,19 @@ TEST_F(protocol, ostream)
 {
   std::ostringstream oss;
   oss << *this;
-  EXPECT_EQ(protocol_name, oss.str());
+  EXPECT_EQ(name(), oss.str());
 }
 
 
 TEST_F(protocol, ostream_unnamed)
 {
-  std::ostringstream oss;
-  oss << 'a' << unnamed_protocol_t{} << 'b';
-  EXPECT_EQ("ab", oss.str());
-}
-
-
-TEST_F(protocol, name)
-{
-  EXPECT_STREQ(protocol_name, name());
-  EXPECT_EQ(nullptr, unnamed_protocol_t::name());
-}
-
-
-extern const char msg_type_name[] = "message_type";
-
-TEST_F(protocol, message_type)
-{
-  auto msg_type = message_type<0x001, msg_type_name>();
-
-  ::testing::StaticAssertTypeEq<
-    decltype(msg_type)::protocol_t,
-    protocol
-  >();
-
-  EXPECT_EQ(uint16_t(0x001), msg_type);
-  EXPECT_STREQ(msg_type_name, msg_type.name());
+  struct unnamed_protocol_t
+    : public turner::basic_protocol_t<unnamed_protocol_t>
+  {};
 
   std::ostringstream oss;
-  oss << msg_type;
-  EXPECT_EQ(msg_type_name, oss.str());
+  oss << unnamed_protocol_t{};
+  EXPECT_EQ("", oss.str());
 }
 
 

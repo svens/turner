@@ -6,12 +6,15 @@
  */
 
 #include <turner/config.hpp>
+#include <memory>
+#include <type_traits>
 
 
 __turner_begin
 
 
 namespace __bits {
+
 
 // RFC5398, 6
 __turner_inline_var constexpr uint16_t
@@ -20,16 +23,42 @@ __turner_inline_var constexpr uint16_t
   success_response_class = 0b000'0001'0000'0000,
   error_response_class =   0b000'0001'0001'0000;
 
+
+// helper to detect if T has method name()
+template <typename T>
+class has_name_t
+{
+  template <typename TT>
+  static auto test (int) -> decltype(std::declval<TT&>().name(), std::true_type());
+
+  template <typename>
+  static auto test (...) -> std::false_type;
+
+public:
+
+  static __turner_inline_var constexpr const bool value =
+    decltype(test<T>(0))::value;
+};
+
+// instantiantion for has_name_t
+template <typename T>
+__turner_inline_var constexpr bool has_name_v = has_name_t<T>::value;
+
+
+// cast any iterator It to byte pointer
+template <typename It>
+static constexpr const uint8_t *to_ptr (It it) noexcept
+{
+  return reinterpret_cast<const uint8_t *>(std::addressof(*it));
+}
+
+
 } // namespace __bits
 
 
 // turner/protocol.hpp
-template <typename Protocol, const char *Name = nullptr>
-class protocol_t;
-
-// turner/message_type.hpp
-template <typename Protocol, uint16_t Type, const char *Name = nullptr>
-class message_type_t;
+template <typename Protocol>
+class basic_protocol_t;
 
 
 __turner_end
