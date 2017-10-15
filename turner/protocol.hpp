@@ -90,9 +90,8 @@ public:
   static constexpr message_type_t<Protocol, MessageType, MessageName>
     message_type () noexcept
   {
-    static_assert(
-      (MessageType & __bits::class_mask) == 0,
-      "not a valid message type"
+    static_assert((MessageType & __bits::class_mask) == 0,
+      "invalid message type"
     );
     return {};
   }

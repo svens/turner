@@ -21,6 +21,10 @@ class message_type_t
 {
 public:
 
+  // check message validity according to RFC5389, section 6
+  static_assert((Type & 0b1100'0000'0000'0000) == 0, "invalid message type");
+
+
   /**
    * Protocol which defines this message type.
    */
@@ -157,7 +161,7 @@ private:
 
   static constexpr void ensure_message_class_is_request () noexcept
   {
-    static_assert((Type & __bits::class_mask) == 0);
+    static_assert((Type & __bits::class_mask) == 0, "invalid message type");
   }
 };
 
