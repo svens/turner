@@ -16,7 +16,7 @@ __turner_begin
 namespace __bits {
 
 
-// RFC5398, 6
+// RFC5389, 6
 __turner_inline_var constexpr uint16_t
   class_mask =             0b000'0001'0001'0000,
   indication_class =       0b000'0000'0001'0000,
@@ -59,6 +59,10 @@ static constexpr const uint8_t *to_ptr (It it) noexcept
 // turner/protocol.hpp
 template <typename Protocol>
 class basic_protocol_t;
+
+// turner/message.hpp
+template <typename Protocol>
+class any_message_t;
 
 
 __turner_end

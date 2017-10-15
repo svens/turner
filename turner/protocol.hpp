@@ -7,7 +7,9 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <turner/error.hpp>
 #include <sal/byte_order.hpp>
+#include <type_traits>
 
 
 __turner_begin
@@ -17,38 +19,7 @@ __turner_begin
  * Common base class for protocol classes.
  */
 class protocol_base_t
-{
-protected:
-
-  /**
-   * Return \a message type.
-   *
-   * \note This method intentionally does not check length of message. This is
-   * responsibility of message parsing.
-   */
-  template <typename It>
-  static constexpr uint16_t type (It message) noexcept
-  {
-    return sal::network_to_native_byte_order(
-      reinterpret_cast<const uint16_t *>(__bits::to_ptr(message))[0]
-    );
-  }
-
-
-  /**
-   * Return \a message length.
-   *
-   * \note This method intentionally does not check length of message. This is
-   * responsibility of message parsing.
-   */
-  template <typename It>
-  static constexpr uint16_t length (It message) noexcept
-  {
-    return sal::network_to_native_byte_order(
-      reinterpret_cast<const uint16_t *>(__bits::to_ptr(message))[1]
-    );
-  }
-};
+{};
 
 
 /**
@@ -64,6 +35,32 @@ class basic_protocol_t
 public:
 
   /**
+   */
+  using cookie_t = std::remove_reference_t<decltype(Protocol::cookie())>;
+
+
+  /**
+   */
+  template <typename It>
+  static constexpr any_message_t<Protocol> from_wire (It first, It last,
+    std::error_code &error) noexcept
+  {
+    return from_wire(__bits::to_ptr(first), __bits::to_ptr(last), error);
+  }
+
+
+  /**
+   */
+  template <typename It>
+  static constexpr any_message_t<Protocol> from_wire (It first, It last)
+  {
+    return from_wire(__bits::to_ptr(first), __bits::to_ptr(last),
+      sal::throw_on_error("basic_protocol_t::from_wire")
+    );
+  }
+
+
+  /**
    * Write to \a stream \a Protocol name. If name is not defined, nothing is
    * written.
    */
@@ -75,7 +72,61 @@ public:
     }
     return stream;
   }
+
+
+private:
+
+  static constexpr any_message_t<Protocol> from_wire (
+    const uint8_t *first,
+    const uint8_t *last,
+    std::error_code &error
+  ) noexcept;
 };
+
+
+template <typename Protocol>
+constexpr any_message_t<Protocol> basic_protocol_t<Protocol>::from_wire (
+  const uint8_t *first,
+  const uint8_t *last,
+  std::error_code &error) noexcept
+{
+  // validate arguments
+  if (!first || !last || first > last)
+  {
+    error = std::make_error_code(std::errc::invalid_argument);
+    return {};
+  }
+  if (last - first < Protocol::header_size())
+  {
+    error = make_error_code(errc::insufficient_data);
+    return {};
+  }
+
+  // message type (2 highest bits must be 00, RFC5389, section 6)
+  any_message_t<Protocol> message(first, last);
+  if ((message.type() & 0b1100'0000'0000'0000) != 0)
+  {
+    error = make_error_code(errc::invalid_message_type);
+    return {};
+  }
+
+  // message length (must be padded to 4B boundary)
+  if (message.length() % 4 != 0)
+  {
+    error = make_error_code(errc::invalid_message_length);
+    return {};
+  }
+
+  // cookie
+  if (message.cookie() != Protocol::cookie())
+  {
+    error = make_error_code(errc::invalid_message_cookie);
+    return {};
+  }
+
+  error.clear();
+  return message;
+}
 
 
 __turner_end
