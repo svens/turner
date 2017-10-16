@@ -1,5 +1,6 @@
 #include <turner/common.test.hpp>
 #include <turner/message.hpp>
+#include <turner/message_type.hpp>
 #include <turner/protocol.hpp>
 
 
@@ -12,6 +13,22 @@ struct protocol
 {
   virtual ~protocol () = default;
 };
+
+
+TEST_F(protocol, message_type)
+{
+  constexpr const auto msg_1 = message_type<1>();
+
+  EXPECT_EQ(
+    typeid(msg_1),
+    typeid(turner::message_type_t<protocol_t, 1>)
+  );
+
+  EXPECT_EQ(uint16_t(1), msg_1);
+  EXPECT_EQ(msg_1, uint16_t(1));
+
+  EXPECT_EQ(uint16_t(0), msg_1.type() & turner::__bits::class_mask);
+}
 
 
 TEST_F(protocol, ostream)

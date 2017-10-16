@@ -38,6 +38,17 @@ public:
 
 
   /**
+   * Return instance of message \a Type as defined by \a Protocol.
+   */
+  template <uint16_t Type>
+  static constexpr message_type_t<Protocol, Type> message_type () noexcept
+  {
+    static_assert((Type & __bits::class_mask) == 0, "expected request class");
+    return {};
+  }
+
+
+  /**
    * Return pointer to message instance wrapping raw network format in range
    * [\a first, \a last).
    *

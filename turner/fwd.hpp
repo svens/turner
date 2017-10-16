@@ -64,5 +64,9 @@ class basic_protocol_t;
 template <typename Protocol>
 class any_message_t;
 
+// turner/message_type.hpp
+template <typename Protocol, uint16_t Type>
+class message_type_t;
+
 
 __turner_end
