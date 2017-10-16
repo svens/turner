@@ -1,5 +1,9 @@
 #pragma once
 
+#include <turner/config.hpp>
+#include <array>
+#include <string_view>
+
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
 
@@ -42,6 +46,69 @@ class with_value
   : public fixture
   , public ::testing::WithParamInterface<T>
 {};
+
+
+// Protocol and related data for testing //{{{1
+
+
+struct unnamed_protocol_t
+{
+  static constexpr uint16_t header_size () noexcept
+  {
+    return 24;
+  }
+
+  static constexpr size_t cookie_offset () noexcept
+  {
+    return 5;
+  }
+
+  static constexpr std::array<uint8_t, 6> cookie () noexcept
+  {
+    return
+    {
+      { 'C', 'o', 'o', 'k', 'i', 'e', }
+    };
+  }
+
+  static constexpr size_t transaction_id_offset () noexcept
+  {
+    return 12;
+  }
+
+  static constexpr size_t transaction_id_size () noexcept
+  {
+    return 11;
+  }
+};
+
+
+struct protocol_t
+  : public unnamed_protocol_t
+{
+  static constexpr std::string_view name () noexcept
+  {
+    using namespace std::string_view_literals;
+    return "Protocol"sv;
+  }
+};
+
+
+__turner_inline_var constexpr const char raw[] =
+  "\x00\x01"    // Type
+  "\x00\x08"    // Length
+  "_"
+  "Cookie"
+  "_"
+  "Transaction"
+  "_"
+  "Payload"
+  "\00";        // Padding
+
+__turner_inline_var constexpr const char *raw_end = raw + sizeof(raw) - 1;
+
+
+//}}}1
 
 
 } // namespace turner_test
