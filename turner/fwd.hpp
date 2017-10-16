@@ -47,7 +47,7 @@ __turner_inline_var constexpr bool has_name_v = has_name_t<T>::value;
 
 // cast any iterator It to byte pointer
 template <typename It>
-static constexpr const uint8_t *to_ptr (It it) noexcept
+inline constexpr const uint8_t *to_ptr (It it) noexcept
 {
   return reinterpret_cast<const uint8_t *>(std::addressof(*it));
 }

@@ -81,7 +81,7 @@ public:
   constexpr const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      this + Protocol::cookie_offset()
+      __bits::to_ptr(this) + Protocol::cookie_offset()
     );
   }
 
@@ -92,7 +92,7 @@ public:
   constexpr const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      this + Protocol::transaction_id_offset()
+      __bits::to_ptr(this) + Protocol::transaction_id_offset()
     );
   }
 
