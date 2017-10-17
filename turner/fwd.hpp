@@ -56,15 +56,27 @@ inline constexpr const uint8_t *to_ptr (It it) noexcept
 } // namespace __bits
 
 
+//
 // turner/protocol.hpp
+//
+
 template <typename Protocol>
 class basic_protocol_t;
 
+//
 // turner/message.hpp
+//
+
 template <typename Protocol>
 class any_message_t;
 
+template <typename Protocol, uint16_t Type>
+class basic_message_t;
+
+//
 // turner/message_type.hpp
+//
+
 template <typename Protocol, uint16_t Type>
 class message_type_t;
 

@@ -97,9 +97,40 @@ public:
   }
 
 
+  /**
+   * Return specialized message from \a this generic message if underlying raw
+   * message has expected \a Type. On different type, return nullptr.
+   */
+  template <uint16_t Type>
+  constexpr const basic_message_t<Protocol, Type> *
+    as (message_type_t<Protocol, Type>) const noexcept
+  {
+    return type() == Type
+      ? reinterpret_cast<const basic_message_t<Protocol, Type> *>(this)
+      : nullptr;
+  }
+
+
 private:
 
   any_message_t () = delete;
+};
+
+
+/**
+ * Specialized \a Protocol message of \a Type.
+ */
+template <typename Protocol, uint16_t Type>
+class basic_message_t
+  : public any_message_t<Protocol>
+{
+public:
+
+  /**
+   * message_type_t instance for this message \a Type.
+   */
+  static __turner_inline_var constexpr const message_type_t<Protocol, Type>
+    message_type{};
 };
 
 
