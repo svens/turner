@@ -9,22 +9,6 @@ namespace turner_test { namespace {
 using message_type = turner_test::fixture;
 
 
-template <uint16_t Type>
-using protocol_message_t = turner::message_type_t<turner_test::protocol_t, Type>;
-
-using msg_1_t = protocol_message_t<1>;
-using msg_1a_t = protocol_message_t<1>;
-using msg_2_t = protocol_message_t<2>;
-
-__turner_inline_var constexpr const msg_1_t msg_1{};
-__turner_inline_var constexpr const msg_1a_t msg_1a{};
-__turner_inline_var constexpr const msg_2_t msg_2{};
-
-using up_msg_1_t = turner::message_type_t<turner_test::unnamed_protocol_t, 1>;
-
-__turner_inline_var constexpr const up_msg_1_t up_msg_1{};
-
-
 TEST_F(message_type, protocol)
 {
   EXPECT_EQ(
@@ -55,6 +39,50 @@ TEST_F(message_type, type)
   EXPECT_EQ(uint16_t(1), msg_1a.type());
   EXPECT_EQ(uint16_t(2), msg_2.type());
   EXPECT_EQ(uint16_t(1), up_msg_1.type());
+}
+
+
+TEST_F(message_type, name)
+{
+  const char *name;
+  msg_1 >> name;
+  EXPECT_STREQ(name, msg_1.name());
+}
+
+
+TEST_F(message_type, name_unnamed)
+{
+  EXPECT_EQ(nullptr, msg_2.name());
+  EXPECT_EQ(nullptr, up_msg_1.name());
+}
+
+
+TEST_F(message_type, ostream)
+{
+  const char *name;
+  msg_1 >> name;
+
+  std::ostringstream oss;
+  oss << msg_1;
+  EXPECT_EQ(name, oss.str());
+}
+
+
+TEST_F(message_type, ostream_unnamed_with_named_protocol)
+{
+  std::ostringstream oss, expected;
+  expected << msg_1_t::protocol_t{} << ':' << msg_2.type();
+  oss << msg_2;
+  EXPECT_EQ(expected.str(), oss.str());
+}
+
+
+TEST_F(message_type, ostream_unnamed_with_unnamed_protocol)
+{
+  std::ostringstream oss, expected;
+  expected << up_msg_1.type();
+  oss << up_msg_1;
+  EXPECT_EQ(expected.str(), oss.str());
 }
 
 

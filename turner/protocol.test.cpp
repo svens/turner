@@ -17,8 +17,6 @@ struct protocol
 
 TEST_F(protocol, message_type)
 {
-  constexpr const auto msg_1 = message_type<1>();
-
   EXPECT_EQ(
     typeid(msg_1),
     typeid(turner::message_type_t<protocol_t, 1>)
@@ -33,7 +31,9 @@ TEST_F(protocol, message_type)
 
 TEST_F(protocol, name)
 {
-  EXPECT_STREQ("Protocol", name());
+  const char *protocol_name;
+  *this >> protocol_name;
+  EXPECT_STREQ(protocol_name, name());
 }
 
 
@@ -46,14 +46,20 @@ TEST_F(protocol, name_unnamed)
 
 TEST_F(protocol, ostream)
 {
+  const char *protocol_name;
+  *this >> protocol_name;
+
   std::ostringstream oss;
   oss << *this;
-  EXPECT_EQ("Protocol", oss.str());
+  EXPECT_EQ(protocol_name, oss.str());
 }
 
 
 TEST_F(protocol, ostream_unnamed)
 {
+  const char *protocol_name;
+  *this >> protocol_name;
+
   turner::basic_protocol_t<unnamed_protocol_t> p;
   std::ostringstream oss;
   oss << p;

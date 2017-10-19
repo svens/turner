@@ -6,6 +6,7 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <ostream>
 
 
 __turner_begin
@@ -51,6 +52,56 @@ public:
   static constexpr uint16_t type () noexcept
   {
     return Type;
+  }
+
+
+  /**
+   * Return message \a Type name (if defined).
+   *
+   * \a Type name is defined, if \c "void operator>> (Type, const char *&name)"
+   * is provided. On operator invocation, name should be assigned to
+   * \a Type name.
+   *
+   * If this operator is not provided, nullptr is returned.
+   */
+  static constexpr const char *name () noexcept
+  {
+    if constexpr (__bits::has_name_getter_v<message_type_t>)
+    {
+      const char *result{};
+      message_type_t{} >> result;
+      return result;
+    }
+    else
+    {
+      return nullptr;
+    }
+  }
+
+
+  /**
+   * Write to \a stream message \a Type name.
+   *
+   * Depending on which name getter operators are provided, name is formatted
+   * as follows:
+   *  - name(): write returned string
+   *  - if no name() but have protocol_t::name(): write as "Protocol:Type"
+   *  - if no name() and no protocol_t::name(): write as "Type"
+   */
+  friend std::ostream &operator<< (std::ostream &stream, message_type_t)
+  {
+    if constexpr (name() != nullptr)
+    {
+      return (stream << name());
+    }
+    else if constexpr (protocol_t::name() != nullptr)
+    {
+      return (stream << protocol_t::name() << ':' << Type);
+    }
+    else
+    {
+      return (stream << Type);
+    }
   }
 
 

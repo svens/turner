@@ -1,6 +1,7 @@
 #pragma once
 
 #include <turner/config.hpp>
+#include <turner/message_type.hpp>
 #include <turner/protocol.hpp>
 #include <array>
 
@@ -83,15 +84,38 @@ struct unnamed_protocol_t
 };
 
 
+using up_msg_1_t = turner::message_type_t<turner_test::unnamed_protocol_t, 1>;
+__turner_inline_var constexpr const up_msg_1_t up_msg_1{};
+
+
 struct protocol_t
   : public unnamed_protocol_t
-{};
+{
+  template <uint16_t Type>
+  using message_type_t = turner::message_type_t<protocol_t, Type>;
+};
 
 
 inline constexpr void operator>> (turner::basic_protocol_t<protocol_t>,
   const char *&name) noexcept
 {
   name = "Protocol";
+}
+
+
+using msg_1_t = protocol_t::message_type_t<1>;
+__turner_inline_var constexpr const msg_1_t msg_1{};
+
+using msg_1a_t = protocol_t::message_type_t<1>;
+__turner_inline_var constexpr const msg_1a_t msg_1a{};
+
+using msg_2_t = protocol_t::message_type_t<2>;
+__turner_inline_var constexpr const msg_2_t msg_2{};
+
+
+inline constexpr void operator>> (decltype(msg_1), const char *&name) noexcept
+{
+  name = "msg_1";
 }
 
 
