@@ -31,11 +31,24 @@ TEST_F(protocol, message_type)
 }
 
 
+TEST_F(protocol, name)
+{
+  EXPECT_STREQ("Protocol", name());
+}
+
+
+TEST_F(protocol, name_unnamed)
+{
+  turner::basic_protocol_t<unnamed_protocol_t> p;
+  EXPECT_EQ(nullptr, p.name());
+}
+
+
 TEST_F(protocol, ostream)
 {
   std::ostringstream oss;
   oss << *this;
-  EXPECT_EQ(protocol_t::name(), oss.str());
+  EXPECT_EQ("Protocol", oss.str());
 }
 
 

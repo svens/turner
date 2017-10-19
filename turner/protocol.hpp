@@ -38,6 +38,30 @@ public:
 
 
   /**
+   * Return \a Protocol name (if defined).
+   *
+   * \a Protocol name is defined, if \c "void operator>> (Protocol, const char *&name)"
+   * is provided. On operator invocation, name should be assigned to
+   * \a Protocol name.
+   *
+   * If this operator is not provided, nullptr is returned.
+   */
+  static constexpr const char *name () noexcept
+  {
+    if constexpr (__bits::has_name_getter_v<basic_protocol_t>)
+    {
+      const char *result{};
+      basic_protocol_t{} >> result;
+      return result;
+    }
+    else
+    {
+      return nullptr;
+    }
+  }
+
+
+  /**
    * Return instance of message \a Type as defined by \a Protocol.
    */
   template <uint16_t Type>
@@ -93,11 +117,14 @@ public:
    */
   friend std::ostream &operator<< (std::ostream &stream, basic_protocol_t)
   {
-    if constexpr (__bits::has_name_v<Protocol>)
+    if constexpr (name() != nullptr)
     {
-      stream << Protocol::name();
+      return (stream << name());
     }
-    return stream;
+    else
+    {
+      return stream;
+    }
   }
 
 

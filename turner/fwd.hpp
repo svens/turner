@@ -24,15 +24,17 @@ __turner_inline_var constexpr uint16_t
   error_response_class =   0b000'0001'0001'0000;
 
 
-// helper to detect if T has method name()
+// helper to detect if for type T, there is "operator>> (T, const char *&)"
 template <typename T>
-class has_name_t
+class has_name_getter_t
 {
-  template <typename TT>
-  static auto test (int) -> decltype(std::declval<TT&>().name(), std::true_type());
+  template <typename U>
+  static auto test (const char **x)
+    -> decltype(std::declval<U&>() >> *x, std::true_type());
 
-  template <typename>
-  static auto test (...) -> std::false_type;
+  template <typename U>
+  static auto test (...)
+    -> std::false_type;
 
 public:
 
@@ -40,9 +42,10 @@ public:
     decltype(test<T>(0))::value;
 };
 
-// instantiantion for has_name_t
+// instantiantion for has_name_getter_t
 template <typename T>
-__turner_inline_var constexpr bool has_name_v = has_name_t<T>::value;
+__turner_inline_var constexpr bool has_name_getter_v =
+  has_name_getter_t<T>::value;
 
 
 // cast any iterator It to byte pointer

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <turner/config.hpp>
+#include <turner/protocol.hpp>
 #include <array>
-#include <string_view>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
@@ -85,13 +85,14 @@ struct unnamed_protocol_t
 
 struct protocol_t
   : public unnamed_protocol_t
+{};
+
+
+inline constexpr void operator>> (turner::basic_protocol_t<protocol_t>,
+  const char *&name) noexcept
 {
-  static constexpr std::string_view name () noexcept
-  {
-    using namespace std::string_view_literals;
-    return "Protocol"sv;
-  }
-};
+  name = "Protocol";
+}
 
 
 __turner_inline_var constexpr const char raw[] =
