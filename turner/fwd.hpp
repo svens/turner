@@ -18,6 +18,7 @@ namespace __bits {
 
 // RFC5389, 6
 __turner_inline_var constexpr uint16_t
+  method_mask =            0b110'0000'0000'0000,
   class_mask =             0b000'0001'0001'0000,
   indication_class =       0b000'0000'0001'0000,
   success_response_class = 0b000'0001'0000'0000,

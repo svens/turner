@@ -37,6 +37,12 @@ public:
    */
   using transaction_id_t = std::array<uint8_t, Protocol::transaction_id_size>;
 
+  /**
+   * Message \a Type as defined by \a Protocol
+   */
+  template <uint16_t Type>
+  using message_type_t = basic_message_type_t<Protocol, Type>;
+
 
   /**
    * Return \a Protocol name (if defined).
@@ -66,10 +72,9 @@ public:
    * Return instance of message \a Type as defined by \a Protocol.
    */
   template <uint16_t Type>
-  static constexpr basic_message_type_t<Protocol, Type> message_type ()
-    noexcept
+  static constexpr message_type_t<Type> message_type () noexcept
   {
-    static_assert((Type & __bits::class_mask) == 0, "expected request class");
+    message_type_t<Type>::expect_request_class();
     return {};
   }
 

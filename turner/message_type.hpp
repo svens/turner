@@ -37,7 +37,7 @@ class basic_message_type_t
 {
 public:
 
-  static_assert((Type & 0b1100'0000'0000'0000) == 0, "invalid message type");
+  static_assert((Type & __bits::method_mask) == 0, "invalid message type");
 
 
   /**
@@ -187,6 +187,8 @@ private:
   {
     static_assert((Type & __bits::class_mask) == 0, "expected request class");
   }
+
+  friend class basic_protocol_t<Protocol>;
 };
 
 
