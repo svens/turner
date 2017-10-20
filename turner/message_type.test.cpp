@@ -1,183 +1,184 @@
 #include <turner/common.test.hpp>
-#include <turner/message_type.hpp>
-#include <turner/protocol.hpp>
 
 
 namespace turner_test { namespace {
 
 
-using message_type = turner_test::fixture;
+template <typename Protocol>
+using message_type = turner_test::with_protocol<Protocol>;
+
+TYPED_TEST_CASE(message_type, protocol_types);
 
 
-TEST_F(message_type, protocol)
+TYPED_TEST(message_type, protocol)
 {
   EXPECT_EQ(
-    typeid(msg_1_t::protocol_t),
-    typeid(turner::basic_protocol_t<turner_test::protocol_t>)
+    typeid(typename decltype(x_message_type(TypeParam()))::protocol_t),
+    typeid(TypeParam)
   );
+}
 
+
+TYPED_TEST(message_type, type)
+{
   EXPECT_EQ(
-    typeid(msg_1_t::protocol_t),
-    typeid(msg_1a_t::protocol_t)
-  );
-
-  EXPECT_EQ(
-    typeid(msg_1_t::protocol_t),
-    typeid(msg_2_t::protocol_t)
-  );
-
-  EXPECT_NE(
-    typeid(msg_1_t::protocol_t),
-    typeid(up_msg_1_t::protocol_t)
+    x_message_type_value(TypeParam()),
+    x_message_type(TypeParam()).type()
   );
 }
 
 
-TEST_F(message_type, type)
+TYPED_TEST(message_type, name)
 {
-  EXPECT_EQ(uint16_t(1), msg_1.type());
-  EXPECT_EQ(uint16_t(1), msg_1a.type());
-  EXPECT_EQ(uint16_t(2), msg_2.type());
-  EXPECT_EQ(uint16_t(1), up_msg_1.type());
+  auto t = x_message_type(TypeParam());
+
+  const char *expected;
+  t >> expected;
+  EXPECT_STREQ(expected, t.name());
 }
 
 
-TEST_F(message_type, name)
+TYPED_TEST(message_type, name_unnamed)
 {
-  const char *name;
-  msg_1 >> name;
-  EXPECT_STREQ(name, msg_1.name());
+  EXPECT_EQ(nullptr, unused_message_type<TypeParam>.name());
 }
 
 
-TEST_F(message_type, name_unnamed)
+TYPED_TEST(message_type, ostream)
 {
-  EXPECT_EQ(nullptr, msg_2.name());
-  EXPECT_EQ(nullptr, up_msg_1.name());
-}
+  auto t = x_message_type(TypeParam());
 
-
-TEST_F(message_type, ostream)
-{
-  const char *name;
-  msg_1 >> name;
+  const char *expected;
+  t >> expected;
 
   std::ostringstream oss;
-  oss << msg_1;
-  EXPECT_EQ(name, oss.str());
+  oss << t;
+  EXPECT_EQ(expected, oss.str());
 }
 
 
-TEST_F(message_type, ostream_unnamed_with_named_protocol)
+TYPED_TEST(message_type, ostream_unnamed_with_named_protocol)
 {
   std::ostringstream oss, expected;
-  expected << msg_1_t::protocol_t{} << ':' << msg_2.type();
-  oss << msg_2;
+
+  expected
+    << TypeParam::name()
+    << ':'
+    << unused_message_type<TypeParam>.type();
+
+  oss << unused_message_type<TypeParam>;
   EXPECT_EQ(expected.str(), oss.str());
 }
 
 
-TEST_F(message_type, ostream_unnamed_with_unnamed_protocol)
+TEST(message_type, ostream_unnamed_with_unnamed_protocol)
 {
-  std::ostringstream oss, expected;
-  expected << up_msg_1.type();
-  oss << up_msg_1;
-  EXPECT_EQ(expected.str(), oss.str());
-}
-
-
-TEST_F(message_type, compare)
-{
-  EXPECT_EQ(msg_1, msg_1a);
-  EXPECT_NE(msg_1, msg_2);
-
-  // expected compilation error:
-  // (void)(msg_1 == up_msg_1);
-  // (void)(msg_1 != up_msg_1);
-}
-
-
-TEST_F(message_type, compare_int)
-{
-  EXPECT_EQ(uint16_t(1), msg_1);
-  EXPECT_EQ(msg_1, uint16_t(1));
-  EXPECT_NE(uint16_t(2), msg_1);
-  EXPECT_NE(msg_1, uint16_t(2));
-
-  EXPECT_EQ(uint16_t(1), msg_1a);
-  EXPECT_EQ(msg_1a, uint16_t(1));
-  EXPECT_NE(uint16_t(2), msg_1a);
-  EXPECT_NE(msg_1a, uint16_t(2));
-
-  EXPECT_EQ(uint16_t(2), msg_2);
-  EXPECT_EQ(msg_2, uint16_t(2));
-  EXPECT_NE(uint16_t(1), msg_2);
-  EXPECT_NE(msg_2, uint16_t(1));
-}
-
-
-TEST_F(message_type, success_response)
-{
-  constexpr const auto msg_1_ok = msg_1.success_response();
-  EXPECT_NE(msg_1, msg_1_ok);
+  std::ostringstream oss;
+  oss << unused_message_type<unnamed_protocol_t>;
 
   EXPECT_EQ(
-    msg_1.type() | turner::__bits::success_response_class,
-    msg_1_ok.type()
-  );
-
-  EXPECT_EQ(
-    typeid(msg_1_t::success_response_t),
-    typeid(msg_1_ok)
-  );
-
-  EXPECT_EQ(
-    typeid(decltype(msg_1_ok)::protocol_t),
-    typeid(turner::basic_protocol_t<turner_test::protocol_t>)
+    std::to_string(unused_message_type<unnamed_protocol_t>.type()),
+    oss.str()
   );
 }
 
 
-TEST_F(message_type, error_response)
+TYPED_TEST(message_type, compare)
 {
-  constexpr const auto msg_1_fail = msg_1.error_response();
-  EXPECT_NE(msg_1, msg_1_fail);
+  auto t = x_message_type(TypeParam());
+
+  EXPECT_EQ(x_message_type(TypeParam()), t);
+  EXPECT_EQ(t, x_message_type(TypeParam()));
+
+  EXPECT_NE(t, t.success_response());
+  EXPECT_NE(t.success_response(), t);
+}
+
+
+TYPED_TEST(message_type, compare_value)
+{
+  auto t = x_message_type(TypeParam());
+  auto v = x_message_type_value(TypeParam());
+
+  EXPECT_EQ(v, t);
+  EXPECT_EQ(t, v);
+
+  EXPECT_NE(uint16_t(v + 1), t);
+  EXPECT_NE(t, uint16_t(v + 1));
+}
+
+
+TYPED_TEST(message_type, success_response)
+{
+  auto t = x_message_type(TypeParam());
+  auto ts = t.success_response();
+
+  EXPECT_NE(t, ts);
+  EXPECT_NE(ts, t);
 
   EXPECT_EQ(
-    msg_1.type() | turner::__bits::error_response_class,
-    msg_1_fail.type()
+    t.type() | turner::__bits::success_response_class,
+    ts.type()
   );
 
   EXPECT_EQ(
-    typeid(msg_1_t::error_response_t),
-    typeid(msg_1_fail)
+    typeid(typename decltype(t)::success_response_t),
+    typeid(ts)
   );
 
   EXPECT_EQ(
-    typeid(decltype(msg_1_fail)::protocol_t),
-    typeid(turner::basic_protocol_t<turner_test::protocol_t>)
+    typeid(typename decltype(ts)::protocol_t),
+    typeid(TypeParam)
   );
 }
 
 
-TEST_F(message_type, indication)
+TYPED_TEST(message_type, error_response)
 {
-  constexpr const auto msg_1_ind = msg_1.indication();
-  EXPECT_NE(msg_1, msg_1_ind);
+  auto t = x_message_type(TypeParam());
+  auto ts = t.error_response();
+
+  EXPECT_NE(t, ts);
+  EXPECT_NE(ts, t);
 
   EXPECT_EQ(
-    msg_1.type() | turner::__bits::indication_class,
-    msg_1_ind.type()
+    t.type() | turner::__bits::error_response_class,
+    ts.type()
   );
 
   EXPECT_EQ(
-    typeid(msg_1_t::indication_t),
-    typeid(msg_1_ind)
+    typeid(typename decltype(t)::error_response_t),
+    typeid(ts)
   );
 
   EXPECT_EQ(
-    typeid(decltype(msg_1_ind)::protocol_t),
-    typeid(turner::basic_protocol_t<turner_test::protocol_t>)
+    typeid(typename decltype(ts)::protocol_t),
+    typeid(TypeParam)
+  );
+}
+
+
+TYPED_TEST(message_type, indication)
+{
+  auto t = x_message_type(TypeParam());
+  auto ts = t.indication();
+
+  EXPECT_NE(t, ts);
+  EXPECT_NE(ts, t);
+
+  EXPECT_EQ(
+    t.type() | turner::__bits::indication_class,
+    ts.type()
+  );
+
+  EXPECT_EQ(
+    typeid(typename decltype(t)::indication_t),
+    typeid(ts)
+  );
+
+  EXPECT_EQ(
+    typeid(typename decltype(ts)::protocol_t),
+    typeid(TypeParam)
   );
 }
 

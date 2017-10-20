@@ -47,7 +47,7 @@ public:
 
 
   /**
-   * return message type numeric value (in host byte order)
+   * Return message type numeric value (in host byte order)
    */
   static constexpr uint16_t type () noexcept
   {

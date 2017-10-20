@@ -5,6 +5,9 @@ list(APPEND turner
   turner/message.hpp
   turner/message_type.hpp
   turner/protocol.hpp
+
+  # specific protocol headers
+  turner/stun.hpp
 )
 
 list(APPEND turner_unittests

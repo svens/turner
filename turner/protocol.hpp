@@ -28,6 +28,11 @@ class basic_protocol_t
 public:
 
   /**
+   * Protocol traits.
+   */
+  using traits_t = Protocol;
+
+  /**
    * Cookie type for \a Protocol message.
    */
   using cookie_t = std::array<uint8_t, Protocol::cookie.max_size()>;
@@ -94,7 +99,8 @@ public:
   static constexpr const any_message_t<Protocol> *from_wire (It first, It last,
     std::error_code &error) noexcept
   {
-    return from_wire(__bits::to_ptr(first), __bits::to_ptr(last), error);
+    auto begin = __bits::to_ptr(first);
+    return from_wire(begin, begin + (last - first), error);
   }
 
 
@@ -112,7 +118,7 @@ public:
   template <typename It>
   static constexpr const any_message_t<Protocol> *from_wire (It first, It last)
   {
-    return from_wire(__bits::to_ptr(first), __bits::to_ptr(last),
+    return from_wire(first, last,
       sal::throw_on_error("basic_protocol_t::from_wire")
     );
   }
@@ -152,12 +158,7 @@ constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
   std::error_code &error) noexcept
 {
   // validate arguments
-  if (!first || !last || first > last)
-  {
-    error = std::make_error_code(std::errc::invalid_argument);
-    return {};
-  }
-  if (last - first < Protocol::header_size)
+  if (size_t(last - first) < Protocol::header_size)
   {
     error = make_error_code(errc::insufficient_header_data);
     return {};

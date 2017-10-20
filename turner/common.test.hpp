@@ -1,9 +1,8 @@
 #pragma once
 
 #include <turner/config.hpp>
-#include <turner/message_type.hpp>
-#include <turner/protocol.hpp>
-#include <array>
+#include <turner/stun.hpp>
+#include <turner/message.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
@@ -49,73 +48,96 @@ class with_value
 {};
 
 
-// Protocol and related data for testing //{{{1
+// Test data {{{1
+
+// note: functions returning protocol specific test data are prefixed with x_
+// to differentiate them from test case names
+
+using STUN = turner::stun::protocol_t;
+
+using protocol_types = ::testing::Types<
+  STUN
+>;
+
+template <typename Protocol>
+class with_protocol
+  : public with_type<Protocol>
+{};
 
 
-struct unnamed_protocol_t
+// STUN {{{1
+
+inline auto x_request (STUN)
 {
-  static __turner_inline_var constexpr uint16_t header_size = 24;
+  return std::vector<uint8_t>
+  {{
+    // header
+    0x00, 0x01,                 // Type (Binding)
+    0x00, 0x08,                 // Length
+    0x21, 0x12, 0xa4, 0x42,     // Cookie
+    0x00, 0x01, 0x02, 0x03,     // Transaction ID
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
 
-  static __turner_inline_var constexpr size_t cookie_offset = 5;
+    // attributes
+    0x00, 0x01,                 // Type (XXX)
+    0x00, 0x01,                 // Length
+    0x01, 0x00,                 // Value + padding
+    0x00, 0x00
+  }};
+}
 
-  static __turner_inline_var constexpr std::array<uint8_t, 6> cookie =
-  {
-    { 'C', 'o', 'o', 'k', 'i', 'e', }
-  };
-
-  static __turner_inline_var constexpr size_t transaction_id_offset = 12;
-
-  static __turner_inline_var constexpr size_t transaction_id_size = 11;
-};
-
-
-using up_msg_1_t = turner::basic_message_type_t<turner_test::unnamed_protocol_t, 1>;
-__turner_inline_var constexpr const up_msg_1_t up_msg_1{};
-
-
-struct protocol_t
-  : public unnamed_protocol_t
+inline constexpr auto x_message_type (STUN)
 {
-  template <uint16_t Type>
-  using message_type_t = turner::basic_message_type_t<protocol_t, Type>;
-};
+  return turner::stun::binding;
+}
+
+inline constexpr auto x_message_type_value (STUN)
+{
+  return turner::stun::binding.type();
+}
+
+inline constexpr auto x_message_length (STUN)
+{
+  return 8;
+}
+
+inline constexpr auto x_transaction_id (STUN)
+{
+  return STUN::transaction_id_t
+  {{
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+  }};
+}
 
 
-inline constexpr void operator>> (turner::basic_protocol_t<protocol_t>,
+// Unnamed protocol for testing {{{1
+
+// unused message type (0 is unused for STUN/TURN/MSTURN)
+template <typename Protocol>
+using unused_message_type_t = typename Protocol::template message_type_t<0>;
+
+template <typename Protocol>
+static __turner_inline_var constexpr const unused_message_type_t<Protocol>
+  unused_message_type{};
+
+// protocol
+struct unnamed_protocol_traits_t : public turner::stun::protocol_traits_t {};
+using unnamed_protocol_t = turner::basic_protocol_t<unnamed_protocol_traits_t>;
+static __turner_inline_var constexpr const unnamed_protocol_t unnamed_protocol;
+
+// message type
+using unnamed_protocol_message_type_t = unnamed_protocol_t::message_type_t<1>;
+static __turner_inline_var constexpr const unnamed_protocol_message_type_t
+  unnamed_protocol_message_type;
+
+inline constexpr void operator>> (unnamed_protocol_message_type_t,
   const char *&name) noexcept
 {
-  name = "Protocol";
+  name = "unnamed_protocol_message";
 }
-
-
-using msg_1_t = protocol_t::message_type_t<1>;
-__turner_inline_var constexpr const msg_1_t msg_1{};
-
-using msg_1a_t = protocol_t::message_type_t<1>;
-__turner_inline_var constexpr const msg_1a_t msg_1a{};
-
-using msg_2_t = protocol_t::message_type_t<2>;
-__turner_inline_var constexpr const msg_2_t msg_2{};
-
-
-inline constexpr void operator>> (decltype(msg_1), const char *&name) noexcept
-{
-  name = "msg_1";
-}
-
-
-__turner_inline_var constexpr const char raw[] =
-  "\x00\x01"    // Type
-  "\x00\x08"    // Length
-  "_"
-  "Cookie"
-  "_"
-  "Transaction"
-  "_"
-  "Payload"
-  "\00";        // Padding
-
-__turner_inline_var constexpr const char *raw_end = raw + sizeof(raw) - 1;
 
 
 //}}}1
