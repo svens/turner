@@ -103,7 +103,7 @@ public:
    */
   template <uint16_t Type>
   constexpr const basic_message_t<Protocol, Type> *
-    as (message_type_t<Protocol, Type>) const noexcept
+    as (basic_message_type_t<Protocol, Type>) const noexcept
   {
     return type() == Type
       ? reinterpret_cast<const basic_message_t<Protocol, Type> *>(this)
@@ -127,9 +127,9 @@ class basic_message_t
 public:
 
   /**
-   * message_type_t instance for this message \a Type.
+   * basic_message_type_t instance for this message \a Type.
    */
-  static __turner_inline_var constexpr const message_type_t<Protocol, Type>
+  static __turner_inline_var constexpr const basic_message_type_t<Protocol, Type>
     message_type{};
 };
 

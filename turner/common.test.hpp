@@ -69,7 +69,7 @@ struct unnamed_protocol_t
 };
 
 
-using up_msg_1_t = turner::message_type_t<turner_test::unnamed_protocol_t, 1>;
+using up_msg_1_t = turner::basic_message_type_t<turner_test::unnamed_protocol_t, 1>;
 __turner_inline_var constexpr const up_msg_1_t up_msg_1{};
 
 
@@ -77,7 +77,7 @@ struct protocol_t
   : public unnamed_protocol_t
 {
   template <uint16_t Type>
-  using message_type_t = turner::message_type_t<protocol_t, Type>;
+  using message_type_t = turner::basic_message_type_t<protocol_t, Type>;
 };
 
 

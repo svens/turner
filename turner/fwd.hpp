@@ -81,7 +81,7 @@ class basic_message_t;
 //
 
 template <typename Protocol, uint16_t Type>
-class message_type_t;
+class basic_message_type_t;
 
 
 __turner_end

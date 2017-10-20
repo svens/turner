@@ -8,6 +8,7 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
+#include <array>
 #include <ostream>
 #include <type_traits>
 
@@ -29,7 +30,7 @@ public:
   /**
    * Cookie type for \a Protocol message.
    */
-  using cookie_t = std::remove_reference_t<decltype(Protocol::cookie)>;
+  using cookie_t = std::array<uint8_t, Protocol::cookie.max_size()>;
 
   /**
    * Transaction ID type for \a Protocol message.
@@ -65,7 +66,8 @@ public:
    * Return instance of message \a Type as defined by \a Protocol.
    */
   template <uint16_t Type>
-  static constexpr message_type_t<Protocol, Type> message_type () noexcept
+  static constexpr basic_message_type_t<Protocol, Type> message_type ()
+    noexcept
   {
     static_assert((Type & __bits::class_mask) == 0, "expected request class");
     return {};

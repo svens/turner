@@ -19,7 +19,7 @@ TEST_F(protocol, message_type)
 {
   EXPECT_EQ(
     typeid(msg_1),
-    typeid(turner::message_type_t<protocol_t, 1>)
+    typeid(turner::basic_message_type_t<protocol_t, 1>)
   );
 
   EXPECT_EQ(uint16_t(1), msg_1);

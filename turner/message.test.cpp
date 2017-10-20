@@ -131,18 +131,15 @@ TEST_F(any_message, transaction_id)
   EXPECT_EQ(expected, msg->transaction_id());
 }
 
-__turner_inline_var constexpr const auto message_type =
-  turner::message_type_t<turner_test::protocol_t, 1>{};
-
 
 TEST_F(any_message, as_valid)
 {
   auto any_msg = protocol.from_wire(raw, raw_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type);
+  auto msg = any_msg->as(msg_1);
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type, msg->message_type);
+  EXPECT_EQ(msg_1, msg->message_type);
 
   EXPECT_EQ(any_msg, msg);
   EXPECT_EQ(any_msg->type(), msg->type());
@@ -161,7 +158,7 @@ TEST_F(any_message, as_invalid)
   auto any_msg = protocol.from_wire(data, data_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type);
+  auto msg = any_msg->as(msg_1);
   EXPECT_EQ(nullptr, msg);
 }
 
@@ -171,7 +168,7 @@ TEST_F(any_message, as_success_response_invalid)
   auto any_msg = protocol.from_wire(raw, raw_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.success_response());
+  auto msg = any_msg->as(msg_1.success_response());
   EXPECT_EQ(nullptr, msg);
 }
 
@@ -181,14 +178,14 @@ TEST_F(any_message, as_success_response_valid)
   char data[sizeof(raw)] = {};
   auto data_end = std::uninitialized_copy(raw, raw_end, data);
   reinterpret_cast<uint16_t *>(data)[0] =
-    sal::native_to_network_byte_order(message_type.success_response().type());
+    sal::native_to_network_byte_order(msg_1.success_response().type());
 
   auto any_msg = protocol.from_wire(data, data_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.success_response());
+  auto msg = any_msg->as(msg_1.success_response());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type.success_response(), msg->message_type);
+  EXPECT_EQ(msg_1.success_response(), msg->message_type);
 }
 
 
@@ -197,7 +194,7 @@ TEST_F(any_message, as_error_response_invalid)
   auto any_msg = protocol.from_wire(raw, raw_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.error_response());
+  auto msg = any_msg->as(msg_1.error_response());
   EXPECT_EQ(nullptr, msg);
 }
 
@@ -207,14 +204,14 @@ TEST_F(any_message, as_error_response_valid)
   char data[sizeof(raw)] = {};
   auto data_end = std::uninitialized_copy(raw, raw_end, data);
   reinterpret_cast<uint16_t *>(data)[0] =
-    sal::native_to_network_byte_order(message_type.error_response().type());
+    sal::native_to_network_byte_order(msg_1.error_response().type());
 
   auto any_msg = protocol.from_wire(data, data_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.error_response());
+  auto msg = any_msg->as(msg_1.error_response());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type.error_response(), msg->message_type);
+  EXPECT_EQ(msg_1.error_response(), msg->message_type);
 }
 
 
@@ -223,7 +220,7 @@ TEST_F(any_message, as_indication_invalid)
   auto any_msg = protocol.from_wire(raw, raw_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.indication());
+  auto msg = any_msg->as(msg_1.indication());
   EXPECT_EQ(nullptr, msg);
 }
 
@@ -233,14 +230,14 @@ TEST_F(any_message, as_indication_valid)
   char data[sizeof(raw)] = {};
   auto data_end = std::uninitialized_copy(raw, raw_end, data);
   reinterpret_cast<uint16_t *>(data)[0] =
-    sal::native_to_network_byte_order(message_type.indication().type());
+    sal::native_to_network_byte_order(msg_1.indication().type());
 
   auto any_msg = protocol.from_wire(data, data_end);
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.indication());
+  auto msg = any_msg->as(msg_1.indication());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type.indication(), msg->message_type);
+  EXPECT_EQ(msg_1.indication(), msg->message_type);
 }
 
 
