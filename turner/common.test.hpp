@@ -54,33 +54,18 @@ class with_value
 
 struct unnamed_protocol_t
 {
-  static constexpr uint16_t header_size () noexcept
-  {
-    return 24;
-  }
+  static __turner_inline_var constexpr uint16_t header_size = 24;
 
-  static constexpr size_t cookie_offset () noexcept
-  {
-    return 5;
-  }
+  static __turner_inline_var constexpr size_t cookie_offset = 5;
 
-  static constexpr std::array<uint8_t, 6> cookie () noexcept
+  static __turner_inline_var constexpr std::array<uint8_t, 6> cookie =
   {
-    return
-    {
-      { 'C', 'o', 'o', 'k', 'i', 'e', }
-    };
-  }
+    { 'C', 'o', 'o', 'k', 'i', 'e', }
+  };
 
-  static constexpr size_t transaction_id_offset () noexcept
-  {
-    return 12;
-  }
+  static __turner_inline_var constexpr size_t transaction_id_offset = 12;
 
-  static constexpr size_t transaction_id_size () noexcept
-  {
-    return 11;
-  }
+  static __turner_inline_var constexpr size_t transaction_id_size = 11;
 };
 
 

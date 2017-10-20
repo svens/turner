@@ -29,12 +29,12 @@ public:
   /**
    * Cookie type for \a Protocol message.
    */
-  using cookie_t = std::remove_reference_t<decltype(Protocol::cookie())>;
+  using cookie_t = std::remove_reference_t<decltype(Protocol::cookie)>;
 
   /**
    * Transaction ID type for \a Protocol message.
    */
-  using transaction_id_t = std::array<uint8_t, Protocol::transaction_id_size()>;
+  using transaction_id_t = std::array<uint8_t, Protocol::transaction_id_size>;
 
 
   /**
@@ -150,7 +150,7 @@ constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
     error = std::make_error_code(std::errc::invalid_argument);
     return {};
   }
-  if (last - first < Protocol::header_size())
+  if (last - first < Protocol::header_size)
   {
     error = make_error_code(errc::insufficient_header_data);
     return {};
@@ -173,14 +173,14 @@ constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
     error = make_error_code(errc::invalid_message_length);
     return {};
   }
-  if (first + Protocol::header_size() + message->length() > last)
+  if (first + Protocol::header_size + message->length() > last)
   {
     error = make_error_code(errc::insufficient_payload_data);
     return {};
   }
 
   // cookie
-  if (message->cookie() != Protocol::cookie())
+  if (message->cookie() != Protocol::cookie)
   {
     error = make_error_code(errc::invalid_message_cookie);
     return {};

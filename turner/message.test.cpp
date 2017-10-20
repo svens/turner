@@ -17,12 +17,12 @@ __turner_inline_var constexpr const auto protocol =
 TEST_F(any_message, insufficient_header_data)
 {
   std::error_code error;
-  auto msg = protocol.from_wire(raw, raw + protocol_t::header_size() / 2, error);
+  auto msg = protocol.from_wire(raw, raw + protocol_t::header_size / 2, error);
   EXPECT_EQ(turner::errc::insufficient_header_data, error);
   EXPECT_FALSE(msg);
 
   EXPECT_THROW(
-    protocol.from_wire(raw, raw + protocol_t::header_size() / 2),
+    protocol.from_wire(raw, raw + protocol_t::header_size / 2),
     std::system_error
   );
 }
@@ -102,7 +102,7 @@ TEST_F(any_message, invalid_cookie)
 {
   char data[sizeof(raw)] = {};
   auto data_end = std::uninitialized_copy(raw, raw_end, data);
-  data[protocol_t::cookie_offset()] += 1;
+  data[protocol_t::cookie_offset] += 1;
 
   std::error_code error;
   auto msg = protocol.from_wire(data, data_end, error);
