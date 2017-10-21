@@ -3,7 +3,6 @@
 [![Build Status](https://travis-ci.org/svens/turner.svg?branch=master)](https://travis-ci.org/svens/turner)
 [![Build Status](https://ci.appveyor.com/api/projects/status/76xm7ukgm9enegjx/branch/master?svg=true)](https://ci.appveyor.com/project/svens/turner/branch/master)
 [![Coverage](https://coveralls.io/repos/github/svens/turner/badge.svg?branch=master)](https://coveralls.io/github/svens/turner?branch=master)
-[![Coverity](https://scan.coverity.com/projects/13914/badge.svg)](https://scan.coverity.com/projects/svens-turner)
 
 Turner is multiplatform (Linux, MacOS, Windows) STUN/TURN protocol based
 relay.
