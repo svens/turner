@@ -18,6 +18,9 @@
 
 __turner_begin
 
-constexpr const char *version = "turner/@version@";
+/**
+ * Turner library version as string (turner/{VERSION}).
+ */
+__turner_inline_var constexpr const char version[] = "turner/@version@";
 
 __turner_end

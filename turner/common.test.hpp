@@ -1,8 +1,8 @@
 #pragma once
 
-#include <turner/msturn.hpp>
+#include <turner/config.hpp>
 #include <turner/stun.hpp>
-#include <turner/turn.hpp>
+#include <turner/message.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
@@ -48,393 +48,99 @@ class with_value
 {};
 
 
-using MSTURN = turner::msturn::protocol_t;
-using STUN = turner::stun::protocol_t;
-using TURN = turner::turn::protocol_t;
+// Test data {{{1
 
-using protocol_types = testing::Types<
-  MSTURN,
-  STUN,
-  TURN
+// note: functions returning protocol specific test data are prefixed with x_
+// to differentiate them from test case names
+
+using STUN = turner::stun::protocol_t;
+
+using protocol_types = ::testing::Types<
+  STUN
 >;
 
-
-//
-// Test data
-//
-
-
-// MS-TURN {{{1
-
-
-inline constexpr auto expected_request (MSTURN)
-{
-  return turner::msturn::allocate;
-}
-
-
-inline constexpr auto expected_success_response (MSTURN)
-{
-  return turner::msturn::allocate_success;
-}
-
-
-inline constexpr uint16_t expected_length (MSTURN)
-{
-  return 0U;
-}
-
-
-inline constexpr auto request (MSTURN)
-{
-  return std::array<uint8_t, 28>
-  {{
-    0x00, 0x03,                   // MS-TURN Allocate
-    0x00, 0x00,                   // length
-    0x00, 0x01, 0x02, 0x03,       // transaction id
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    0x00, 0x0f,                   // cookie as TLV
-    0x00, 0x04,
-    0x72, 0xc6, 0x4b, 0xc6,
- }};
-}
-
-
-inline constexpr auto success_response (MSTURN)
-{
-  return std::array<uint8_t, 28>
-  {{
-    0x01, 0x03,                   // MS-TURN Allocate success response
-    0x00, 0x00,                   // length
-    0x00, 0x01, 0x02, 0x03,       // transaction id
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    0x00, 0x0f,                   // cookie as TLV
-    0x00, 0x04,
-    0x72, 0xc6, 0x4b, 0xc6,
-  }};
-}
-
-
-inline constexpr auto expected_transaction_id (MSTURN)
-{
-  return turner::msturn::message_t::transaction_id_t
-  {{
-    0x00, 0x01, 0x02, 0x03,
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-  }};
-}
-
-
-inline constexpr auto message_with_bad_type (MSTURN)
-{
-  return std::array<uint8_t, 28>
-  {{
-    0x00, 0x02,                   // invalid MS-TURN method
-    0x00, 0x00,                   // length
-    0x00, 0x01, 0x02, 0x03,       // transaction id
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    0x00, 0x0f,                   // cookie as TLV
-    0x00, 0x04,
-    0x72, 0xc6, 0x4b, 0xc6,
-  }};
-}
-
-
-inline constexpr auto message_with_bad_length (MSTURN)
-{
-  return std::array<uint8_t, 28>
-  {{
-    0x00, 0x03,                   // MS-TURN Allocate
-    0x00, 0x11,                   // length
-    0x00, 0x01, 0x02, 0x03,       // transaction id
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    0x00, 0x0f,                   // cookie as TLV
-    0x00, 0x04,
-    0x72, 0xc6, 0x4b, 0xc6,
-  }};
-}
-
-
-inline constexpr auto message_with_valid_length_and_insufficient_data (MSTURN)
-{
-  return std::array<uint8_t, 30>
-  {{
-    0x00, 0x03,                   // MS-TURN Allocate
-    0x00, 0x04,                   // length
-    0x00, 0x01, 0x02, 0x03,       // transaction id
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    0x00, 0x0f,                   // cookie as TLV
-    0x00, 0x04,
-    0x72, 0xc6, 0x4b, 0xc6,
-    0x01, 0x02,                   // insufficient data
-  }};
-}
-
-
-inline constexpr auto message_with_bad_cookie (MSTURN)
-{
-  return std::array<uint8_t, 28>
-  {{
-    0x00, 0x03,                   // MS-TURN Allocate
-    0x00, 0x00,                   // length
-    0x00, 0x01, 0x02, 0x03,       // transaction id
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f,
-    0x01, 0x0f,                   // bad cookie as TLV
-    0x00, 0x04,
-    0x72, 0xc6, 0x4b, 0xc6,
-  }};
-}
+template <typename Protocol>
+class with_protocol
+  : public with_type<Protocol>
+{};
 
 
 // STUN {{{1
 
+inline auto x_request (STUN)
+{
+  return std::vector<uint8_t>
+  {{
+    // header
+    0x00, 0x01,                 // Type (Binding)
+    0x00, 0x08,                 // Length
+    0x21, 0x12, 0xa4, 0x42,     // Cookie
+    0x00, 0x01, 0x02, 0x03,     // Transaction ID
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
 
-inline constexpr auto expected_request (STUN)
+    // attributes
+    0x00, 0x01,                 // Type (XXX)
+    0x00, 0x01,                 // Length
+    0x01, 0x00,                 // Value + padding
+    0x00, 0x00
+  }};
+}
+
+inline constexpr auto x_message_type (STUN)
 {
   return turner::stun::binding;
 }
 
-
-inline constexpr auto expected_success_response (STUN)
+inline constexpr auto x_message_type_value (STUN)
 {
-  return turner::stun::binding_success;
+  return turner::stun::binding.type();
 }
 
-
-inline constexpr uint16_t expected_length (STUN)
+inline constexpr auto x_message_length (STUN)
 {
-  return 0U;
+  return 8;
 }
 
-
-inline constexpr auto request (STUN)
+inline constexpr auto x_transaction_id (STUN)
 {
-  return std::array<uint8_t, 20>
+  return STUN::transaction_id_t
   {{
-    0x00, 0x01,                   // STUN Binding
-    0x00, 0x00,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
- }};
-}
-
-
-inline constexpr auto success_response (STUN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x01, 0x01,                   // STUN Binding succes response
-    0x00, 0x00,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
   }};
 }
 
 
-inline constexpr auto expected_transaction_id (STUN)
+// Unnamed protocol for testing {{{1
+
+// unused message type (0 is unused for STUN/TURN/MSTURN)
+template <typename Protocol>
+using unused_message_type_t = typename Protocol::template message_type_t<0>;
+
+template <typename Protocol>
+static __turner_inline_var constexpr const unused_message_type_t<Protocol>
+  unused_message_type{};
+
+// protocol
+struct unnamed_protocol_traits_t : public turner::stun::protocol_traits_t {};
+using unnamed_protocol_t = turner::basic_protocol_t<unnamed_protocol_traits_t>;
+static __turner_inline_var constexpr const unnamed_protocol_t unnamed_protocol;
+
+// message type
+using unnamed_protocol_message_type_t = unnamed_protocol_t::message_type_t<1>;
+static __turner_inline_var constexpr const unnamed_protocol_message_type_t
+  unnamed_protocol_message_type;
+
+inline constexpr void operator>> (unnamed_protocol_message_type_t,
+  const char *&name) noexcept
 {
-  return turner::stun::message_t::transaction_id_t
-  {{
-    0x01, 0x02, 0x03, 0x04,
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
+  name = "unnamed_protocol_message";
 }
 
 
-inline constexpr auto message_with_bad_type (STUN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x02,                   // invalid STUN method
-    0x00, 0x00,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-inline constexpr auto message_with_bad_length (STUN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x01,                   // STUN Binding
-    0x00, 0x11,                   // bad length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-inline constexpr auto message_with_valid_length_and_insufficient_data (STUN)
-{
-  return std::array<uint8_t, 22>
-  {{
-    0x00, 0x01,                   // STUN Binding
-    0x00, 0x04,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-    0x01, 0x02,                   // insufficient data
-  }};
-}
-
-
-inline constexpr auto message_with_bad_cookie (STUN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x01,                   // STUN Binding
-    0x00, 0x00,                   // length
-    0x12, 0x12, 0xa4, 0x42,       // invalid cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-// TURN {{{1
-
-
-inline constexpr auto expected_request (TURN)
-{
-  return turner::turn::allocation;
-}
-
-
-inline constexpr auto expected_success_response (TURN)
-{
-  return turner::turn::allocation_success;
-}
-
-
-inline constexpr uint16_t expected_length (TURN)
-{
-  return 0U;
-}
-
-
-inline constexpr auto request (TURN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x03,                   // TURN Allocation
-    0x00, 0x00,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
- }};
-}
-
-
-inline constexpr auto success_response (TURN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x01, 0x03,                   // TURN Allocation succes response
-    0x00, 0x00,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-inline constexpr auto expected_transaction_id (TURN)
-{
-  return turner::stun::message_t::transaction_id_t
-  {{
-    0x01, 0x02, 0x03, 0x04,
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-inline constexpr auto message_with_bad_type (TURN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x02,                   // invalid TURN method
-    0x00, 0x00,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-inline constexpr auto message_with_bad_length (TURN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x03,                   // TURN Allocation
-    0x00, 0x11,                   // bad length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-inline constexpr auto message_with_valid_length_and_insufficient_data (TURN)
-{
-  return std::array<uint8_t, 22>
-  {{
-    0x00, 0x03,                   // TURN Allocation
-    0x00, 0x04,                   // length
-    0x21, 0x12, 0xa4, 0x42,       // cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-    0x01, 0x02,                   // insufficient data
-  }};
-}
-
-
-inline constexpr auto message_with_bad_cookie (TURN)
-{
-  return std::array<uint8_t, 20>
-  {{
-    0x00, 0x03,                   // TURN Allocation
-    0x00, 0x00,                   // length
-    0x12, 0x12, 0xa4, 0x42,       // invalid cookie
-    0x01, 0x02, 0x03, 0x04,       // transaction id
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x10, 0x11, 0x12,
-  }};
-}
-
-
-// }}}1
+//}}}1
 
 
 } // namespace turner_test

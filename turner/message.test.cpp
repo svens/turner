@@ -1,191 +1,249 @@
 #include <turner/common.test.hpp>
-#include <turner/stun/message.hpp>
-#include <turner/error.hpp>
 
 
 namespace turner_test { namespace {
 
 
 template <typename Protocol>
-using turner_message = turner_test::with_type<Protocol>;
+using any_message = turner_test::with_protocol<Protocol>;
 
-TYPED_TEST_CASE(turner_message, protocol_types);
+TYPED_TEST_CASE(any_message, protocol_types);
 
 
-TYPED_TEST(turner_message, ctor)
+TYPED_TEST(any_message, insufficient_header_data)
 {
-  turner::basic_message_t<TypeParam> message;
-  EXPECT_FALSE(message.is_valid());
-  EXPECT_TRUE(!message);
+  auto data = x_request(TypeParam());
+  data.resize(data.size() / 2);
+
+  std::error_code error;
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::insufficient_header_data, error);
+  EXPECT_FALSE(msg);
+
+  EXPECT_THROW(
+    TypeParam::from_wire(data.begin(), data.end()),
+    std::system_error
+  );
 }
 
 
-TYPED_TEST(turner_message, make)
+TYPED_TEST(any_message, type)
 {
+  auto data = x_request(TypeParam());
+
   std::error_code error;
-
-  auto buf = request(TypeParam());
-  auto message = turner::basic_message_t<TypeParam>::make(
-    buf.data(), buf.data() + buf.size(), error
-  );
-
-  ASSERT_TRUE(!error) << error.message();
-  ASSERT_TRUE(message.is_valid());
-
-  EXPECT_EQ(expected_request(TypeParam()), message);
-  EXPECT_EQ(message, expected_request(TypeParam()));
-  EXPECT_EQ(expected_request(TypeParam()), message.type());
-
-  EXPECT_FALSE(message.is_indication());
-  EXPECT_FALSE(message.is_success_response());
-  EXPECT_FALSE(message.is_error_response());
-
-  EXPECT_NE(expected_success_response(TypeParam()), message);
-  EXPECT_NE(message, expected_success_response(TypeParam()));
-  EXPECT_NE(expected_success_response(TypeParam()), message.type());
-
-  EXPECT_EQ(expected_length(TypeParam()), message.length());
-  EXPECT_EQ(buf.size(), message.size());
-
-  EXPECT_EQ(expected_transaction_id(TypeParam()), message.transaction_id());
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_TRUE(!error);
+  ASSERT_TRUE(msg);
+  EXPECT_EQ(x_message_type_value(TypeParam()), msg->type());
 }
 
 
-TYPED_TEST(turner_message, make_success_response)
+TYPED_TEST(any_message, invalid_type)
 {
+  auto data = x_request(TypeParam());
+  data[0] |= 0b1100'0000;
+
   std::error_code error;
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::invalid_message_type, error);
+  EXPECT_FALSE(msg);
 
-  auto buf = success_response(TypeParam());
-  auto message = turner::basic_message_t<TypeParam>::make(
-    buf.data(), buf.data() + buf.size(), error
+  EXPECT_THROW(
+    TypeParam::from_wire(data.begin(), data.end()),
+    std::system_error
   );
-
-  ASSERT_TRUE(!error) << error.message();
-  ASSERT_TRUE(message.is_valid());
-
-  EXPECT_EQ(expected_success_response(TypeParam()), message);
-  EXPECT_EQ(message, expected_success_response(TypeParam()));
-  EXPECT_EQ(expected_success_response(TypeParam()), message.type());
-  EXPECT_FALSE(message.is_indication());
-  EXPECT_TRUE(message.is_success_response());
-  EXPECT_FALSE(message.is_error_response());
-
-  EXPECT_EQ(expected_length(TypeParam()), message.length());
-  EXPECT_EQ(buf.size(), message.size());
-
-  EXPECT_EQ(expected_transaction_id(TypeParam()), message.transaction_id());
 }
 
 
-TYPED_TEST(turner_message, make_with_invalid_begin)
+TYPED_TEST(any_message, length)
 {
+  auto data = x_request(TypeParam());
+
   std::error_code error;
-
-  uint8_t data{};
-  auto message = turner::basic_message_t<TypeParam>::make(
-    {}, &data, error
-  );
-
-  EXPECT_EQ(std::errc::invalid_argument, error);
-  EXPECT_FALSE(message.is_valid());
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_TRUE(!error);
+  ASSERT_TRUE(msg);
+  EXPECT_EQ(x_message_length(TypeParam()), msg->length());
 }
 
 
-TYPED_TEST(turner_message, make_with_invalid_end)
+TYPED_TEST(any_message, invalid_length)
 {
+  auto data = x_request(TypeParam());
+  data[3] += 1;
+
   std::error_code error;
-
-  uint8_t data{};
-  auto message = turner::basic_message_t<TypeParam>::make(
-    &data, {}, error
-  );
-
-  EXPECT_EQ(std::errc::invalid_argument, error);
-  EXPECT_FALSE(message.is_valid());
-}
-
-
-TYPED_TEST(turner_message, make_with_begin_gt_end)
-{
-  std::error_code error;
-
-  uint8_t data{};
-  auto message = turner::basic_message_t<TypeParam>::make(
-    &data + sizeof(data), &data, error
-  );
-
-  EXPECT_EQ(std::errc::invalid_argument, error);
-  EXPECT_FALSE(message.is_valid());
-}
-
-
-TYPED_TEST(turner_message, make_with_insufficient_data)
-{
-  std::error_code error;
-
-  uint8_t data = 0x01;
-  auto message = turner::basic_message_t<TypeParam>::make(
-    &data, &data + sizeof(data), error
-  );
-
-  EXPECT_EQ(turner::errc::insufficient_data, error);
-  EXPECT_FALSE(message.is_valid());
-}
-
-
-TYPED_TEST(turner_message, make_with_bad_type)
-{
-  std::error_code error;
-
-  auto buf = message_with_bad_type(TypeParam());
-  auto message = turner::basic_message_t<TypeParam>::make(
-    buf.data(), buf.data() + buf.size(), error
-  );
-
-  EXPECT_EQ(turner::errc::invalid_message_header, error);
-  EXPECT_FALSE(message.is_valid());
-}
-
-
-TYPED_TEST(turner_message, make_with_bad_length)
-{
-  std::error_code error;
-
-  auto buf = message_with_bad_length(TypeParam());
-  auto message = turner::basic_message_t<TypeParam>::make(
-    buf.data(), buf.data() + buf.size(), error
-  );
-
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
   EXPECT_EQ(turner::errc::invalid_message_length, error);
-  EXPECT_FALSE(message.is_valid());
+  EXPECT_FALSE(msg);
+
+  EXPECT_THROW(
+    TypeParam::from_wire(data.begin(), data.end()),
+    std::system_error
+  );
 }
 
 
-TYPED_TEST(turner_message, make_with_valid_length_and_insufficient_data)
+TYPED_TEST(any_message, insufficient_payload_data)
 {
+  auto data = x_request(TypeParam());
+  data.pop_back();
+
   std::error_code error;
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+  EXPECT_FALSE(msg);
 
-  auto buf = message_with_valid_length_and_insufficient_data(TypeParam());
-  auto message = turner::basic_message_t<TypeParam>::make(
-    buf.data(), buf.data() + buf.size(), error
+  EXPECT_THROW(
+    TypeParam::from_wire(data.begin(), data.end()),
+    std::system_error
   );
-
-  EXPECT_EQ(turner::errc::insufficient_data, error);
-  EXPECT_FALSE(message.is_valid());
 }
 
 
-TYPED_TEST(turner_message, make_with_bad_cookie)
+TYPED_TEST(any_message, invalid_cookie)
 {
+  auto data = x_request(TypeParam());
+  data[TypeParam::traits_t::cookie_offset] += 1;
+
   std::error_code error;
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::invalid_message_cookie, error);
+  EXPECT_FALSE(msg);
 
-  auto buf = message_with_bad_cookie(TypeParam());
-  auto message = turner::basic_message_t<TypeParam>::make(
-    buf.data(), buf.data() + buf.size(), error
+  EXPECT_THROW(
+    TypeParam::from_wire(data.begin(), data.end()),
+    std::system_error
   );
+}
 
-  EXPECT_EQ(turner::errc::invalid_message_header, error);
-  EXPECT_FALSE(message.is_valid());
+
+TYPED_TEST(any_message, transaction_id)
+{
+  auto data = x_request(TypeParam());
+
+  std::error_code error;
+  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  EXPECT_TRUE(!error);
+  ASSERT_TRUE(msg);
+
+  EXPECT_EQ(x_transaction_id(TypeParam()), msg->transaction_id());
+}
+
+
+TYPED_TEST(any_message, as_valid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(x_message_type(TypeParam()));
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(x_message_type(TypeParam()), msg->message_type);
+
+  EXPECT_EQ(any_msg, msg);
+  EXPECT_EQ(any_msg->type(), msg->type());
+  EXPECT_EQ(any_msg->length(), msg->length());
+  EXPECT_EQ(any_msg->cookie(), msg->cookie());
+  EXPECT_EQ(any_msg->transaction_id(), msg->transaction_id());
+}
+
+
+TYPED_TEST(any_message, as_invalid)
+{
+  auto data = x_request(TypeParam());
+  data[1] = 2;
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(x_message_type(TypeParam()));
+  EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_success_response_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(x_message_type(TypeParam()).success_response());
+  EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_success_response_valid)
+{
+  auto message_type = x_message_type(TypeParam());
+
+  auto data = x_request(TypeParam());
+  reinterpret_cast<uint16_t *>(data.data())[0] =
+    sal::native_to_network_byte_order(message_type.success_response().type());
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(message_type.success_response());
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(message_type.success_response(), msg->message_type);
+}
+
+
+TYPED_TEST(any_message, as_error_response_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(x_message_type(TypeParam()).error_response());
+  EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_error_response_valid)
+{
+  auto message_type = x_message_type(TypeParam());
+
+  auto data = x_request(TypeParam());
+  reinterpret_cast<uint16_t *>(data.data())[0] =
+    sal::native_to_network_byte_order(message_type.error_response().type());
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(message_type.error_response());
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(message_type.error_response(), msg->message_type);
+}
+
+
+TYPED_TEST(any_message, as_indication_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(x_message_type(TypeParam()).indication());
+  EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_indication_valid)
+{
+  auto message_type = x_message_type(TypeParam());
+
+  auto data = x_request(TypeParam());
+  reinterpret_cast<uint16_t *>(data.data())[0] =
+    sal::native_to_network_byte_order(message_type.indication().type());
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->as(message_type.indication());
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(message_type.indication(), msg->message_type);
 }
 
 

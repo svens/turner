@@ -18,9 +18,11 @@ __turner_begin
  */
 enum class errc
 {
-  insufficient_data = 1,
-  invalid_message_header,
+  insufficient_header_data = 1,
+  insufficient_payload_data,
+  invalid_message_type,
   invalid_message_length,
+  invalid_message_cookie,
 };
 
 

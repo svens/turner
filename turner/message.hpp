@@ -2,290 +2,136 @@
 
 /**
  * \file turner/message.hpp
+ * Protocol message
  */
 
-
 #include <turner/config.hpp>
-#include <turner/error.hpp>
-#include <sal/assert.hpp>
-#include <array>
+#include <turner/fwd.hpp>
+#include <sal/byte_order.hpp>
 
 
 __turner_begin
 
 
-namespace __bits {
-
-__turner_inline_var constexpr uint16_t
-  class_mask =             0b0000'0001'0001'0000,
-  indication_class =       0b0000'0000'0001'0000,
-  success_response_class = 0b0000'0001'0000'0000,
-  error_response_class =   0b0000'0001'0001'0000;
-
-} // namespace __bits
-
-
-using message_type_t = uint16_t;
-
-
 /**
- * Generic request \t Method
- */
-template <message_type_t Method>
-__turner_inline_var constexpr message_type_t request_v = Method;
-
-
-/**
- * Indication for \t Method
- */
-template <message_type_t Method>
-__turner_inline_var constexpr message_type_t indication_v =
-  Method | __bits::indication_class;
-
-
-/**
- * Success response for \t Method
- */
-template <message_type_t Method>
-__turner_inline_var constexpr message_type_t success_response_v =
-  Method | __bits::success_response_class;
-
-
-/**
- * Error response for \t Method
- */
-template <message_type_t Method>
-__turner_inline_var constexpr message_type_t error_response_v =
-  Method | __bits::error_response_class;
-
-
-/**
- */
-class message_base_t
-{
-public:
-
-  /**
-   */
-  message_base_t () = default;
-
-
-  /**
-   */
-  bool is_valid () const noexcept
-  {
-    return begin_ != end_;
-  }
-
-
-  /**
-   */
-  explicit operator bool () const noexcept
-  {
-    return is_valid();
-  }
-
-
-  /**
-   */
-  message_type_t type () const noexcept;
-
-
-  /**
-   */
-  uint16_t length () const noexcept;
-
-
-  /**
-   */
-  bool is_indication () const noexcept
-  {
-    sal_assert(is_valid());
-    return has_class(__bits::indication_class);
-  }
-
-
-  /**
-   */
-  bool is_success_response () const noexcept
-  {
-    sal_assert(is_valid());
-    return has_class(__bits::success_response_class);
-  }
-
-
-  /**
-   */
-  bool is_error_response () const noexcept
-  {
-    sal_assert(is_valid());
-    return has_class(__bits::error_response_class);
-  }
-
-
-  /**
-   */
-  size_t size () const noexcept
-  {
-    return static_cast<uint16_t>(end_ - begin_);
-  }
-
-
-protected:
-
-  const uint8_t *begin_{}, *end_{};
-
-  message_base_t (const uint8_t *first, const uint8_t *last) noexcept
-    : begin_(first)
-    , end_(last)
-  {}
-
-  bool has_class (uint16_t c) const noexcept
-  {
-    return (type() & __bits::class_mask) == c;
-  }
-};
-
-
-/**
- */
-inline bool operator== (const message_base_t &message, message_type_t type)
-  noexcept
-{
-  return message.type() == type;
-}
-
-
-/**
- */
-inline bool operator== (message_type_t type, const message_base_t &message)
-  noexcept
-{
-  return message.type() == type;
-}
-
-
-/**
- */
-inline bool operator!= (const message_base_t &message, message_type_t type)
-  noexcept
-{
-  return message.type() != type;
-}
-
-
-/**
- */
-inline bool operator!= (message_type_t type, const message_base_t &message)
-  noexcept
-{
-  return message.type() != type;
-}
-
-
-/**
+ * Generic \a Protocol message, not tied to any message type.
+ *
+ * It can be used to parse STUN-based protocols only as it's header layout
+ * depends on RFC5389, section 6.
+ *
+ * This type is not meant to be instantiated directly but from
+ * basic_protocol_t<Protocol>::from_wire() that does message validation. On
+ * success, returned pointed object does not have any own storage. It is
+ * overlayed on top of memory range containing raw network formatted message
+ * and all getter methods operate on fields offset relative from this and
+ * described by \a Protocol.
  */
 template <typename Protocol>
-class basic_message_t
-  : public message_base_t
+class any_message_t
 {
 public:
 
   /**
+   * Protocol class describing raw network message format.
    */
-  using protocol_t = Protocol;
-
-  /**
-   */
-  using transaction_id_t = std::array<uint8_t, protocol_t::transaction_id_size>;
+  using protocol_t = basic_protocol_t<Protocol>;
 
 
   /**
+   * Per protocol unique cookie type. It is additional helper to detect
+   * network message protocol if multiple protocols are multiplexed on single
+   * channel.
    */
-  basic_message_t () = default;
+  using cookie_t = typename protocol_t::cookie_t;
 
 
   /**
+   * Per message unique transaction ID.
    */
-  template <typename It>
-  static basic_message_t make (It first, It last, std::error_code &error)
-    noexcept;
+  using transaction_id_t = typename protocol_t::transaction_id_t;
 
 
   /**
+   * Return message type code in native byte order. Code values are defined by
+   * protocol documentation.
    */
-  const transaction_id_t &transaction_id () const noexcept
+  constexpr uint16_t type () const noexcept
   {
-    sal_assert(is_valid());
-    return *reinterpret_cast<const transaction_id_t *>(
-      begin_ + protocol_t::transaction_id_offset
+    return sal::network_to_native_byte_order(
+      reinterpret_cast<const uint16_t *>(this)[0]
     );
   }
 
 
-protected:
+  /**
+   * Return message size as claimed by message length field. It does not
+   * include message header length nor possible padding.
+   */
+  constexpr uint16_t length () const noexcept
+  {
+    return sal::network_to_native_byte_order(
+      reinterpret_cast<const uint16_t *>(this)[1]
+    );
+  }
 
-  basic_message_t (const uint8_t *first, const uint8_t *last) noexcept
-    : message_base_t(first, last)
-  {}
+
+  /**
+   * Return message cookie.
+   */
+  constexpr const cookie_t &cookie () const noexcept
+  {
+    return *reinterpret_cast<const cookie_t *>(
+      __bits::to_ptr(this) + Protocol::cookie_offset
+    );
+  }
+
+
+  /**
+   * Return message transaction ID.
+   */
+  constexpr const transaction_id_t &transaction_id () const noexcept
+  {
+    return *reinterpret_cast<const transaction_id_t *>(
+      __bits::to_ptr(this) + Protocol::transaction_id_offset
+    );
+  }
+
+
+  /**
+   * Return specialized message from \a this generic message if underlying raw
+   * message has expected \a Type. On different type, return nullptr.
+   */
+  template <uint16_t Type>
+  constexpr const basic_message_t<Protocol, Type> *
+    as (basic_message_type_t<Protocol, Type>) const noexcept
+  {
+    return type() == Type
+      ? reinterpret_cast<const basic_message_t<Protocol, Type> *>(this)
+      : nullptr;
+  }
+
+
+private:
+
+  any_message_t () = delete;
 };
 
 
-template <typename Protocol>
-template <typename It>
-basic_message_t<Protocol> basic_message_t<Protocol>::make (It first, It last,
-  std::error_code &error) noexcept
+/**
+ * Specialized \a Protocol message of \a Type.
+ */
+template <typename Protocol, uint16_t Type>
+class basic_message_t
+  : public any_message_t<Protocol>
 {
-  auto begin = reinterpret_cast<const uint8_t *>(std::addressof(*first));
-  auto end = begin + (last - first) * sizeof(*first);
+public:
 
-  // validate arguments
-  if (!begin || !end || begin > end)
-  {
-    error = make_error_code(std::errc::invalid_argument);
-    return {};
-  }
-  if (static_cast<size_t>(end - begin) < Protocol::header_size)
-  {
-    error = make_error_code(errc::insufficient_data);
-    return {};
-  }
-
-  basic_message_t message(begin, end);
-
-  // message type
-  if (!Protocol::is_valid_message_type(message.type()))
-  {
-    error = make_error_code(errc::invalid_message_header);
-    return {};
-  }
-
-  // message length (must be padded to 4B boundary)
-  if ((message.length() & 0b11) != 0)
-  {
-    error = make_error_code(errc::invalid_message_length);
-    return {};
-  }
-  if (Protocol::header_size + message.length() > message.size())
-  {
-    error = make_error_code(errc::insufficient_data);
-    return {};
-  }
-
-  // cookie
-  auto cookie = *reinterpret_cast<const decltype(Protocol::cookie) *>(
-    begin + Protocol::cookie_offset
-  );
-  if (cookie != Protocol::cookie)
-  {
-    error = make_error_code(errc::invalid_message_header);
-    return {};
-  }
-
-  // success
-  error.clear();
-  return message;
-}
+  /**
+   * basic_message_type_t instance for this message \a Type.
+   */
+  static __turner_inline_var constexpr const basic_message_type_t<Protocol, Type>
+    message_type{};
+};
 
 
 __turner_end

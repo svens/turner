@@ -11,12 +11,16 @@ inline constexpr const char *to_message (errc e) noexcept
 {
   switch (e)
   {
-    case errc::insufficient_data:
-      return "insufficient data";
-    case errc::invalid_message_header:
-      return "invalid message header";
+    case errc::insufficient_header_data:
+      return "insufficient header data";
+    case errc::insufficient_payload_data:
+      return "insufficient payload data";
+    case errc::invalid_message_type:
+      return "invalid message type";
     case errc::invalid_message_length:
       return "invalid message length";
+    case errc::invalid_message_cookie:
+      return "invalid message cookie";
   }
   return "unknown error";
 }
