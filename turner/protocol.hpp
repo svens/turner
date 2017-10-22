@@ -43,10 +43,10 @@ public:
   using transaction_id_t = std::array<uint8_t, Protocol::transaction_id_size>;
 
   /**
-   * Message \a Type as defined by \a Protocol
+   * \a Message as defined by \a Protocol
    */
-  template <uint16_t Type>
-  using message_type_t = basic_message_type_t<Protocol, Type>;
+  template <uint16_t Message>
+  using message_type_t = basic_message_type_t<Protocol, Message>;
 
 
   /**
@@ -74,12 +74,12 @@ public:
 
 
   /**
-   * Return instance of message \a Type as defined by \a Protocol.
+   * Return instance of \a Message as defined by \a Protocol.
    */
-  template <uint16_t Type>
-  static constexpr message_type_t<Type> message_type () noexcept
+  template <uint16_t Message>
+  static constexpr message_type_t<Message> message_type () noexcept
   {
-    message_type_t<Type>::expect_request_class();
+    message_type_t<Message>::expect_request_class();
     return {};
   }
 
@@ -96,7 +96,7 @@ public:
    * returned and error is set to code describing failure.
    */
   template <typename It>
-  static constexpr const any_message_t<Protocol> *from_wire (It first, It last,
+  static const any_message_t<Protocol> *from_wire (It first, It last,
     std::error_code &error) noexcept
   {
     auto begin = __bits::to_ptr(first);
@@ -116,7 +116,7 @@ public:
    * validation fails.
    */
   template <typename It>
-  static constexpr const any_message_t<Protocol> *from_wire (It first, It last)
+  static const any_message_t<Protocol> *from_wire (It first, It last)
   {
     return from_wire(first, last,
       sal::throw_on_error("basic_protocol::from_wire")
@@ -143,7 +143,7 @@ public:
 
 private:
 
-  static constexpr const any_message_t<Protocol> *from_wire (
+  static const any_message_t<Protocol> *from_wire (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error
@@ -152,7 +152,7 @@ private:
 
 
 template <typename Protocol>
-constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
+const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
   const uint8_t *first,
   const uint8_t *last,
   std::error_code &error) noexcept

@@ -56,7 +56,7 @@ public:
    * Return message type code in native byte order. Code values are defined by
    * protocol documentation.
    */
-  constexpr uint16_t type () const noexcept
+  uint16_t type () const noexcept
   {
     return sal::network_to_native_byte_order(
       reinterpret_cast<const uint16_t *>(this)[0]
@@ -68,7 +68,7 @@ public:
    * Return message size as claimed by message length field. It does not
    * include message header length nor possible padding.
    */
-  constexpr uint16_t length () const noexcept
+  uint16_t length () const noexcept
   {
     return sal::network_to_native_byte_order(
       reinterpret_cast<const uint16_t *>(this)[1]
@@ -79,7 +79,7 @@ public:
   /**
    * Return message cookie.
    */
-  constexpr const cookie_t &cookie () const noexcept
+  const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
       __bits::to_ptr(this) + Protocol::cookie_offset
@@ -90,7 +90,7 @@ public:
   /**
    * Return message transaction ID.
    */
-  constexpr const transaction_id_t &transaction_id () const noexcept
+  const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
       __bits::to_ptr(this) + Protocol::transaction_id_offset
@@ -99,29 +99,30 @@ public:
 
 
   /**
-   * Return specialized message from \a this generic message if underlying raw
-   * message has expected \a Type. On different type, return nullptr.
+   * Return specialized instance from \a this generic message if underlying
+   * raw data has expected \a message_type. On different type, return nullptr.
    */
-  template <uint16_t Type>
-  constexpr const basic_message_t<Protocol, Type> *
-    try_as (basic_message_type_t<Protocol, Type>) const noexcept
+  template <uint16_t Message>
+  const basic_message_t<Protocol, Message> *try_as (
+    basic_message_type_t<Protocol, Message>) const noexcept
   {
-    return type() == Type
-      ? reinterpret_cast<const basic_message_t<Protocol, Type> *>(this)
+    return type() == Message
+      ? reinterpret_cast<const basic_message_t<Protocol, Message> *>(this)
       : nullptr;
   }
 
 
   /**
-   * Return specialized message from \a this generic message if underlying raw
-   * message has expected \a Type. On different type, return nullptr and set
-   * \a error to turner::errc::unexpected_message_type
+   * Return specialized instance from \a this generic message if underlying
+   * raw data has expected \a message_type. On different type, return nullptr
+   * and set \a error to turner::errc::unexpected_message_type
    */
-  template <uint16_t Type>
-  constexpr const basic_message_t<Protocol, Type> *
-    as (basic_message_type_t<Protocol, Type> t, std::error_code &error) const noexcept
+  template <uint16_t Message>
+  const basic_message_t<Protocol, Message> *as (
+    basic_message_type_t<Protocol, Message> message_type,
+    std::error_code &error) const noexcept
   {
-    if (auto message = try_as(t))
+    if (auto message = try_as(message_type))
     {
       error.clear();
       return message;
@@ -132,16 +133,18 @@ public:
 
 
   /**
-   * Return specialized message from \a this generic message if underlying raw
-   * message has expected type \a t.
+   * Return specialized instance from \a this generic message if underlying
+   * raw data has expected \a message_type.
    *
-   * \throws std::system_error if \a this message type is not \a t.
+   * \throws std::system_error if \a this message type is not \a message_type.
    */
-  template <uint16_t Type>
-  constexpr const basic_message_t<Protocol, Type> *
-    as (basic_message_type_t<Protocol, Type> t) const
+  template <uint16_t Message>
+  const basic_message_t<Protocol, Message> *as (
+    basic_message_type_t<Protocol, Message> message_type) const
   {
-    return as(t, sal::throw_on_error("basic_message::as"));
+    return as(message_type,
+      sal::throw_on_error("any_message::as")
+    );
   }
 
 
@@ -156,18 +159,18 @@ private:
 
 
 /**
- * Specialized \a Protocol message of \a Type.
+ * Specialized \a Protocol \a Message.
  */
-template <typename Protocol, uint16_t Type>
+template <typename Protocol, uint16_t Message>
 class basic_message_t
   : public any_message_t<Protocol>
 {
 public:
 
   /**
-   * basic_message_type_t instance for this message \a Type.
+   * basic_message_type_t instance for this \a Message.
    */
-  static __turner_inline_var constexpr const basic_message_type_t<Protocol, Type>
+  static __turner_inline_var constexpr const basic_message_type_t<Protocol, Message>
     message_type{};
 };
 
