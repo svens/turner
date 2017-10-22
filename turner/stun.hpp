@@ -7,8 +7,9 @@
 
 
 #include <turner/config.hpp>
-#include <turner/protocol.hpp>
+#include <turner/message.hpp>
 #include <turner/message_type.hpp>
+#include <turner/protocol.hpp>
 
 
 __turner_begin

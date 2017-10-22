@@ -2,7 +2,6 @@
 
 #include <turner/config.hpp>
 #include <turner/stun.hpp>
-#include <turner/message.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>

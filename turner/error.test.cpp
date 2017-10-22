@@ -32,7 +32,8 @@ INSTANTIATE_TEST_CASE_P(error, errc,
     turner::errc::insufficient_payload_data,
     turner::errc::invalid_message_type,
     turner::errc::invalid_message_length,
-    turner::errc::invalid_message_cookie
+    turner::errc::invalid_message_cookie,
+    turner::errc::unexpected_message_type
   )
 );
 

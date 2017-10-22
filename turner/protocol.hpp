@@ -119,7 +119,7 @@ public:
   static constexpr const any_message_t<Protocol> *from_wire (It first, It last)
   {
     return from_wire(first, last,
-      sal::throw_on_error("basic_protocol_t::from_wire")
+      sal::throw_on_error("basic_protocol::from_wire")
     );
   }
 

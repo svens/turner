@@ -132,13 +132,13 @@ TYPED_TEST(any_message, transaction_id)
 }
 
 
-TYPED_TEST(any_message, as_valid)
+TYPED_TEST(any_message, try_as_valid)
 {
   auto data = x_request(TypeParam());
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(x_message_type(TypeParam()));
+  auto msg = any_msg->try_as(x_message_type(TypeParam()));
   ASSERT_NE(nullptr, msg);
   EXPECT_EQ(x_message_type(TypeParam()), msg->message_type);
 
@@ -150,6 +150,43 @@ TYPED_TEST(any_message, as_valid)
 }
 
 
+TYPED_TEST(any_message, as_valid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto msg = any_msg->as(x_message_type(TypeParam()), error);
+  ASSERT_TRUE(!error) << error;
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(x_message_type(TypeParam()), msg->message_type);
+
+  EXPECT_EQ(any_msg, msg);
+  EXPECT_EQ(any_msg->type(), msg->type());
+  EXPECT_EQ(any_msg->length(), msg->length());
+  EXPECT_EQ(any_msg->cookie(), msg->cookie());
+  EXPECT_EQ(any_msg->transaction_id(), msg->transaction_id());
+
+  EXPECT_NO_THROW(
+    any_msg->as(x_message_type(TypeParam()))
+  );
+}
+
+
+TYPED_TEST(any_message, try_as_invalid)
+{
+  auto data = x_request(TypeParam());
+  data[1] = 2;
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->try_as(x_message_type(TypeParam()));
+  EXPECT_EQ(nullptr, msg);
+}
+
+
 TYPED_TEST(any_message, as_invalid)
 {
   auto data = x_request(TypeParam());
@@ -158,19 +195,32 @@ TYPED_TEST(any_message, as_invalid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(x_message_type(TypeParam()));
+  std::error_code error;
+  auto msg = any_msg->as(x_message_type(TypeParam()), error);
+  EXPECT_EQ(turner::errc::unexpected_message_type, error);
   EXPECT_EQ(nullptr, msg);
+
+  EXPECT_THROW(
+    any_msg->as(x_message_type(TypeParam())),
+    std::system_error
+  );
 }
 
 
-TYPED_TEST(any_message, as_success_response_invalid)
+TYPED_TEST(any_message, try_as_success_response_valid)
 {
+  auto message_type = x_message_type(TypeParam());
+
   auto data = x_request(TypeParam());
+  reinterpret_cast<uint16_t *>(data.data())[0] =
+    sal::native_to_network_byte_order(message_type.success_response().type());
+
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(x_message_type(TypeParam()).success_response());
-  EXPECT_EQ(nullptr, msg);
+  auto msg = any_msg->try_as(message_type.success_response());
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(message_type.success_response(), msg->message_type);
 }
 
 
@@ -185,20 +235,61 @@ TYPED_TEST(any_message, as_success_response_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.success_response());
+  std::error_code error;
+  auto msg = any_msg->as(message_type.success_response(), error);
+  ASSERT_TRUE(!error) << error;
   ASSERT_NE(nullptr, msg);
   EXPECT_EQ(message_type.success_response(), msg->message_type);
+
+  EXPECT_NO_THROW(
+    any_msg->as(message_type.success_response())
+  );
 }
 
 
-TYPED_TEST(any_message, as_error_response_invalid)
+TYPED_TEST(any_message, try_as_success_response_invalid)
 {
   auto data = x_request(TypeParam());
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(x_message_type(TypeParam()).error_response());
+  auto msg = any_msg->try_as(x_message_type(TypeParam()).success_response());
   EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_success_response_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto msg = any_msg->as(x_message_type(TypeParam()).success_response(), error);
+  EXPECT_EQ(turner::errc::unexpected_message_type, error);
+  EXPECT_EQ(nullptr, msg);
+
+  EXPECT_THROW(
+    any_msg->as(x_message_type(TypeParam()).success_response()),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(any_message, try_as_error_response_valid)
+{
+  auto message_type = x_message_type(TypeParam());
+
+  auto data = x_request(TypeParam());
+  reinterpret_cast<uint16_t *>(data.data())[0] =
+    sal::native_to_network_byte_order(message_type.error_response().type());
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->try_as(message_type.error_response());
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(message_type.error_response(), msg->message_type);
 }
 
 
@@ -213,20 +304,61 @@ TYPED_TEST(any_message, as_error_response_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.error_response());
+  std::error_code error;
+  auto msg = any_msg->as(message_type.error_response(), error);
+  ASSERT_TRUE(!error) << error;
   ASSERT_NE(nullptr, msg);
   EXPECT_EQ(message_type.error_response(), msg->message_type);
+
+  EXPECT_NO_THROW(
+    any_msg->as(message_type.error_response())
+  );
 }
 
 
-TYPED_TEST(any_message, as_indication_invalid)
+TYPED_TEST(any_message, try_as_error_response_invalid)
 {
   auto data = x_request(TypeParam());
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(x_message_type(TypeParam()).indication());
+  auto msg = any_msg->try_as(x_message_type(TypeParam()).error_response());
   EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_error_response_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto msg = any_msg->as(x_message_type(TypeParam()).error_response(), error);
+  EXPECT_EQ(turner::errc::unexpected_message_type, error);
+  EXPECT_EQ(nullptr, msg);
+
+  EXPECT_THROW(
+    any_msg->as(x_message_type(TypeParam()).error_response()),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(any_message, try_as_indication_valid)
+{
+  auto message_type = x_message_type(TypeParam());
+
+  auto data = x_request(TypeParam());
+  reinterpret_cast<uint16_t *>(data.data())[0] =
+    sal::native_to_network_byte_order(message_type.indication().type());
+
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->try_as(message_type.indication());
+  ASSERT_NE(nullptr, msg);
+  EXPECT_EQ(message_type.indication(), msg->message_type);
 }
 
 
@@ -241,9 +373,44 @@ TYPED_TEST(any_message, as_indication_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  auto msg = any_msg->as(message_type.indication());
+  std::error_code error;
+  auto msg = any_msg->as(message_type.indication(), error);
+  ASSERT_TRUE(!error) << error;
   ASSERT_NE(nullptr, msg);
   EXPECT_EQ(message_type.indication(), msg->message_type);
+
+  EXPECT_NO_THROW(
+    any_msg->as(message_type.indication())
+  );
+}
+
+
+TYPED_TEST(any_message, try_as_indication_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  auto msg = any_msg->try_as(x_message_type(TypeParam()).indication());
+  EXPECT_EQ(nullptr, msg);
+}
+
+
+TYPED_TEST(any_message, as_indication_invalid)
+{
+  auto data = x_request(TypeParam());
+  auto any_msg = TypeParam::from_wire(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto msg = any_msg->as(x_message_type(TypeParam()).indication(), error);
+  EXPECT_EQ(turner::errc::unexpected_message_type, error);
+  EXPECT_EQ(nullptr, msg);
+
+  EXPECT_THROW(
+    any_msg->as(x_message_type(TypeParam()).indication()),
+    std::system_error
+  );
 }
 
 

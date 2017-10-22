@@ -7,6 +7,7 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <turner/error.hpp>
 #include <sal/byte_order.hpp>
 
 
@@ -103,7 +104,7 @@ public:
    */
   template <uint16_t Type>
   constexpr const basic_message_t<Protocol, Type> *
-    as (basic_message_type_t<Protocol, Type>) const noexcept
+    try_as (basic_message_type_t<Protocol, Type>) const noexcept
   {
     return type() == Type
       ? reinterpret_cast<const basic_message_t<Protocol, Type> *>(this)
@@ -111,9 +112,46 @@ public:
   }
 
 
+  /**
+   * Return specialized message from \a this generic message if underlying raw
+   * message has expected \a Type. On different type, return nullptr and set
+   * \a error to turner::errc::unexpected_message_type
+   */
+  template <uint16_t Type>
+  constexpr const basic_message_t<Protocol, Type> *
+    as (basic_message_type_t<Protocol, Type> t, std::error_code &error) const noexcept
+  {
+    if (auto message = try_as(t))
+    {
+      error.clear();
+      return message;
+    }
+    error = make_error_code(errc::unexpected_message_type);
+    return nullptr;
+  }
+
+
+  /**
+   * Return specialized message from \a this generic message if underlying raw
+   * message has expected type \a t.
+   *
+   * \throws std::system_error if \a this message type is not \a t.
+   */
+  template <uint16_t Type>
+  constexpr const basic_message_t<Protocol, Type> *
+    as (basic_message_type_t<Protocol, Type> t) const
+  {
+    return as(t, sal::throw_on_error("basic_message::as"));
+  }
+
+
 private:
 
   any_message_t () = delete;
+  any_message_t (const any_message_t &) = delete;
+  any_message_t &operator= (const any_message_t &) = delete;
+  any_message_t (any_message_t &&) = delete;
+  any_message_t &operator= (any_message_t &&) = delete;
 };
 
 

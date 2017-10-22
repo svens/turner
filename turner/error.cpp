@@ -21,6 +21,8 @@ inline constexpr const char *to_message (errc e) noexcept
       return "invalid message length";
     case errc::invalid_message_cookie:
       return "invalid message cookie";
+    case errc::unexpected_message_type:
+      return "unexpected_message_type";
   }
   return "unknown error";
 }
