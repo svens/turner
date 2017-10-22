@@ -11,7 +11,7 @@ relay.
 ## Compiling and installing
 
     $ mkdir build && cd build
-    $ cmake .. [-DTURNER_UNITTESTS=yes|no] [-DTURNER_DOCS=yes|no]
+    $ cmake .. [-DUNITTESTS=yes|no] [-DDOCS=yes|no]
 
 
 ## Source tree

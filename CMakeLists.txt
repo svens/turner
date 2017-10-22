@@ -5,21 +5,21 @@ cmake_minimum_required(VERSION 2.8.10)
 # Settings {{{1
 
 # optional features
-option(TURNER_UNITTESTS "Build unittests" ON)
-option(TURNER_DOCS "Generate documentation" ON)
+option(UNITTESTS "Build unittests" ON)
+option(DOCS "Generate documentation" ON)
 
 if(CMAKE_BUILD_TYPE MATCHES Coverage)
   # special case for coverage build
   set(CMAKE_BUILD_TYPE "Debug")
-  set(TURNER_COVERAGE ON)
-  set(TURNER_UNITTESTS ON)
+  set(COVERAGE ON)
+  set(UNITTESTS ON)
 endif()
 
 
 # Version {{{1
 
 # read and parse
-file(STRINGS VERSION version LIMIT_COUNT 1)
+include(VERSION)
 set(version_regex "([0-9]*)\\.([0-9]*)\\.([0-9]*)")
 string(REGEX REPLACE ${version_regex} "\\1" version_major ${version})
 math(EXPR v ${version_major}+0)
@@ -96,7 +96,7 @@ add_dependencies(turner sal)
 
 
 # Testing {{{1
-if(TURNER_UNITTESTS)
+if(UNITTESTS)
   message(STATUS "Building unittests")
   include(cmake/gtest.cmake)
 
@@ -131,7 +131,7 @@ endif()
 
 
 # Documentation {{{1
-if(TURNER_DOCS)
+if(DOCS)
   include(cmake/doxygen.cmake)
 endif()
 

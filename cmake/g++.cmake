@@ -12,7 +12,7 @@ if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color")
 endif()
 
-if(TURNER_COVERAGE)
+if(COVERAGE)
   message(STATUS "Unittests coverage build")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -coverage")
