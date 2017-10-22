@@ -17,8 +17,8 @@ __turner_begin
 /**
  * Generic \a Protocol message, not tied to any message type.
  *
- * It can be used to parse STUN-based protocols only as it's header layout
- * depends on RFC5389, section 6.
+ * It can be used to parse STUN, TURN or MSTURN protocol messages only as it's
+ * header layout depends on corresponding protocol header layout.
  *
  * This type is not meant to be instantiated directly but from
  * basic_protocol_t<Protocol>::from_wire() that does message validation. On
