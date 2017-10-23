@@ -156,21 +156,13 @@ TYPED_TEST(any_message, as_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  std::error_code error;
-  auto msg = any_msg->as(x_message_type(TypeParam()), error);
-  ASSERT_TRUE(!error) << error;
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(x_message_type(TypeParam()), msg->message_type);
+  auto &msg = any_msg->as(x_message_type(TypeParam()));
+  EXPECT_EQ(x_message_type(TypeParam()), msg.message_type);
 
-  EXPECT_EQ(any_msg, msg);
-  EXPECT_EQ(any_msg->type(), msg->type());
-  EXPECT_EQ(any_msg->length(), msg->length());
-  EXPECT_EQ(any_msg->cookie(), msg->cookie());
-  EXPECT_EQ(any_msg->transaction_id(), msg->transaction_id());
-
-  EXPECT_NO_THROW(
-    any_msg->as(x_message_type(TypeParam()))
-  );
+  EXPECT_EQ(any_msg->type(), msg.type());
+  EXPECT_EQ(any_msg->length(), msg.length());
+  EXPECT_EQ(any_msg->cookie(), msg.cookie());
+  EXPECT_EQ(any_msg->transaction_id(), msg.transaction_id());
 }
 
 
@@ -194,11 +186,6 @@ TYPED_TEST(any_message, as_invalid)
 
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
-
-  std::error_code error;
-  auto msg = any_msg->as(x_message_type(TypeParam()), error);
-  EXPECT_EQ(turner::errc::unexpected_message_type, error);
-  EXPECT_EQ(nullptr, msg);
 
   EXPECT_THROW(
     any_msg->as(x_message_type(TypeParam())),
@@ -235,15 +222,8 @@ TYPED_TEST(any_message, as_success_response_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  std::error_code error;
-  auto msg = any_msg->as(message_type.success_response(), error);
-  ASSERT_TRUE(!error) << error;
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type.success_response(), msg->message_type);
-
-  EXPECT_NO_THROW(
-    any_msg->as(message_type.success_response())
-  );
+  auto &msg = any_msg->as(message_type.success_response());
+  EXPECT_EQ(message_type.success_response(), msg.message_type);
 }
 
 
@@ -263,11 +243,6 @@ TYPED_TEST(any_message, as_success_response_invalid)
   auto data = x_request(TypeParam());
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
-
-  std::error_code error;
-  auto msg = any_msg->as(x_message_type(TypeParam()).success_response(), error);
-  EXPECT_EQ(turner::errc::unexpected_message_type, error);
-  EXPECT_EQ(nullptr, msg);
 
   EXPECT_THROW(
     any_msg->as(x_message_type(TypeParam()).success_response()),
@@ -304,15 +279,8 @@ TYPED_TEST(any_message, as_error_response_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  std::error_code error;
-  auto msg = any_msg->as(message_type.error_response(), error);
-  ASSERT_TRUE(!error) << error;
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type.error_response(), msg->message_type);
-
-  EXPECT_NO_THROW(
-    any_msg->as(message_type.error_response())
-  );
+  auto &msg = any_msg->as(message_type.error_response());
+  EXPECT_EQ(message_type.error_response(), msg.message_type);
 }
 
 
@@ -332,11 +300,6 @@ TYPED_TEST(any_message, as_error_response_invalid)
   auto data = x_request(TypeParam());
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
-
-  std::error_code error;
-  auto msg = any_msg->as(x_message_type(TypeParam()).error_response(), error);
-  EXPECT_EQ(turner::errc::unexpected_message_type, error);
-  EXPECT_EQ(nullptr, msg);
 
   EXPECT_THROW(
     any_msg->as(x_message_type(TypeParam()).error_response()),
@@ -373,15 +336,8 @@ TYPED_TEST(any_message, as_indication_valid)
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
 
-  std::error_code error;
-  auto msg = any_msg->as(message_type.indication(), error);
-  ASSERT_TRUE(!error) << error;
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(message_type.indication(), msg->message_type);
-
-  EXPECT_NO_THROW(
-    any_msg->as(message_type.indication())
-  );
+  auto &msg = any_msg->as(message_type.indication());
+  EXPECT_EQ(message_type.indication(), msg.message_type);
 }
 
 
@@ -401,11 +357,6 @@ TYPED_TEST(any_message, as_indication_invalid)
   auto data = x_request(TypeParam());
   auto any_msg = TypeParam::from_wire(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
-
-  std::error_code error;
-  auto msg = any_msg->as(x_message_type(TypeParam()).indication(), error);
-  EXPECT_EQ(turner::errc::unexpected_message_type, error);
-  EXPECT_EQ(nullptr, msg);
 
   EXPECT_THROW(
     any_msg->as(x_message_type(TypeParam()).indication()),

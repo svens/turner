@@ -100,7 +100,7 @@ public:
 
   /**
    * Return specialized instance from \a this generic message if underlying
-   * raw data has expected \a message_type. On different type, return nullptr.
+   * raw data has expected \a Message type. On different type, return nullptr.
    */
   template <uint16_t Message>
   const basic_message_t<Protocol, Message> *try_as (
@@ -114,41 +114,31 @@ public:
 
   /**
    * Return specialized instance from \a this generic message if underlying
-   * raw data has expected \a message_type. On different type, return nullptr
-   * and set \a error to turner::errc::unexpected_message_type
-   */
-  template <uint16_t Message>
-  const basic_message_t<Protocol, Message> *as (
-    basic_message_type_t<Protocol, Message> message_type,
-    std::error_code &error) const noexcept
-  {
-    if (auto message = try_as(message_type))
-    {
-      error.clear();
-      return message;
-    }
-    error = make_error_code(errc::unexpected_message_type);
-    return nullptr;
-  }
-
-
-  /**
-   * Return specialized instance from \a this generic message if underlying
-   * raw data has expected \a message_type.
+   * raw data has expected \a Message type.
    *
-   * \throws std::system_error if \a this message type is not \a message_type.
+   * \throws std::system_error if \a this message type is not \a Message type.
    */
   template <uint16_t Message>
-  const basic_message_t<Protocol, Message> *as (
-    basic_message_type_t<Protocol, Message> message_type) const
+  const basic_message_t<Protocol, Message> &as (
+    basic_message_type_t<Protocol, Message>) const
   {
-    return as(message_type,
-      sal::throw_on_error("any_message::as")
-    );
+    if (type() == Message)
+    {
+      return *reinterpret_cast<const basic_message_t<Protocol, Message> *>(this);
+    }
+    unexpected_message_type("any_message::as");
   }
 
 
 private:
+
+  template <size_t N>
+  static void unexpected_message_type [[noreturn]] (const char (&msg)[N])
+  {
+    sal::throw_system_error(
+      make_error_code(errc::unexpected_message_type), msg
+    );
+  }
 
   any_message_t () = delete;
   any_message_t (const any_message_t &) = delete;
