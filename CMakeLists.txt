@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8.10)
 
 # optional features
 option(UNITTESTS "Build unittests" ON)
-option(DOCS "Generate documentation" ON)
+option(DOCS "Generate documentation" OFF)
 
 if(CMAKE_BUILD_TYPE MATCHES Coverage)
   # special case for coverage build
