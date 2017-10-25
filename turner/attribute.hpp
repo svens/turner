@@ -84,4 +84,21 @@ private:
 };
 
 
+/**
+ * Attribute value reader/writer. This class itself doesn't have any
+ * functionality. It ties together \a Protocol \a Attribute and how to read
+ * and write it's value using \a AttributeProcessor.
+ */
+template <typename Protocol, uint16_t Attribute, typename AttributeProcessor>
+class basic_attribute_t
+{
+public:
+
+  /**
+   * Protocol class describing raw network message format.
+   */
+  using protocol_t = basic_protocol_t<Protocol>;
+};
+
+
 __turner_end

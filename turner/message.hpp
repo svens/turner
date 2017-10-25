@@ -162,7 +162,73 @@ public:
    */
   static __turner_inline_var constexpr const basic_message_type_t<Protocol, Message>
     message_type{};
+
+
+  /**
+   * Decode and return \a Attribute value from message. On failure set \a
+   * error to code describing failure and return default value.
+   */
+  template <uint16_t Attribute, typename AttributeProcessor>
+  typename AttributeProcessor::value_t read (
+    basic_attribute_t<Protocol, Attribute, AttributeProcessor>,
+    std::error_code &error
+  ) const noexcept;
+
+
+  /**
+   * Decode and return \a Attribute value from message. On failure throw
+   * \a std::system_error.
+   */
+  template <uint16_t Attribute, typename AttributeProcessor>
+  typename AttributeProcessor::value_t read (
+    basic_attribute_t<Protocol, Attribute, AttributeProcessor> attribute) const
+  {
+    return read(attribute, sal::throw_on_error("basic_message::read"));
+  }
+
+
+private:
+
+  const any_attribute_t *begin () const noexcept
+  {
+    return reinterpret_cast<const any_attribute_t *>(
+      __bits::to_ptr(this) + Protocol::header_size
+    );
+  }
+
+  const any_attribute_t *end () const noexcept
+  {
+    return reinterpret_cast<const any_attribute_t *>(
+      __bits::to_ptr(this) + Protocol::header_size + this->length()
+    );
+  }
 };
+
+
+template <typename Protocol, uint16_t Message>
+template <uint16_t Attribute, typename AttributeProcessor>
+typename AttributeProcessor::value_t basic_message_t<Protocol, Message>::read (
+  basic_attribute_t<Protocol, Attribute, AttributeProcessor>,
+  std::error_code &error) const noexcept
+{
+  for (auto it = begin(), e = end();  it < e;  it = it->next())
+  {
+    if (it->type() == Attribute)
+    {
+      if (it->data() + it->length() <= __bits::to_ptr(e))
+      {
+        return AttributeProcessor::read(*this, *it, error);
+      }
+      else
+      {
+        error = make_error_code(errc::unexpected_attribute_length);
+        return {};
+      }
+    }
+  }
+  error = make_error_code(errc::attribute_not_found);
+  return {};
+}
 
 
 __turner_end

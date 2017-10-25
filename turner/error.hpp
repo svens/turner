@@ -24,6 +24,8 @@ enum class errc
   invalid_message_length,
   invalid_message_cookie,
   unexpected_message_type,
+  attribute_not_found,
+  unexpected_attribute_length,
 };
 
 

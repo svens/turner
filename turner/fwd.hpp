@@ -84,5 +84,21 @@ class basic_message_t;
 template <typename Protocol, uint16_t Message>
 class basic_message_type_t;
 
+//
+// turner/attribute.hpp
+//
+
+class any_attribute_t;
+
+template <typename Protocol, uint16_t Attribute, typename AttributeProcessor>
+class basic_attribute_t;
+
+//
+// turner/attribute_processor.hpp
+//
+
+template <typename Protocol>
+struct uint32_attribute_processor_t;
+
 
 __turner_end
