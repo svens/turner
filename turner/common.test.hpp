@@ -66,7 +66,7 @@ class with_protocol
 
 // STUN {{{1
 
-inline auto x_request (STUN)
+inline auto msg_data (STUN)
 {
   return std::vector<uint8_t>
   {{
@@ -82,28 +82,28 @@ inline auto x_request (STUN)
     0x00, 0x01,                 // Type (XXX)
     0x00, 0x01,                 // Length
     0x01, 0x00,                 // Value + padding
-    0x00, 0x00
+    0x00, 0x00,
   }};
 }
 
-inline constexpr auto x_message_type (STUN)
+inline constexpr auto msg_type (STUN)
 {
   return turner::stun::binding;
 }
 
-inline constexpr auto x_message_type_value (STUN)
+inline constexpr auto msg_type_v (STUN)
 {
   return turner::stun::binding.type();
 }
 
-inline constexpr auto x_message_length (STUN)
+inline constexpr auto msg_len (STUN)
 {
   return 8;
 }
 
-inline constexpr auto x_transaction_id (STUN)
+inline constexpr auto txn_id (STUN)
 {
-  return STUN::transaction_id_t
+  return turner::stun::protocol_t::transaction_id_t
   {{
     0x00, 0x01, 0x02, 0x03,
     0x04, 0x05, 0x06, 0x07,
