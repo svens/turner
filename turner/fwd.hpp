@@ -97,8 +97,8 @@ class basic_attribute_t;
 // turner/attribute_processor.hpp
 //
 
-template <typename Protocol>
-struct uint32_attribute_processor_t;
+template <typename Protocol> struct string_attribute_processor_t;
+template <typename Protocol> struct uint32_attribute_processor_t;
 
 
 __turner_end

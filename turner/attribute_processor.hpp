@@ -10,6 +10,7 @@
 #include <turner/attribute.hpp>
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>
+#include <string_view>
 
 
 __turner_begin
@@ -45,6 +46,36 @@ struct uint32_attribute_processor_t
     }
     error = make_error_code(errc::unexpected_attribute_length);
     return {};
+  }
+};
+
+
+/**
+ * Generic string type attribute reader/writer.
+ */
+template <typename Protocol>
+struct string_attribute_processor_t
+{
+  /**
+   * Attribute value type.
+   */
+  using value_t = std::string_view;
+
+
+  /**
+   * Read \a attribute value. On failure return default value and set \a error
+   * to code describing failure reason.
+   */
+  static value_t read (
+    const any_message_t<Protocol> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    error.clear();
+    return std::string_view(
+      reinterpret_cast<const char *>(attribute.data()),
+      attribute.length()
+    );
   }
 };
 
