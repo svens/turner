@@ -11,6 +11,7 @@
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>
 #include <string_view>
+#include <utility>
 
 
 __turner_begin
@@ -72,10 +73,41 @@ struct string_attribute_processor_t
     std::error_code &error) noexcept
   {
     error.clear();
-    return std::string_view(
+    return
+    {
       reinterpret_cast<const char *>(attribute.data()),
       attribute.length()
-    );
+    };
+  }
+};
+
+
+/**
+ * Generic byte array type attribute reader/writer.
+ */
+template <typename Protocol>
+struct array_attribute_processor_t
+{
+  /**
+   * Attribute value type.
+   * - first: beginning of array
+   * - second: one byte past end of array
+   */
+  using value_t = std::pair<const uint8_t *, const uint8_t *>;
+
+
+  /**
+   * Read \a attribute value. On failure return default value and set \a error
+   * to code describing failure reason.
+   */
+  static value_t read (
+    const any_message_t<Protocol> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    error.clear();
+    auto data = reinterpret_cast<const uint8_t *>(attribute.data());
+    return {data, data + attribute.length()};
   }
 };
 

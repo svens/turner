@@ -289,6 +289,129 @@ TYPED_TEST(attribute_processor, read_string_empty)
 }
 
 
+// array {{{1
+
+
+TYPED_TEST(attribute_processor, read_array)
+{
+  auto data = msg_with_data(TypeParam(),
+  {
+    0x00, 0x01,         // Type
+    0x00, 0x03,         // Length
+    's', 't', 'r',      // Value + padding
+    0x00,
+  });
+
+  auto &msg = TypeParam::from_wire(data.begin(), data.end())
+    ->as(msg_type(TypeParam()));
+
+  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
+  std::error_code error;
+  auto [ begin, end ] = msg.read(attr, error);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("str", std::string(begin, end));
+
+  EXPECT_NO_THROW(msg.read(attr));
+}
+
+
+TYPED_TEST(attribute_processor, read_array_last_attribute)
+{
+  auto data = msg_with_data(TypeParam(),
+  {
+    0x00, 0x02,         // Type (not expected 0x1)
+    0x00, 0x00,         // Length
+
+    0x00, 0x01,         // Type (expected 0x1)
+    0x00, 0x03,         // Length
+    's', 't', 'r',      // Value + padding
+    0x00,
+  });
+
+  auto &msg = TypeParam::from_wire(data.begin(), data.end())
+    ->as(msg_type(TypeParam()));
+
+  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
+  std::error_code error;
+  auto [ begin, end ] = msg.read(attr, error);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("str", std::string(begin, end));
+
+  EXPECT_NO_THROW(msg.read(attr));
+}
+
+
+TYPED_TEST(attribute_processor, read_array_attribute_not_found)
+{
+  auto data = msg_with_data(TypeParam(),
+  {
+    0x00, 0x02,         // Type (not expected 0x1)
+    0x00, 0x03,         // Length
+    's', 't', 'r',      // Value + padding
+    0x00,
+  });
+
+  auto &msg = TypeParam::from_wire(data.begin(), data.end())
+    ->as(msg_type(TypeParam()));
+
+  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
+  std::error_code error;
+  msg.read(attr, error);
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+
+  EXPECT_THROW(
+    msg.read(attr),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, read_array_length_past_message_end)
+{
+  auto data = msg_with_data(TypeParam(),
+  {
+    0x00, 0x01,         // Type
+    0x00, 0x05,         // Length
+    's', 't', 'r',      // Value + padding
+    0x00,
+  });
+
+  auto &msg = TypeParam::from_wire(data.begin(), data.end())
+    ->as(msg_type(TypeParam()));
+
+  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
+  std::error_code error;
+  msg.read(attr, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+
+  EXPECT_THROW(
+    msg.read(attr),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, read_array_empty)
+{
+  auto data = msg_with_data(TypeParam(),
+  {
+    0x00, 0x01, // Type
+    0x00, 0x00, // Length
+  });
+
+  auto &msg = TypeParam::from_wire(data.begin(), data.end())
+    ->as(msg_type(TypeParam()));
+
+  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
+  std::error_code error;
+  auto [ begin, end ] = msg.read(attr, error);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(begin, end);
+
+  EXPECT_NO_THROW(msg.read(attr));
+}
+
+
 // }}}1
 
 
