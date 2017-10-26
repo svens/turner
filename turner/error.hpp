@@ -7,6 +7,8 @@
 
 #include <turner/config.hpp>
 #include <sal/error.hpp>
+#include <ostream>
+#include <string_view>
 #include <system_error>
 
 
@@ -51,6 +53,79 @@ inline std::error_code make_error_code (errc e) noexcept
 inline std::error_condition make_error_condition (errc e) noexcept
 {
   return std::error_condition(static_cast<int>(e), category());
+}
+
+
+/**
+ * Protocol error code and corresponding message.
+ */
+struct error_t
+{
+  /**
+   * Error code (semantic is defined by specific protocol)
+   */
+  const uint16_t code{};
+
+  /**
+   * Error phase (recommended content is defined by specific protocol)
+   */
+  const std::string_view message{};
+
+
+  constexpr error_t () = default;
+
+
+  /**
+   * Create new error instance.
+   */
+  constexpr error_t (uint16_t code, const std::string_view &message) noexcept
+    : code(code)
+    , message(message)
+  {}
+
+
+  /**
+   * Create new error instance.
+   */
+  template <size_t N>
+  constexpr error_t (uint16_t code, const char (&message)[N]) noexcept
+    : code(code)
+    , message(message, N - 1)
+  {}
+
+
+  /**
+   * Return true if \a this error code is same as \a that.
+   */
+  bool operator== (const error_t &that) const noexcept
+  {
+    return code == that.code;
+  }
+
+
+  /**
+   * Return true if \a this error code is differnt that \a that.
+   */
+  bool operator!= (const error_t &that) const noexcept
+  {
+    return code != that.code;
+  }
+};
+
+
+/**
+ * Success code
+ * \note This is not part of STUN/TURN/MSTURN protocols. Used only internally
+ */
+static __turner_inline_var constexpr const error_t success{0, "Success"};
+
+
+/**
+ * Print into \a stream error code in format 'code message'.
+ */
+inline std::ostream &operator<< (std::ostream &stream, const error_t &error)
+{
+  return (stream << error.code << ' ' << error.message);
 }
 
 

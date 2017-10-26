@@ -56,4 +56,21 @@ TEST_P(errc, make_error_code)
 }
 
 
+TEST(error, success)
+{
+  EXPECT_EQ(0U, turner::success.code);
+  EXPECT_EQ("Success", turner::success.message);
+
+  constexpr const turner::error_t ok{0, "Ok"};
+  EXPECT_EQ(ok, turner::success);
+
+  constexpr const turner::error_t fail{500, "Fail"};
+  EXPECT_NE(fail, turner::success);
+
+  std::ostringstream oss;
+  oss << turner::success;
+  EXPECT_EQ("0 Success", oss.str());
+}
+
+
 }} // namespace turner_test
