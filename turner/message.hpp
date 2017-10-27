@@ -66,7 +66,7 @@ public:
 
   /**
    * Return message size as claimed by message length field. It does not
-   * include message header length nor possible padding.
+   * include message header length.
    */
   uint16_t length () const noexcept
   {
