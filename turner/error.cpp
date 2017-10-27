@@ -27,6 +27,8 @@ inline constexpr const char *to_message (errc e) noexcept
       return "attribute not found";
     case errc::unexpected_attribute_length:
       return "unexpected attribute length";
+    case errc::unexpected_address_family:
+      return "unexpected address family";
   }
   return "unknown error";
 }

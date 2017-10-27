@@ -35,7 +35,8 @@ INSTANTIATE_TEST_CASE_P(error, errc,
     turner::errc::invalid_message_cookie,
     turner::errc::unexpected_message_type,
     turner::errc::attribute_not_found,
-    turner::errc::unexpected_attribute_length
+    turner::errc::unexpected_attribute_length,
+    turner::errc::unexpected_address_family
   )
 );
 

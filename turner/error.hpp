@@ -28,6 +28,7 @@ enum class errc
   unexpected_message_type,
   attribute_not_found,
   unexpected_attribute_length,
+  unexpected_address_family,
 };
 
 

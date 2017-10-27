@@ -11,6 +11,7 @@
 #include <turner/error.hpp>
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>
+#include <sal/net/ip/address.hpp>
 #include <string_view>
 #include <utility>
 
@@ -148,6 +149,86 @@ struct error_attribute_processor_t
     return {};
   }
 };
+
+
+/**
+ * Generic address type attribute reader/writer.
+ */
+template <typename Protocol>
+struct address_attribute_processor_t
+{
+  /**
+   * Attribute value type.
+   * - first: address
+   * - second: port in host byte order
+   */
+  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+
+
+  /**
+   * Read \a attribute value. On failure return default value and set \a error
+   * to code describing failure reason.
+   */
+  static value_t read (
+    const any_message_t<Protocol> &,
+    const any_attribute_t &attribute,
+    std::error_code &error
+  ) noexcept;
+};
+
+
+template <typename Protocol>
+typename address_attribute_processor_t<Protocol>::value_t
+  address_attribute_processor_t<Protocol>::read (
+    const any_message_t<Protocol> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+{
+  const auto family = attribute.data()[1];
+  if (family == 0x01)
+  {
+    if (attribute.length() == 8)
+    {
+      error.clear();
+      return
+      {
+        sal::net::ip::make_address_v4(
+          *reinterpret_cast<const sal::net::ip::address_v4_t::bytes_t *>(
+            attribute.data() + 4
+          )
+        ),
+        sal::network_to_native_byte_order(
+          reinterpret_cast<const uint16_t *>(attribute.data())[1]
+        )
+      };
+    }
+    error = make_error_code(errc::unexpected_attribute_length);
+  }
+  else if (family == 0x02)
+  {
+    if (attribute.length() == 20)
+    {
+      error.clear();
+      return
+      {
+        sal::net::ip::make_address_v6(
+          *reinterpret_cast<const sal::net::ip::address_v6_t::bytes_t *>(
+            attribute.data() + 4
+          )
+        ),
+        sal::network_to_native_byte_order(
+          reinterpret_cast<const uint16_t *>(attribute.data())[1]
+        )
+      };
+    }
+    error = make_error_code(errc::unexpected_attribute_length);
+  }
+  else
+  {
+    error = make_error_code(errc::unexpected_address_family);
+  }
+  return {};
+}
 
 
 __turner_end
