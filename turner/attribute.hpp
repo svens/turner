@@ -90,7 +90,7 @@ private:
  * and write it's value using \a AttributeProcessor.
  */
 template <typename Protocol, uint16_t Attribute, typename AttributeProcessor>
-class basic_attribute_t
+class basic_attribute_type_t
 {
 public:
 

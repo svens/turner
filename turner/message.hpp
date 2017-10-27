@@ -170,7 +170,7 @@ public:
    */
   template <uint16_t Attribute, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
-    basic_attribute_t<Protocol, Attribute, AttributeProcessor>,
+    basic_attribute_type_t<Protocol, Attribute, AttributeProcessor>,
     std::error_code &error
   ) const noexcept;
 
@@ -181,7 +181,7 @@ public:
    */
   template <uint16_t Attribute, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
-    basic_attribute_t<Protocol, Attribute, AttributeProcessor> attribute) const
+    basic_attribute_type_t<Protocol, Attribute, AttributeProcessor> attribute) const
   {
     return read(attribute, sal::throw_on_error("basic_message::read"));
   }
@@ -208,7 +208,7 @@ private:
 template <typename Protocol, uint16_t Message>
 template <uint16_t Attribute, typename AttributeProcessor>
 typename AttributeProcessor::value_t basic_message_t<Protocol, Message>::read (
-  basic_attribute_t<Protocol, Attribute, AttributeProcessor>,
+  basic_attribute_type_t<Protocol, Attribute, AttributeProcessor>,
   std::error_code &error) const noexcept
 {
   for (auto it = begin(), e = end();  it < e;  it = it->next())

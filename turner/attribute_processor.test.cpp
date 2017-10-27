@@ -32,7 +32,7 @@ template <
   typename Protocol,
   template <typename> typename AttributeProcessor
 >
-using attr_t = turner::basic_attribute_t<
+using attr_t = turner::basic_attribute_type_t<
   typename Protocol::traits_t,
   0x01,
   AttributeProcessor<typename Protocol::traits_t>
