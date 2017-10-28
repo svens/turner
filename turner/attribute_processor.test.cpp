@@ -1,6 +1,4 @@
 #include <turner/common.test.hpp>
-#include <turner/attribute.hpp>
-#include <turner/attribute_processor.hpp>
 
 
 namespace turner_test { namespace {

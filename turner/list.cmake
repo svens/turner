@@ -10,6 +10,7 @@ list(APPEND turner
 
   # specific protocol headers
   turner/stun.hpp
+  turner/stun.cpp
 )
 
 list(APPEND turner_unittests
@@ -20,4 +21,7 @@ list(APPEND turner_unittests
   turner/message.test.cpp
   turner/message_type.test.cpp
   turner/protocol.test.cpp
+
+  # STUN tests
+  turner/stun.test.cpp
 )
