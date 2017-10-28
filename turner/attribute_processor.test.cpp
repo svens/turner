@@ -12,19 +12,26 @@ using attribute_processor = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(attribute_processor, protocol_types);
 
 
-template <typename Protocol>
-auto msg_with_data (Protocol, std::initializer_list<uint8_t> data)
+template <typename Protocol, size_t N>
+auto wire_data (Protocol, const char (&data)[N])
 {
   // get message and remove existing body
   auto raw = msg_data(Protocol());
   raw.resize(Protocol::traits_t::header_size);
 
   // append new body and update message length
-  raw.insert(raw.end(), data.begin(), data.end());
+  raw.insert(raw.end(), data, data + N - 1);
   reinterpret_cast<uint16_t *>(&raw[0])[1] =
-    sal::native_to_network_byte_order((uint16_t)data.size());
+    sal::native_to_network_byte_order((uint16_t)(N - 1));
 
   return raw;
+}
+
+
+template <typename Protocol, typename Data>
+inline auto &from_wire (Protocol p, const Data &d)
+{
+  return Protocol::from_wire(d.begin(), d.end())->as(msg_type(p));
 }
 
 
@@ -44,16 +51,12 @@ using attr_t = turner::basic_attribute_type_t<
 
 TYPED_TEST(attribute_processor, read_uint32)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01, // Type
-    0x00, 0x04, // Length
-    0x12, 0x34, // Value
-    0x56, 0x78,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x04"          // Length
+    "\x12\x34\x56\x78"  // Value
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
@@ -67,19 +70,15 @@ TYPED_TEST(attribute_processor, read_uint32)
 
 TYPED_TEST(attribute_processor, read_uint32_last_attribute)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02, // Type (not expected 0x1)
-    0x00, 0x00, // Length
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
 
-    0x00, 0x01, // Type (expected 0x1)
-    0x00, 0x04, // Length
-    0x12, 0x34, // Value
-    0x56, 0x78,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+    "\x00\x01"          // Type (expected 0x1)
+    "\x00\x04"          // Length
+    "\x12\x34\x56\x78"  // Value
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
@@ -93,16 +92,12 @@ TYPED_TEST(attribute_processor, read_uint32_last_attribute)
 
 TYPED_TEST(attribute_processor, read_uint32_attribute_not_found)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02, // Type (not expected 0x1)
-    0x00, 0x04, // Length
-    0x12, 0x34, // Value
-    0x56, 0x78,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\00\x02"           // Type (not expected 0x1)
+    "\00\x04"           // Length
+    "\12\x34\56\x78"    // Value
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
@@ -118,16 +113,12 @@ TYPED_TEST(attribute_processor, read_uint32_attribute_not_found)
 
 TYPED_TEST(attribute_processor, read_uint32_length_past_message_end)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01, // Type
-    0x00, 0x08, // Length (past message)
-    0x12, 0x34, // Value
-    0x56, 0x78,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\00\x01"           // Type
+    "\00\x08"           // Length (past message)
+    "\12\x34\56\x78"    // Value
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
@@ -143,16 +134,12 @@ TYPED_TEST(attribute_processor, read_uint32_length_past_message_end)
 
 TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01, // Type
-    0x00, 0x03, // Length (!= sizeof(uint32_t))
-    0x12, 0x34, // Value
-    0x56, 0x78,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\00\x01"           // Type
+    "\00\x03"           // Length (!= sizeof(uint32_t))
+    "\12\x34\56\x78"    // Value
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
@@ -171,16 +158,12 @@ TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
 
 TYPED_TEST(attribute_processor, read_string)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x03,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
@@ -194,19 +177,15 @@ TYPED_TEST(attribute_processor, read_string)
 
 TYPED_TEST(attribute_processor, read_string_last_attribute)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,         // Type (not expected 0x1)
-    0x00, 0x00,         // Length
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x00"  // Length
 
-    0x00, 0x01,         // Type (expected 0x1)
-    0x00, 0x03,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+    "\x00\x01"  // Type (expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
@@ -220,16 +199,12 @@ TYPED_TEST(attribute_processor, read_string_last_attribute)
 
 TYPED_TEST(attribute_processor, read_string_attribute_not_found)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,         // Type (not expected 0x1)
-    0x00, 0x03,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
@@ -245,16 +220,12 @@ TYPED_TEST(attribute_processor, read_string_attribute_not_found)
 
 TYPED_TEST(attribute_processor, read_string_length_past_message_end)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x05,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x05"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
@@ -270,14 +241,11 @@ TYPED_TEST(attribute_processor, read_string_length_past_message_end)
 
 TYPED_TEST(attribute_processor, read_string_empty)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01, // Type
-    0x00, 0x00, // Length
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01" // Type
+    "\x00\x00" // Length
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
@@ -294,16 +262,12 @@ TYPED_TEST(attribute_processor, read_string_empty)
 
 TYPED_TEST(attribute_processor, read_array)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x03,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
@@ -317,19 +281,15 @@ TYPED_TEST(attribute_processor, read_array)
 
 TYPED_TEST(attribute_processor, read_array_last_attribute)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,         // Type (not expected 0x1)
-    0x00, 0x00,         // Length
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x00"  // Length
 
-    0x00, 0x01,         // Type (expected 0x1)
-    0x00, 0x03,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+    "\x00\x01"  // Type (expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
@@ -343,16 +303,12 @@ TYPED_TEST(attribute_processor, read_array_last_attribute)
 
 TYPED_TEST(attribute_processor, read_array_attribute_not_found)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,         // Type (not expected 0x1)
-    0x00, 0x03,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
@@ -368,16 +324,12 @@ TYPED_TEST(attribute_processor, read_array_attribute_not_found)
 
 TYPED_TEST(attribute_processor, read_array_length_past_message_end)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x05,         // Length
-    's', 't', 'r',      // Value + padding
-    0x00,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x05"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
@@ -393,14 +345,11 @@ TYPED_TEST(attribute_processor, read_array_length_past_message_end)
 
 TYPED_TEST(attribute_processor, read_array_empty)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01, // Type
-    0x00, 0x00, // Length
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x00"  // Length
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
@@ -420,18 +369,13 @@ __turner_inline_var constexpr const turner::error_t expected_error{300, "Text"};
 
 TYPED_TEST(attribute_processor, read_error)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x07,         // Length
-
-    0x00, 0x00, 0x03, 0x00, // Value
-    'M', 's', 'g',
-    0xab
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x07"          // Length
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
@@ -446,21 +390,16 @@ TYPED_TEST(attribute_processor, read_error)
 
 TYPED_TEST(attribute_processor, read_error_last_attribute)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,         // Type (not expected 0x1)
-    0x00, 0x00,         // Length
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
 
-    0x00, 0x01,         // Type (expected 0x1)
-    0x00, 0x07,         // Length
-
-    0x00, 0x00, 0x03, 0x00, // Value
-    'M', 's', 'g',
-    0xab
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+    "\x00\x01"          // Type (expected 0x1)
+    "\x00\x07"          // Length
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
@@ -475,18 +414,13 @@ TYPED_TEST(attribute_processor, read_error_last_attribute)
 
 TYPED_TEST(attribute_processor, read_error_attribute_not_found)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,         // Type (not expected 0x1)
-    0x00, 0x07,         // Length
-
-    0x00, 0x00, 0x03, 0x00, // Value
-    'M', 's', 'g',
-    0xab
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x07"          // Length
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
@@ -502,18 +436,13 @@ TYPED_TEST(attribute_processor, read_error_attribute_not_found)
 
 TYPED_TEST(attribute_processor, read_error_length_past_message_end)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x09,         // Length (past message)
-
-    0x00, 0x00, 0x03, 0x00, // Value
-    'M', 's', 'g',
-    0xab
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x09"          // Length (past message)
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
@@ -529,14 +458,11 @@ TYPED_TEST(attribute_processor, read_error_length_past_message_end)
 
 TYPED_TEST(attribute_processor, read_error_unexpected_attribute_length)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,         // Type
-    0x00, 0x00,         // Length (need at least 4B)
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x00"  // Length (need at least 4B)
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
@@ -564,17 +490,14 @@ __turner_inline_var constexpr const uint16_t expected_port = 0x1234;
 
 TYPED_TEST(attribute_processor, read_address_v4)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x08,                 // Length
-    0x00, 0x01,                 // Value (v4 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv4
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -589,20 +512,17 @@ TYPED_TEST(attribute_processor, read_address_v4)
 
 TYPED_TEST(attribute_processor, read_address_v6)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x14,                 // Length
-    0x00, 0x02,                 // Value (v6 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv6
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x0a, 0x0b, 0x0c,
-    0x0d, 0x0e, 0x0f, 0x10,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x14"          // Length
+    "\x00\x02"          // Value (v6 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -617,20 +537,17 @@ TYPED_TEST(attribute_processor, read_address_v6)
 
 TYPED_TEST(attribute_processor, read_address_v4_last_attribute)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,                 // Type (not expected 0x1)
-    0x00, 0x00,                 // Length
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
 
-    0x00, 0x01,                 // Type
-    0x00, 0x08,                 // Length
-    0x00, 0x01,                 // Value (v4 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv4
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -645,23 +562,20 @@ TYPED_TEST(attribute_processor, read_address_v4_last_attribute)
 
 TYPED_TEST(attribute_processor, read_address_v6_last_attribute)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,                 // Type (not expected 0x1)
-    0x00, 0x00,                 // Length
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
 
-    0x00, 0x01,                 // Type
-    0x00, 0x14,                 // Length
-    0x00, 0x02,                 // Value (v6 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv6
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x0a, 0x0b, 0x0c,
-    0x0d, 0x0e, 0x0f, 0x10,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+    "\x00\x01"          // Type
+    "\x00\x14"          // Length
+    "\x00\x02"          // Value (v6 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -676,17 +590,14 @@ TYPED_TEST(attribute_processor, read_address_v6_last_attribute)
 
 TYPED_TEST(attribute_processor, read_address_attribute_not_found)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x02,                 // Type (not expected 0x1)
-    0x00, 0x08,                 // Length
-    0x00, 0x01,                 // Value (v4 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv4
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -702,17 +613,14 @@ TYPED_TEST(attribute_processor, read_address_attribute_not_found)
 
 TYPED_TEST(attribute_processor, read_address_v4_length_past_message_end)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x09,                 // Length
-    0x00, 0x01,                 // Value (v4 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv4
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x09"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -728,20 +636,17 @@ TYPED_TEST(attribute_processor, read_address_v4_length_past_message_end)
 
 TYPED_TEST(attribute_processor, read_address_v6_length_past_message_end)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x15,                 // Length
-    0x00, 0x02,                 // Value (v6 address)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv6
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x0a, 0x0b, 0x0c,
-    0x0d, 0x0e, 0x0f, 0x10,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x15"          // Length
+    "\x00\x02"          // Value (v6 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -757,20 +662,17 @@ TYPED_TEST(attribute_processor, read_address_v6_length_past_message_end)
 
 TYPED_TEST(attribute_processor, read_address_v4_unexpected_attribute_length)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x14,                 // Length
-    0x00, 0x01,                 // Value (claimed v4 but have v6)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv6
-    0x05, 0x06, 0x07, 0x08,
-    0x09, 0x0a, 0x0b, 0x0c,
-    0x0d, 0x0e, 0x0f, 0x10,
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x14"          // Length
+    "\x00\x01"          // Value (claimed v4 but have v6)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -786,17 +688,14 @@ TYPED_TEST(attribute_processor, read_address_v4_unexpected_attribute_length)
 
 TYPED_TEST(attribute_processor, read_address_v6_unexpected_attribute_length)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x08,                 // Length
-    0x00, 0x02,                 // Value (claimed v6 but have v4)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv4
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x02"          // Value (claimed v6 but have v4)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
@@ -812,17 +711,14 @@ TYPED_TEST(attribute_processor, read_address_v6_unexpected_attribute_length)
 
 TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
 {
-  auto data = msg_with_data(TypeParam(),
-  {
-    0x00, 0x01,                 // Type
-    0x00, 0x08,                 // Length
-    0x00, 0x99,                 // Value (unexpected family)
-    0x12, 0x34,                 // Port
-    0x01, 0x02, 0x03, 0x04,     // IPv4
-  });
-
-  auto &msg = TypeParam::from_wire(data.begin(), data.end())
-    ->as(msg_type(TypeParam()));
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x99"          // Value (unexpected family)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = from_wire(TypeParam(), data);
 
   attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
