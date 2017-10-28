@@ -2,7 +2,7 @@
 
 /**
  * \file turner/stun.hpp
- * STUN protocol (RFC5389)
+ * STUN protocol (https://tools.ietf.org/html/rfc5389)
  */
 
 
@@ -82,7 +82,7 @@ inline constexpr void operator>> (protocol_t, const char *&name) noexcept
 /**
  * STUN protocol instance.
  */
-static __turner_inline_var constexpr const protocol_t protocol{};
+__turner_inline_var constexpr const protocol_t protocol{};
 
 
 /**
@@ -100,7 +100,7 @@ using binding_t = protocol_t::message_type_t<0x001>;
 /**
  * Instance of STUN Binding message type.
  */
-static __turner_inline_var constexpr const binding_t binding{};
+__turner_inline_var constexpr const binding_t binding{};
 
 /**
  * STUN Binding success response message type
@@ -110,7 +110,7 @@ using binding_success_t = binding_t::success_response_t;
 /**
  * Instance of STUN Binding success resposen message type.
  */
-static __turner_inline_var constexpr const binding_success_t binding_success;
+__turner_inline_var constexpr const binding_success_t binding_success;
 
 // \}
 
@@ -200,6 +200,9 @@ using xor_address_type_t = basic_attribute_type_t<
  * \defgroup STUN_attributes STUN attributes
  * \{
  *
+ * \note This library does not implement FINGERPRINT mechanism
+ * (https://tools.ietf.org/html/rfc5389#section-8)
+ *
  * \see https://tools.ietf.org/html/rfc5389#section-15
  */
 
@@ -211,7 +214,7 @@ using mapped_address_t = __bits::address_type_t<0x0001>;
 /**
  * Instance of STUN MAPPED-ADDRESS (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
-static __turner_inline_var constexpr const mapped_address_t mapped_address;
+__turner_inline_var constexpr const mapped_address_t mapped_address;
 
 /**
  * STUN USERNAME type (https://tools.ietf.org/html/rfc5389#section-15.3)
@@ -221,7 +224,7 @@ using username_t = __bits::string_type_t<0x0006>;
 /**
  * Instance of STUN USERNAME (https://tools.ietf.org/html/rfc5389#section-15.3)
  */
-static __turner_inline_var constexpr const username_t username;
+__turner_inline_var constexpr const username_t username;
 
 // 0x0008 message-integrity
 
@@ -233,7 +236,7 @@ using error_code_t = __bits::error_type_t<0x0009>;
 /**
  * Instance of STUN ERROR-CODE (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
-static __turner_inline_var constexpr const error_code_t error_code;
+__turner_inline_var constexpr const error_code_t error_code;
 
 /**
  * STUN REALM type (https://tools.ietf.org/html/rfc5389#section-15.7)
@@ -243,7 +246,7 @@ using realm_t = __bits::string_type_t<0x0014>;
 /**
  * Instance of STUN REALM type (https://tools.ietf.org/html/rfc5389#section-15.7)
  */
-static __turner_inline_var constexpr const realm_t realm;
+__turner_inline_var constexpr const realm_t realm;
 
 /**
  * STUN NONCE type (https://tools.ietf.org/html/rfc5389#section-15.8)
@@ -253,7 +256,7 @@ using nonce_t = __bits::array_type_t<0x0015>;
 /**
  * Instance of STUN NONCE (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
-static __turner_inline_var constexpr const nonce_t nonce;
+__turner_inline_var constexpr const nonce_t nonce;
 
 /**
  * STUN XOR-MAPPED-ADDRESS type (https://tools.ietf.org/html/rfc5389#section-15.2)
@@ -263,7 +266,7 @@ using xor_mapped_address_t = __bits::xor_address_type_t<0x0020>;
 /**
  * Instance of STUN XOR-MAPPED-ADDRESS (https://tools.ietf.org/html/rfc5389#section-15.2)
  */
-static __turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
+__turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
 
 /**
  * STUN SOFTWARE type (https://tools.ietf.org/html/rfc5389#section-15.10)
@@ -273,7 +276,7 @@ using software_t = __bits::string_type_t<0x8022>;
 /**
  * Instance of STUN SOFTWARE (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
-static __turner_inline_var constexpr const software_t software;
+__turner_inline_var constexpr const software_t software;
 
 /**
  * STUN ALTERNATE-SERVER type (https://tools.ietf.org/html/rfc5389#section-15.11)
@@ -283,9 +286,60 @@ using alternate_server_t = __bits::address_type_t<0x8023>;
 /**
  * Instance of STUN ALTERNATE-SERVER (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
-static __turner_inline_var constexpr const alternate_server_t alternate_server;
+__turner_inline_var constexpr const alternate_server_t alternate_server;
 
-// 0x8028 fingerprint
+/// \}
+
+
+/**
+ * \defgroup STUN_errors STUN errors
+ * \{
+ *
+ * \see https://tools.ietf.org/html/rfc5389#section-15.6
+ */
+
+/**
+ * Client should contact an alternate server for this request.
+ */
+__turner_inline_var constexpr const error_t try_alternate{
+  300, "Try Alternate"
+};
+
+/**
+ * The request was malformed.
+ */
+__turner_inline_var constexpr const error_t bad_request{
+  400, "Bad Request"
+};
+
+/**
+ * The request did not contain the correct credentials to proceed.
+ */
+__turner_inline_var constexpr const error_t unauthorized{
+  401, "Unauthorized"
+};
+
+/**
+ * The server received a STUN packet containing comprehension-required
+ * attribute that it did not understand.
+ */
+__turner_inline_var constexpr const error_t unknown_attribute{
+  420, "Unknown Attribute"
+};
+
+/**
+ * The NONCE used by the client was no longer valid.
+ */
+__turner_inline_var constexpr const error_t stale_nonce{
+  438, "Stale Nonce"
+};
+
+/**
+ * The server has suffered a temporary error. The client should try again.
+ */
+__turner_inline_var constexpr const error_t server_error{
+  500, "Server Error"
+};
 
 /// \}
 
