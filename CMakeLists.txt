@@ -75,25 +75,6 @@ include(turner/list.cmake)
 add_library(turner ${turner})
 add_dependencies(turner sal)
 
-# XXX: turn off client/server until needed
-# # turner_client executable
-# include(client/list.cmake)
-# add_executable(turner_client ${turner_client})
-# target_link_libraries(turner_client
-#   turner
-#   ${SAL_LIB}
-#   ${TURNER_DEPS_LIBS}
-# )
-#
-# # turner_server executable
-# include(server/list.cmake)
-# add_executable(turner_server ${turner_server})
-# target_link_libraries(turner_server
-#   turner
-#   ${SAL_LIB}
-#   ${TURNER_DEPS_LIBS}
-# )
-
 
 # Testing {{{1
 if(UNITTESTS)

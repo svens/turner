@@ -1,11 +1,21 @@
-# STUN/TURN client/server
+# STUN/TURN/MSTURN
+
+[STUN]: https://tools.ietf.org/html/rfc5389
+[TURN]: https://tools.ietf.org/html/rfc5389
+[MSTURN]: https://msdn.microsoft.com/en-us/library/office/cc431507(v=office.12).aspx
+
+[STUN]/[TURN]/[MSTURN] parser/generator
 
 [![Build Status](https://travis-ci.org/svens/turner.svg?branch=master)](https://travis-ci.org/svens/turner)
 [![Build Status](https://ci.appveyor.com/api/projects/status/76xm7ukgm9enegjx/branch/master?svg=true)](https://ci.appveyor.com/project/svens/turner/branch/master)
 [![Coverage](https://coveralls.io/repos/github/svens/turner/badge.svg?branch=master)](https://coveralls.io/github/svens/turner?branch=master)
 
-Turner is multiplatform (Linux, MacOS, Windows) STUN/TURN protocol based
-relay.
+
+## Documentation
+
+  * [STUN]
+  * [TURN]
+  * [MSTURN]
 
 
 ## Compiling and installing
@@ -21,8 +31,4 @@ The source tree is organised as follows:
     .                   root directory
     |-- cmake           CMake helpers
     |-- scripts         helper scripts
-    |-- turner          protocol parser library
-    |   |-- client        embeddable client
-    |   `-- server        embeddable server
-    |-- client          client executable
-    `-- server          server executable
+    `-- turner          protocol parser library
