@@ -15,19 +15,19 @@ __turner_begin
 
 
 /**
- * Generic \a Protocol message, not tied to any message type.
+ * Generic protocol message, not tied to any concrete message type.
  *
  * It can be used to parse STUN, TURN or MSTURN protocol messages only as it's
  * header layout depends on corresponding protocol header layout.
  *
  * This type is not meant to be instantiated directly but from
- * basic_protocol_t<Protocol>::from_wire() that does message validation. On
- * success, returned pointed object does not have any own storage. It is
+ * basic_protocol_t<ProtocolTraits>::from_wire() that does message validation.
+ * On success, returned pointed object does not have any own storage. It is
  * overlayed on top of memory range containing raw network formatted message
- * and all getter methods operate on fields offset relative from this and
- * described by \a Protocol.
+ * and all getter methods operate on fields offset relative from \a this and
+ * described by \a ProtocolTraits.
  */
-template <typename Protocol>
+template <typename ProtocolTraits>
 class any_message_t
 {
 public:
@@ -35,11 +35,11 @@ public:
   /**
    * Protocol class describing raw network message format.
    */
-  using protocol_t = basic_protocol_t<Protocol>;
+  using protocol_t = basic_protocol_t<ProtocolTraits>;
 
 
   /**
-   * Per protocol unique cookie type. It is additional helper to detect
+   * Per protocol magic cookie type. It is additional helper to detect
    * network message protocol if multiple protocols are multiplexed on single
    * channel.
    */
@@ -54,7 +54,7 @@ public:
 
   /**
    * Return message type code in native byte order. Code values are defined by
-   * protocol documentation.
+   * concrete protocol documentation.
    */
   uint16_t type () const noexcept
   {
@@ -82,7 +82,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_ptr(this) + Protocol::cookie_offset
+      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
     );
   }
 
@@ -93,38 +93,39 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_ptr(this) + Protocol::transaction_id_offset
+      __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset
     );
   }
 
 
   /**
-   * Return specialized instance from \a this generic message if underlying
-   * raw data has expected \a Message type. On different type, return nullptr.
+   * Return concrete message instance from \a this generic message if
+   * underlying raw data has expected \a MessageType. On different type,
+   * return nullptr.
    */
-  template <uint16_t Message>
-  const basic_message_t<Protocol, Message> *try_as (
-    basic_message_type_t<Protocol, Message>) const noexcept
+  template <uint16_t MessageType>
+  const basic_message_t<ProtocolTraits, MessageType> *try_as (
+    basic_message_type_t<ProtocolTraits, MessageType>) const noexcept
   {
-    return type() == Message
-      ? reinterpret_cast<const basic_message_t<Protocol, Message> *>(this)
+    return type() == MessageType
+      ? reinterpret_cast<const basic_message_t<ProtocolTraits, MessageType> *>(this)
       : nullptr;
   }
 
 
   /**
-   * Return specialized instance from \a this generic message if underlying
-   * raw data has expected \a Message type.
+   * Return concrete message instance from \a this generic message if
+   * underlying raw data has expected \a MessageType.
    *
-   * \throws std::system_error if \a this message type is not \a Message type.
+   * \throws std::system_error if \a this message type is not \a MessageType.
    */
-  template <uint16_t Message>
-  const basic_message_t<Protocol, Message> &as (
-    basic_message_type_t<Protocol, Message>) const
+  template <uint16_t MessageType>
+  const basic_message_t<ProtocolTraits, MessageType> &as (
+    basic_message_type_t<ProtocolTraits, MessageType>) const
   {
-    if (type() == Message)
+    if (type() == MessageType)
     {
-      return *reinterpret_cast<const basic_message_t<Protocol, Message> *>(this);
+      return *reinterpret_cast<const basic_message_t<ProtocolTraits, MessageType> *>(this);
     }
     unexpected_message_type("any_message::as");
   }
@@ -149,39 +150,47 @@ private:
 
 
 /**
- * Specialized \a Protocol \a Message.
+ * Concrete protocol's message.
  */
-template <typename Protocol, uint16_t Message>
+template <typename ProtocolTraits, uint16_t MessageType>
 class basic_message_t
-  : public any_message_t<Protocol>
+  : public any_message_t<ProtocolTraits>
 {
 public:
 
   /**
-   * basic_message_type_t instance for this \a Message.
+   * Message type.
    */
-  static __turner_inline_var constexpr const basic_message_type_t<Protocol, Message>
-    message_type{};
+  using message_type_t = basic_message_type_t<ProtocolTraits, MessageType>;
 
 
   /**
-   * Decode and return \a Attribute value from message. On failure set \a
+   * Return message type.
+   */
+  static constexpr message_type_t type () noexcept
+  {
+    return {};
+  }
+
+
+  /**
+   * Decode and return \a AttributeType value from message. On failure set \a
    * error to code describing failure and return default value.
    */
-  template <uint16_t Attribute, typename AttributeProcessor>
+  template <uint16_t AttributeType, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
-    basic_attribute_type_t<Protocol, Attribute, AttributeProcessor>,
+    basic_attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error
   ) const noexcept;
 
 
   /**
-   * Decode and return \a Attribute value from message. On failure throw
+   * Decode and return \a AttributeType value from message. On failure throw
    * \a std::system_error.
    */
-  template <uint16_t Attribute, typename AttributeProcessor>
+  template <uint16_t AttributeType, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
-    basic_attribute_type_t<Protocol, Attribute, AttributeProcessor> attribute) const
+    basic_attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute) const
   {
     return read(attribute, sal::throw_on_error("basic_message::read"));
   }
@@ -192,28 +201,29 @@ private:
   const any_attribute_t *begin () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + Protocol::header_size
+      __bits::to_ptr(this) + ProtocolTraits::header_size
     );
   }
 
   const any_attribute_t *end () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + Protocol::header_size + this->length()
+      __bits::to_ptr(this) + ProtocolTraits::header_size + this->length()
     );
   }
 };
 
 
-template <typename Protocol, uint16_t Message>
-template <uint16_t Attribute, typename AttributeProcessor>
-typename AttributeProcessor::value_t basic_message_t<Protocol, Message>::read (
-  basic_attribute_type_t<Protocol, Attribute, AttributeProcessor>,
-  std::error_code &error) const noexcept
+template <typename ProtocolTraits, uint16_t MessageType>
+template <uint16_t AttributeType, typename AttributeProcessor>
+typename AttributeProcessor::value_t
+  basic_message_t<ProtocolTraits, MessageType>::read (
+    basic_attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+    std::error_code &error) const noexcept
 {
   for (auto it = begin(), e = end();  it < e;  it = it->next())
   {
-    if (it->type() == Attribute)
+    if (it->type() == AttributeType)
     {
       if (it->data() + it->length() <= __bits::to_ptr(e))
       {

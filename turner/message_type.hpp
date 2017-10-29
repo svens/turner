@@ -13,37 +13,42 @@ __turner_begin
 
 
 /**
- * Define \a Protocol \a Message.
+ * Define protocol \a MessageType.
  *
- * \a Message value must follow rules defined by RFC5389, section 6. To define
- * message's responses, there are conveniency typedefs:
+ * \a MessageType value must follow rules defined by RFC5389, section 6. To
+ * define message's responses, there are conveniency typedefs:
  *  - basic_message_type_t::success_response_t
  *  - basic_message_type_t::error_response_t
  *  - basic_message_type_t::indication_t
  *
- * Although application code might need to know specific types, it is more
+ * Although application scope might need to know specific types, it is more
  * convenient to use instances of basic_message_type_t. To create such
- * instances, there are static methods:
- *  - protocol_t::message_type() to create message type that has no class
+ * instances, there are static methods provided:
+ *  - protocol_t::message_type() to create message type that has no request
+ *    class
  *  - basic_message_type_t::success_response() to create message type instance
  *    corresponding to this message type success response
  *  - basic_message_type_t::error_response() to create message type instance
  *    corresponding to this message type error response
  *  - basic_message_type_t::indication() to create message type instance
  *    corresponding to this message type indication
+ *
+ * \see https://tools.ietf.org/html/rfc5389#section-6
  */
-template <typename Protocol, uint16_t Message>
+template <typename ProtocolTraits, uint16_t MessageType>
 class basic_message_type_t
 {
 public:
 
-  static_assert((Message & __bits::method_mask) == 0, "invalid message type");
+  static_assert((MessageType & __bits::method_mask) == 0,
+    "invalid message type"
+  );
 
 
   /**
    * Protocol that defines this message type.
    */
-  using protocol_t = basic_protocol_t<Protocol>;
+  using protocol_t = basic_protocol_t<ProtocolTraits>;
 
 
   /**
@@ -51,17 +56,17 @@ public:
    */
   static constexpr uint16_t type () noexcept
   {
-    return Message;
+    return MessageType;
   }
 
 
   /**
-   * Return \a Message name (if defined).
+   * Return \a MessageType name (if defined).
    *
-   * \a Message name is defined, if
-   * \c "void operator>> (basic_message_type<Protocol, Message>, const char *&name)"
+   * \a MessageType name is defined, if
+   * \c "void operator>> (basic_message_type<ProtocolTraits, MessageType>, const char *&name)"
    * is provided. On operator invocation, name should be assigned to
-   * \a Message name.
+   * \a MessageType name.
    *
    * If this operator is not provided, nullptr is returned.
    */
@@ -81,12 +86,12 @@ public:
 
 
   /**
-   * Write to \a stream \a Message name.
+   * Write to \a stream \a MessageType name.
    *
    * Depending on which name getter operators are provided, name is formatted
    * as follows:
    *  - name(): write returned string
-   *  - if no name() but have protocol_t::name(): write as "Protocol:type"
+   *  - if no name() but have protocol_t::name(): write as "ProtocolTraits:type"
    *  - if no name() and no protocol_t::name(): write as "type"
    */
   friend std::ostream &operator<< (std::ostream &stream, basic_message_type_t)
@@ -97,25 +102,25 @@ public:
     }
     else if constexpr (protocol_t::name() != nullptr)
     {
-      return (stream << protocol_t::name() << ':' << Message);
+      return (stream << protocol_t::name() << ':' << MessageType);
     }
     else
     {
-      return (stream << Message);
+      return (stream << MessageType);
     }
   }
 
 
   /**
-   * Success response for \a Message.
+   * Success response for \a MessageType.
    */
-  using success_response_t = basic_message_type_t<Protocol,
-    Message | __bits::success_response_class
+  using success_response_t = basic_message_type_t<ProtocolTraits,
+    MessageType | __bits::success_response_class
   >;
 
 
   /**
-   * Return instance of \a Message success response.
+   * Return instance of \a MessageType success response.
    */
   static constexpr success_response_t success_response () noexcept
   {
@@ -125,15 +130,15 @@ public:
 
 
   /**
-   * Error response for \a Message.
+   * Error response for \a MessageType.
    */
-  using error_response_t = basic_message_type_t<Protocol,
-    Message | __bits::error_response_class
+  using error_response_t = basic_message_type_t<ProtocolTraits,
+    MessageType | __bits::error_response_class
   >;
 
 
   /**
-   * Return instance of \a Message error response.
+   * Return instance of \a MessageType error response.
    */
   static constexpr error_response_t error_response () noexcept
   {
@@ -143,15 +148,15 @@ public:
 
 
   /**
-   * Indication for \a Message.
+   * Indication for \a MessageType.
    */
-  using indication_t = basic_message_type_t<Protocol,
-    Message | __bits::indication_class
+  using indication_t = basic_message_type_t<ProtocolTraits,
+    MessageType | __bits::indication_class
   >;
 
 
   /**
-   * Return instance of \a Message indication.
+   * Return instance of \a MessageType indication.
    */
   static constexpr indication_t indication () noexcept
   {
@@ -161,24 +166,24 @@ public:
 
 
   /**
-   * Return true if this \a Message is same as \a OtherMessage
+   * Return true if this \a MessageType is same as \a OtherMessageType
    */
-  template <uint16_t OtherMessage>
-  constexpr bool operator== (basic_message_type_t<Protocol, OtherMessage>)
+  template <uint16_t OtherMessageType>
+  constexpr bool operator== (basic_message_type_t<ProtocolTraits, OtherMessageType>)
     const noexcept
   {
-    return Message == OtherMessage;
+    return MessageType == OtherMessageType;
   }
 
 
   /**
-   * Return true if this \a Message is not same as \a OtherMessage
+   * Return true if this \a MessageType is not same as \a OtherMessageType
    */
-  template <uint16_t OtherMessage>
-  constexpr bool operator!= (basic_message_type_t<Protocol, OtherMessage>)
+  template <uint16_t OtherMessageType>
+  constexpr bool operator!= (basic_message_type_t<ProtocolTraits, OtherMessageType>)
     const noexcept
   {
-    return Message != OtherMessage;
+    return MessageType != OtherMessageType;
   }
 
 
@@ -186,54 +191,56 @@ private:
 
   static constexpr void expect_request_class () noexcept
   {
-    static_assert((Message & __bits::class_mask) == 0, "expected request class");
+    static_assert((MessageType & __bits::class_mask) == 0,
+      "expected request class"
+    );
   }
 
-  friend class basic_protocol_t<Protocol>;
+  friend class basic_protocol_t<ProtocolTraits>;
 };
 
 
 /**
- * Return true if \a Message is same as numeric \a type.
+ * Return true if \a MessageType is same as numeric \a type.
  */
-template <typename Protocol, uint16_t Message>
-inline constexpr bool operator== (basic_message_type_t<Protocol, Message>,
-  uint16_t type) noexcept
+template <typename ProtocolTraits, uint16_t MessageType>
+inline constexpr bool operator== (
+  basic_message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
 {
-  return Message == type;
+  return MessageType == type;
 }
 
 
 /**
- * Return true if \a Message is same as numeric \a type.
+ * Return true if \a MessageType is same as numeric \a type.
  */
-template <typename Protocol, uint16_t Message>
-inline constexpr bool operator== (uint16_t type,
-  basic_message_type_t<Protocol, Message>) noexcept
+template <typename ProtocolTraits, uint16_t MessageType>
+inline constexpr bool operator== (
+  uint16_t type, basic_message_type_t<ProtocolTraits, MessageType>) noexcept
 {
-  return Message == type;
+  return MessageType == type;
 }
 
 
 /**
- * Return true if \a Message is not same as numeric \a type.
+ * Return true if \a MessageType is not same as numeric \a type.
  */
-template <typename Protocol, uint16_t Message>
-inline constexpr bool operator!= (basic_message_type_t<Protocol, Message>,
-  uint16_t type) noexcept
+template <typename ProtocolTraits, uint16_t MessageType>
+inline constexpr bool operator!= (
+  basic_message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
 {
-  return Message != type;
+  return MessageType != type;
 }
 
 
 /**
- * Return true if \a Message is not same as numeric \a type.
+ * Return true if \a MessageType is not same as numeric \a type.
  */
-template <typename Protocol, uint16_t Message>
-inline constexpr bool operator!= (uint16_t type,
-  basic_message_type_t<Protocol, Message>) noexcept
+template <typename ProtocolTraits, uint16_t MessageType>
+inline constexpr bool operator!= (
+  uint16_t type, basic_message_type_t<ProtocolTraits, MessageType>) noexcept
 {
-  return Message != type;
+  return MessageType != type;
 }
 
 

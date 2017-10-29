@@ -71,18 +71,18 @@ using protocol_t = basic_protocol_t<protocol_traits_t>;
 
 
 /**
+ * STUN protocol instance.
+ */
+__turner_inline_var constexpr const protocol_t protocol{};
+
+
+/**
  * Return STUN protocol \a name in output argument.
  */
 inline constexpr void operator>> (protocol_t, const char *&name) noexcept
 {
   name = "STUN";
 }
-
-
-/**
- * STUN protocol instance.
- */
-__turner_inline_var constexpr const protocol_t protocol{};
 
 
 /**

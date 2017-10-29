@@ -22,7 +22,7 @@ __turner_begin
 /**
  * Generic uint32 type attribute reader/writer.
  */
-template <typename Protocol>
+template <typename ProtocolTraits>
 struct uint32_attribute_processor_t
 {
   /**
@@ -36,7 +36,7 @@ struct uint32_attribute_processor_t
    * to code describing failure reason.
    */
   static value_t read (
-    const any_message_t<Protocol> &,
+    const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
@@ -56,7 +56,7 @@ struct uint32_attribute_processor_t
 /**
  * Generic string type attribute reader/writer.
  */
-template <typename Protocol>
+template <typename ProtocolTraits>
 struct string_attribute_processor_t
 {
   /**
@@ -70,7 +70,7 @@ struct string_attribute_processor_t
    * to code describing failure reason.
    */
   static value_t read (
-    const any_message_t<Protocol> &,
+    const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
@@ -87,7 +87,7 @@ struct string_attribute_processor_t
 /**
  * Generic byte array type attribute reader/writer.
  */
-template <typename Protocol>
+template <typename ProtocolTraits>
 struct array_attribute_processor_t
 {
   /**
@@ -103,7 +103,7 @@ struct array_attribute_processor_t
    * to code describing failure reason.
    */
   static value_t read (
-    const any_message_t<Protocol> &,
+    const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
@@ -117,7 +117,7 @@ struct array_attribute_processor_t
 /**
  * Generic error code type attribute reader/writer.
  */
-template <typename Protocol>
+template <typename ProtocolTraits>
 struct error_attribute_processor_t
 {
   /**
@@ -131,7 +131,7 @@ struct error_attribute_processor_t
    * to code describing failure reason.
    */
   static value_t read (
-    const any_message_t<Protocol> &,
+    const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
@@ -154,7 +154,7 @@ struct error_attribute_processor_t
 /**
  * Generic address type attribute reader/writer.
  */
-template <typename Protocol>
+template <typename ProtocolTraits>
 struct address_attribute_processor_t
 {
   /**
@@ -170,17 +170,17 @@ struct address_attribute_processor_t
    * to code describing failure reason.
    */
   static value_t read (
-    const any_message_t<Protocol> &,
+    const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error
   ) noexcept;
 };
 
 
-template <typename Protocol>
-typename address_attribute_processor_t<Protocol>::value_t
-  address_attribute_processor_t<Protocol>::read (
-    const any_message_t<Protocol> &,
+template <typename ProtocolTraits>
+typename address_attribute_processor_t<ProtocolTraits>::value_t
+  address_attribute_processor_t<ProtocolTraits>::read (
+    const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
 {

@@ -140,7 +140,7 @@ TYPED_TEST(any_message, try_as_valid)
 
   auto msg = any_msg->try_as(msg_type(TypeParam()));
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(msg_type(TypeParam()), msg->message_type);
+  EXPECT_EQ(msg_type(TypeParam()), msg->type());
 
   EXPECT_EQ(any_msg, msg);
   EXPECT_EQ(any_msg->type(), msg->type());
@@ -157,7 +157,7 @@ TYPED_TEST(any_message, as_valid)
   ASSERT_TRUE(any_msg);
 
   auto &msg = any_msg->as(msg_type(TypeParam()));
-  EXPECT_EQ(msg_type(TypeParam()), msg.message_type);
+  EXPECT_EQ(msg_type(TypeParam()), msg.type());
 
   EXPECT_EQ(any_msg->type(), msg.type());
   EXPECT_EQ(any_msg->length(), msg.length());
@@ -207,7 +207,7 @@ TYPED_TEST(any_message, try_as_success_response_valid)
 
   auto msg = any_msg->try_as(t.success_response());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(t.success_response(), msg->message_type);
+  EXPECT_EQ(t.success_response(), msg->type());
 }
 
 
@@ -223,7 +223,7 @@ TYPED_TEST(any_message, as_success_response_valid)
   ASSERT_TRUE(any_msg);
 
   auto &msg = any_msg->as(t.success_response());
-  EXPECT_EQ(t.success_response(), msg.message_type);
+  EXPECT_EQ(t.success_response(), msg.type());
 }
 
 
@@ -264,7 +264,7 @@ TYPED_TEST(any_message, try_as_error_response_valid)
 
   auto msg = any_msg->try_as(t.error_response());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(t.error_response(), msg->message_type);
+  EXPECT_EQ(t.error_response(), msg->type());
 }
 
 
@@ -280,7 +280,7 @@ TYPED_TEST(any_message, as_error_response_valid)
   ASSERT_TRUE(any_msg);
 
   auto &msg = any_msg->as(t.error_response());
-  EXPECT_EQ(t.error_response(), msg.message_type);
+  EXPECT_EQ(t.error_response(), msg.type());
 }
 
 
@@ -321,7 +321,7 @@ TYPED_TEST(any_message, try_as_indication_valid)
 
   auto msg = any_msg->try_as(t.indication());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(t.indication(), msg->message_type);
+  EXPECT_EQ(t.indication(), msg->type());
 }
 
 
@@ -337,7 +337,7 @@ TYPED_TEST(any_message, as_indication_valid)
   ASSERT_TRUE(any_msg);
 
   auto &msg = any_msg->as(t.indication());
-  EXPECT_EQ(t.indication(), msg.message_type);
+  EXPECT_EQ(t.indication(), msg.type());
 }
 
 

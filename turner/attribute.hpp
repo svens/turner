@@ -2,7 +2,7 @@
 
 /**
  * \file turner/attribute.hpp
- * STUN-based protocol attribute (same as TURN/MSTURN)
+ * STUN/TURN/MSTURN protocol attribute structure.
  */
 
 
@@ -16,8 +16,8 @@ __turner_begin
 
 /**
  * Generic STUN-based protocol attribute encoded as TLV (Type-Length-Value).
- * Attribute encoding is defined in RFC5389, section 15. TURN & MSTURN
- * attributes are encoded same way.
+ * Encoding is documented at https://tools.ietf.org/html/rfc5389#section-15.
+ * TURN and MSTURN are encoded same way.
  */
 class any_attribute_t
 {
@@ -85,19 +85,42 @@ private:
 
 
 /**
- * Attribute value reader/writer. This class itself doesn't have any
- * functionality. It ties together \a Protocol \a Attribute and how to read
- * and write it's value using \a AttributeProcessor.
+ * Attribute value reader/writer.
  */
-template <typename Protocol, uint16_t Attribute, typename AttributeProcessor>
+template <
+  typename ProtocolTraits,
+  uint16_t AttributeType,
+  typename AttributeProcessor
+>
 class basic_attribute_type_t
 {
 public:
 
   /**
-   * Protocol class describing raw network message format.
+   * Protocol class describing raw network message format traits.
    */
-  using protocol_t = basic_protocol_t<Protocol>;
+  using protocol_t = basic_protocol_t<ProtocolTraits>;
+
+
+  /**
+   * Concrete \a AttributeType reader/writer.
+   */
+  using processor_t = AttributeProcessor;
+
+
+  /**
+   * \a AttributeType value type.
+   */
+  using value_t = typename processor_t::value_t;
+
+
+  /**
+   * \a AttributeType value in attributes' registry.
+   */
+  static constexpr uint16_t type () noexcept
+  {
+    return AttributeType;
+  }
 };
 
 
