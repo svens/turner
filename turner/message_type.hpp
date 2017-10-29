@@ -195,8 +195,6 @@ private:
       "expected request class"
     );
   }
-
-  friend class turner::protocol_t<ProtocolTraits>;
 };
 
 

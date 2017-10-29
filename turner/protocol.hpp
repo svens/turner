@@ -79,17 +79,6 @@ public:
 
 
   /**
-   * Return instance of \a MessageType as defined by protocol.
-   */
-  template <uint16_t MessageType>
-  static constexpr message_type_t<MessageType> message_type () noexcept
-  {
-    message_type_t<MessageType>::expect_request_class();
-    return {};
-  }
-
-
-  /**
    * Return pointer to message instance wrapping raw network format in range
    * [\a first, \a last).
    *
