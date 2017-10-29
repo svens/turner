@@ -20,10 +20,10 @@ __turner_begin
  * Generalised protocol description class.
  *
  * Concrete protocols define own ProtocolTraits and wrap it into
- * basic_protocol_t which provides common API for message parsing.
+ * protocol_t which provides common API for message parsing.
  */
 template <typename ProtocolTraits>
-class basic_protocol_t
+class protocol_t
 {
 public:
 
@@ -46,7 +46,7 @@ public:
    * Message type as defined by protocol
    */
   template <uint16_t MessageType>
-  using message_type_t = basic_message_type_t<ProtocolTraits, MessageType>;
+  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
 
   /**
    * Untyped message as defined by protocol.
@@ -65,10 +65,10 @@ public:
    */
   static constexpr const char *name () noexcept
   {
-    if constexpr (__bits::has_name_getter_v<basic_protocol_t>)
+    if constexpr (__bits::has_name_getter_v<protocol_t>)
     {
       const char *result{};
-      basic_protocol_t{} >> result;
+      protocol_t{} >> result;
       return result;
     }
     else
@@ -124,7 +124,7 @@ public:
   static const message_t *from_wire (It first, It last)
   {
     return from_wire(first, last,
-      sal::throw_on_error("basic_protocol::from_wire")
+      sal::throw_on_error("protocol::from_wire")
     );
   }
 
@@ -133,7 +133,7 @@ public:
    * Write to \a stream protocol name. If name is not defined, nothing is
    * written.
    */
-  friend std::ostream &operator<< (std::ostream &stream, basic_protocol_t)
+  friend std::ostream &operator<< (std::ostream &stream, protocol_t)
   {
     if constexpr (name() != nullptr)
     {
@@ -157,8 +157,8 @@ private:
 
 
 template <typename ProtocolTraits>
-const typename basic_protocol_t<ProtocolTraits>::message_t *
-  basic_protocol_t<ProtocolTraits>::from_wire (
+const typename protocol_t<ProtocolTraits>::message_t *
+  protocol_t<ProtocolTraits>::from_wire (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error) noexcept

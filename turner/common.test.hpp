@@ -124,7 +124,7 @@ static __turner_inline_var constexpr const unused_message_type_t<Protocol>
 
 // protocol
 struct unnamed_protocol_traits_t : public turner::stun::protocol_traits_t {};
-using unnamed_protocol_t = turner::basic_protocol_t<unnamed_protocol_traits_t>;
+using unnamed_protocol_t = turner::protocol_t<unnamed_protocol_traits_t>;
 static __turner_inline_var constexpr const unnamed_protocol_t unnamed_protocol;
 
 // message type

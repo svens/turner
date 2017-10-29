@@ -67,7 +67,7 @@ struct protocol_traits_t
 /**
  * Structure type describing STUN protocol message layout.
  */
-using protocol_t = basic_protocol_t<protocol_traits_t>;
+using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
@@ -168,7 +168,7 @@ template <
   uint16_t Type,
   template <typename> typename AttributeProcessor
 >
-using attribute_type_t = basic_attribute_type_t<
+using attribute_type_t = turner::attribute_type_t<
   protocol_traits_t,
   Type,
   AttributeProcessor<protocol_traits_t>
@@ -187,7 +187,7 @@ template <uint16_t Type>
 using address_type_t = attribute_type_t<Type, address_attribute_processor_t>;
 
 template <uint16_t Type>
-using xor_address_type_t = basic_attribute_type_t<
+using xor_address_type_t = turner::attribute_type_t<
   protocol_traits_t,
   Type,
   xor_address_attribute_processor_t

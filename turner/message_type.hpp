@@ -17,26 +17,26 @@ __turner_begin
  *
  * \a MessageType value must follow rules defined by RFC5389, section 6. To
  * define message's responses, there are conveniency typedefs:
- *  - basic_message_type_t::success_response_t
- *  - basic_message_type_t::error_response_t
- *  - basic_message_type_t::indication_t
+ *  - message_type_t::success_response_t
+ *  - message_type_t::error_response_t
+ *  - message_type_t::indication_t
  *
  * Although application scope might need to know specific types, it is more
- * convenient to use instances of basic_message_type_t. To create such
+ * convenient to use instances of message_type_t. To create such
  * instances, there are static methods provided:
  *  - protocol_t::message_type() to create message type that has no request
  *    class
- *  - basic_message_type_t::success_response() to create message type instance
+ *  - message_type_t::success_response() to create message type instance
  *    corresponding to this message type success response
- *  - basic_message_type_t::error_response() to create message type instance
+ *  - message_type_t::error_response() to create message type instance
  *    corresponding to this message type error response
- *  - basic_message_type_t::indication() to create message type instance
+ *  - message_type_t::indication() to create message type instance
  *    corresponding to this message type indication
  *
  * \see https://tools.ietf.org/html/rfc5389#section-6
  */
 template <typename ProtocolTraits, uint16_t MessageType>
-class basic_message_type_t
+class message_type_t
 {
 public:
 
@@ -48,7 +48,7 @@ public:
   /**
    * Protocol that defines this message type.
    */
-  using protocol_t = basic_protocol_t<ProtocolTraits>;
+  using protocol_t = turner::protocol_t<ProtocolTraits>;
 
 
   /**
@@ -64,7 +64,7 @@ public:
    * Return \a MessageType name (if defined).
    *
    * \a MessageType name is defined, if
-   * \c "void operator>> (basic_message_type<ProtocolTraits, MessageType>, const char *&name)"
+   * \c "void operator>> (message_type<ProtocolTraits, MessageType>, const char *&name)"
    * is provided. On operator invocation, name should be assigned to
    * \a MessageType name.
    *
@@ -72,10 +72,10 @@ public:
    */
   static constexpr const char *name () noexcept
   {
-    if constexpr (__bits::has_name_getter_v<basic_message_type_t>)
+    if constexpr (__bits::has_name_getter_v<message_type_t>)
     {
       const char *result{};
-      basic_message_type_t{} >> result;
+      message_type_t{} >> result;
       return result;
     }
     else
@@ -94,7 +94,7 @@ public:
    *  - if no name() but have protocol_t::name(): write as "ProtocolTraits:type"
    *  - if no name() and no protocol_t::name(): write as "type"
    */
-  friend std::ostream &operator<< (std::ostream &stream, basic_message_type_t)
+  friend std::ostream &operator<< (std::ostream &stream, message_type_t)
   {
     if constexpr (name() != nullptr)
     {
@@ -114,7 +114,7 @@ public:
   /**
    * Success response for \a MessageType.
    */
-  using success_response_t = basic_message_type_t<ProtocolTraits,
+  using success_response_t = message_type_t<ProtocolTraits,
     MessageType | __bits::success_response_class
   >;
 
@@ -132,7 +132,7 @@ public:
   /**
    * Error response for \a MessageType.
    */
-  using error_response_t = basic_message_type_t<ProtocolTraits,
+  using error_response_t = message_type_t<ProtocolTraits,
     MessageType | __bits::error_response_class
   >;
 
@@ -150,7 +150,7 @@ public:
   /**
    * Indication for \a MessageType.
    */
-  using indication_t = basic_message_type_t<ProtocolTraits,
+  using indication_t = message_type_t<ProtocolTraits,
     MessageType | __bits::indication_class
   >;
 
@@ -169,7 +169,7 @@ public:
    * Return true if this \a MessageType is same as \a OtherMessageType
    */
   template <uint16_t OtherMessageType>
-  constexpr bool operator== (basic_message_type_t<ProtocolTraits, OtherMessageType>)
+  constexpr bool operator== (message_type_t<ProtocolTraits, OtherMessageType>)
     const noexcept
   {
     return MessageType == OtherMessageType;
@@ -180,7 +180,7 @@ public:
    * Return true if this \a MessageType is not same as \a OtherMessageType
    */
   template <uint16_t OtherMessageType>
-  constexpr bool operator!= (basic_message_type_t<ProtocolTraits, OtherMessageType>)
+  constexpr bool operator!= (message_type_t<ProtocolTraits, OtherMessageType>)
     const noexcept
   {
     return MessageType != OtherMessageType;
@@ -196,7 +196,7 @@ private:
     );
   }
 
-  friend class basic_protocol_t<ProtocolTraits>;
+  friend class turner::protocol_t<ProtocolTraits>;
 };
 
 
@@ -205,7 +205,7 @@ private:
  */
 template <typename ProtocolTraits, uint16_t MessageType>
 inline constexpr bool operator== (
-  basic_message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
+  message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
 {
   return MessageType == type;
 }
@@ -216,7 +216,7 @@ inline constexpr bool operator== (
  */
 template <typename ProtocolTraits, uint16_t MessageType>
 inline constexpr bool operator== (
-  uint16_t type, basic_message_type_t<ProtocolTraits, MessageType>) noexcept
+  uint16_t type, message_type_t<ProtocolTraits, MessageType>) noexcept
 {
   return MessageType == type;
 }
@@ -227,7 +227,7 @@ inline constexpr bool operator== (
  */
 template <typename ProtocolTraits, uint16_t MessageType>
 inline constexpr bool operator!= (
-  basic_message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
+  message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
 {
   return MessageType != type;
 }
@@ -238,7 +238,7 @@ inline constexpr bool operator!= (
  */
 template <typename ProtocolTraits, uint16_t MessageType>
 inline constexpr bool operator!= (
-  uint16_t type, basic_message_type_t<ProtocolTraits, MessageType>) noexcept
+  uint16_t type, message_type_t<ProtocolTraits, MessageType>) noexcept
 {
   return MessageType != type;
 }

@@ -92,14 +92,14 @@ template <
   uint16_t AttributeType,
   typename AttributeProcessor
 >
-class basic_attribute_type_t
+class attribute_type_t
 {
 public:
 
   /**
    * Protocol class describing raw network message format traits.
    */
-  using protocol_t = basic_protocol_t<ProtocolTraits>;
+  using protocol_t = turner::protocol_t<ProtocolTraits>;
 
 
   /**

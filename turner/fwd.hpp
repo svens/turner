@@ -65,7 +65,7 @@ inline constexpr const uint8_t *to_ptr (It it) noexcept
 //
 
 template <typename ProtocolTraits>
-class basic_protocol_t;
+class protocol_t;
 
 //
 // turner/message.hpp
@@ -75,14 +75,14 @@ template <typename ProtocolTraits>
 class any_message_t;
 
 template <typename ProtocolTraits, uint16_t MessageType>
-class basic_message_t;
+class message_reader_t;
 
 //
 // turner/message_type.hpp
 //
 
 template <typename ProtocolTraits, uint16_t MessageType>
-class basic_message_type_t;
+class message_type_t;
 
 //
 // turner/attribute.hpp
@@ -95,7 +95,7 @@ template <
   uint16_t AttributeType,
   typename AttributeProcessor
 >
-class basic_attribute_type_t;
+class attribute_type_t;
 
 //
 // turner/attribute_processor.hpp

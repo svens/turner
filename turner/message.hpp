@@ -21,7 +21,7 @@ __turner_begin
  * header layout depends on corresponding protocol header layout.
  *
  * This type is not meant to be instantiated directly but from
- * basic_protocol_t<ProtocolTraits>::from_wire() that does message validation.
+ * protocol_t<ProtocolTraits>::from_wire() that does message validation.
  * On success, returned pointed object does not have any own storage. It is
  * overlayed on top of memory range containing raw network formatted message
  * and all getter methods operate on fields offset relative from \a this and
@@ -35,7 +35,7 @@ public:
   /**
    * Protocol class describing raw network message format.
    */
-  using protocol_t = basic_protocol_t<ProtocolTraits>;
+  using protocol_t = turner::protocol_t<ProtocolTraits>;
 
 
   /**
@@ -104,11 +104,11 @@ public:
    * return nullptr.
    */
   template <uint16_t MessageType>
-  const basic_message_t<ProtocolTraits, MessageType> *try_as (
-    basic_message_type_t<ProtocolTraits, MessageType>) const noexcept
+  const message_reader_t<ProtocolTraits, MessageType> *try_as (
+    message_type_t<ProtocolTraits, MessageType>) const noexcept
   {
     return type() == MessageType
-      ? reinterpret_cast<const basic_message_t<ProtocolTraits, MessageType> *>(this)
+      ? reinterpret_cast<const message_reader_t<ProtocolTraits, MessageType> *>(this)
       : nullptr;
   }
 
@@ -120,12 +120,12 @@ public:
    * \throws std::system_error if \a this message type is not \a MessageType.
    */
   template <uint16_t MessageType>
-  const basic_message_t<ProtocolTraits, MessageType> &as (
-    basic_message_type_t<ProtocolTraits, MessageType>) const
+  const message_reader_t<ProtocolTraits, MessageType> &as (
+    message_type_t<ProtocolTraits, MessageType>) const
   {
     if (type() == MessageType)
     {
-      return *reinterpret_cast<const basic_message_t<ProtocolTraits, MessageType> *>(this);
+      return *reinterpret_cast<const message_reader_t<ProtocolTraits, MessageType> *>(this);
     }
     unexpected_message_type("any_message::as");
   }
@@ -153,7 +153,7 @@ private:
  * Concrete protocol's message.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
-class basic_message_t
+class message_reader_t
   : public any_message_t<ProtocolTraits>
 {
 public:
@@ -161,7 +161,7 @@ public:
   /**
    * Message type.
    */
-  using message_type_t = basic_message_type_t<ProtocolTraits, MessageType>;
+  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
 
 
   /**
@@ -179,7 +179,7 @@ public:
    */
   template <uint16_t AttributeType, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
-    basic_attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error
   ) const noexcept;
 
@@ -190,9 +190,9 @@ public:
    */
   template <uint16_t AttributeType, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
-    basic_attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute) const
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute) const
   {
-    return read(attribute, sal::throw_on_error("basic_message::read"));
+    return read(attribute, sal::throw_on_error("message_reader::read"));
   }
 
 
@@ -217,8 +217,8 @@ private:
 template <typename ProtocolTraits, uint16_t MessageType>
 template <uint16_t AttributeType, typename AttributeProcessor>
 typename AttributeProcessor::value_t
-  basic_message_t<ProtocolTraits, MessageType>::read (
-    basic_attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+  message_reader_t<ProtocolTraits, MessageType>::read (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
 {
   for (auto it = begin(), e = end();  it < e;  it = it->next())
