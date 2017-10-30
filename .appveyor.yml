@@ -1,4 +1,4 @@
-version: 0.1.0.{build}
+version: '{build}'
 
 branches:
   except:
@@ -12,7 +12,7 @@ configuration:
   - Release
 
 before_build:
-  - cmake . -DTURNER_UNITTESTS=yes -DTURNER_DOCS=no -G "Visual Studio 15 2017 Win64"
+  - cmake . -DUNITTESTS=yes -DDOCS=no -G "Visual Studio 15 2017 Win64"
 
 build_script:
   - cmake --build . --config %CONFIGURATION%

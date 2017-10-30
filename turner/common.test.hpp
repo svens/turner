@@ -2,7 +2,6 @@
 
 #include <turner/config.hpp>
 #include <turner/stun.hpp>
-#include <turner/message.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
@@ -67,7 +66,7 @@ class with_protocol
 
 // STUN {{{1
 
-inline auto x_request (STUN)
+inline auto msg_data (STUN)
 {
   return std::vector<uint8_t>
   {{
@@ -83,28 +82,28 @@ inline auto x_request (STUN)
     0x00, 0x01,                 // Type (XXX)
     0x00, 0x01,                 // Length
     0x01, 0x00,                 // Value + padding
-    0x00, 0x00
+    0x00, 0x00,
   }};
 }
 
-inline constexpr auto x_message_type (STUN)
+inline constexpr auto msg_type (STUN)
 {
   return turner::stun::binding;
 }
 
-inline constexpr auto x_message_type_value (STUN)
+inline constexpr auto msg_type_v (STUN)
 {
   return turner::stun::binding.type();
 }
 
-inline constexpr auto x_message_length (STUN)
+inline constexpr auto msg_len (STUN)
 {
   return 8;
 }
 
-inline constexpr auto x_transaction_id (STUN)
+inline constexpr auto txn_id (STUN)
 {
-  return STUN::transaction_id_t
+  return turner::stun::protocol_t::transaction_id_t
   {{
     0x00, 0x01, 0x02, 0x03,
     0x04, 0x05, 0x06, 0x07,
@@ -125,7 +124,7 @@ static __turner_inline_var constexpr const unused_message_type_t<Protocol>
 
 // protocol
 struct unnamed_protocol_traits_t : public turner::stun::protocol_traits_t {};
-using unnamed_protocol_t = turner::basic_protocol_t<unnamed_protocol_traits_t>;
+using unnamed_protocol_t = turner::protocol_t<unnamed_protocol_traits_t>;
 static __turner_inline_var constexpr const unnamed_protocol_t unnamed_protocol;
 
 // message type

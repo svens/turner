@@ -19,68 +19,62 @@ __turner_begin
 /**
  * Generalised protocol description class.
  *
- * Specific Protocol defines own trait and wrap it into basic_protocol_t which
- * provides common API for message parsing.
+ * Concrete protocols define own ProtocolTraits and wrap it into
+ * protocol_t which provides common API for message parsing.
  */
-template <typename Protocol>
-class basic_protocol_t
+template <typename ProtocolTraits>
+class protocol_t
 {
 public:
 
   /**
    * Protocol traits.
    */
-  using traits_t = Protocol;
+  using traits_t = ProtocolTraits;
 
   /**
-   * Cookie type for \a Protocol message.
+   * Cookie type for protocol message.
    */
-  using cookie_t = std::array<uint8_t, Protocol::cookie.max_size()>;
+  using cookie_t = std::array<uint8_t, traits_t::cookie.max_size()>;
 
   /**
-   * Transaction ID type for \a Protocol message.
+   * Transaction ID type for protocol message.
    */
-  using transaction_id_t = std::array<uint8_t, Protocol::transaction_id_size>;
+  using transaction_id_t = std::array<uint8_t, traits_t::transaction_id_size>;
 
   /**
-   * Message \a Type as defined by \a Protocol
+   * Message type as defined by protocol
    */
-  template <uint16_t Type>
-  using message_type_t = basic_message_type_t<Protocol, Type>;
+  template <uint16_t MessageType>
+  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
+
+  /**
+   * Untyped message as defined by protocol.
+   */
+  using message_t = any_message_t<traits_t>;
 
 
   /**
-   * Return \a Protocol name (if defined).
+   * Return protocol name (if defined).
    *
-   * \a Protocol name is defined, if \c "void operator>> (Protocol, const char *&name)"
-   * is provided. On operator invocation, name should be assigned to
-   * \a Protocol name.
+   * Protocol name is defined, if \c "void operator>> (ProtocolTraits, const char *&name)"
+   * is provided. On operator invocation, name should be assigned to protocol
+   * name.
    *
    * If this operator is not provided, nullptr is returned.
    */
   static constexpr const char *name () noexcept
   {
-    if constexpr (__bits::has_name_getter_v<basic_protocol_t>)
+    if constexpr (__bits::has_name_getter_v<protocol_t>)
     {
       const char *result{};
-      basic_protocol_t{} >> result;
+      protocol_t{} >> result;
       return result;
     }
     else
     {
       return nullptr;
     }
-  }
-
-
-  /**
-   * Return instance of message \a Type as defined by \a Protocol.
-   */
-  template <uint16_t Type>
-  static constexpr message_type_t<Type> message_type () noexcept
-  {
-    message_type_t<Type>::expect_request_class();
-    return {};
   }
 
 
@@ -96,7 +90,7 @@ public:
    * returned and error is set to code describing failure.
    */
   template <typename It>
-  static constexpr const any_message_t<Protocol> *from_wire (It first, It last,
+  static const message_t *from_wire (It first, It last,
     std::error_code &error) noexcept
   {
     auto begin = __bits::to_ptr(first);
@@ -116,19 +110,19 @@ public:
    * validation fails.
    */
   template <typename It>
-  static constexpr const any_message_t<Protocol> *from_wire (It first, It last)
+  static const message_t *from_wire (It first, It last)
   {
     return from_wire(first, last,
-      sal::throw_on_error("basic_protocol_t::from_wire")
+      sal::throw_on_error("protocol::from_wire")
     );
   }
 
 
   /**
-   * Write to \a stream \a Protocol name. If name is not defined, nothing is
+   * Write to \a stream protocol name. If name is not defined, nothing is
    * written.
    */
-  friend std::ostream &operator<< (std::ostream &stream, basic_protocol_t)
+  friend std::ostream &operator<< (std::ostream &stream, protocol_t)
   {
     if constexpr (name() != nullptr)
     {
@@ -143,7 +137,7 @@ public:
 
 private:
 
-  static constexpr const any_message_t<Protocol> *from_wire (
+  static const message_t *from_wire (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error
@@ -151,25 +145,26 @@ private:
 };
 
 
-template <typename Protocol>
-constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
-  const uint8_t *first,
-  const uint8_t *last,
-  std::error_code &error) noexcept
+template <typename ProtocolTraits>
+const typename protocol_t<ProtocolTraits>::message_t *
+  protocol_t<ProtocolTraits>::from_wire (
+    const uint8_t *first,
+    const uint8_t *last,
+    std::error_code &error) noexcept
 {
   // validate arguments
-  if (size_t(last - first) < Protocol::header_size)
+  if (size_t(last - first) < traits_t::header_size)
   {
     error = make_error_code(errc::insufficient_header_data);
     return {};
   }
 
   // passed initial checks, overlay any_message_t on top of specified area
-  static_assert(std::is_trivially_destructible_v<any_message_t<Protocol>>);
-  auto message = reinterpret_cast<const any_message_t<Protocol> *>(first);
+  static_assert(std::is_trivially_destructible_v<message_t>);
+  auto message = reinterpret_cast<const message_t *>(first);
 
-  // message type (2 highest bits must be 00, RFC5389, section 6)
-  if ((message->type() & 0b1100'0000'0000'0000) != 0)
+  // message type
+  if ((message->type() & __bits::method_mask) != 0)
   {
     error = make_error_code(errc::invalid_message_type);
     return {};
@@ -181,14 +176,14 @@ constexpr const any_message_t<Protocol> *basic_protocol_t<Protocol>::from_wire (
     error = make_error_code(errc::invalid_message_length);
     return {};
   }
-  if (first + Protocol::header_size + message->length() > last)
+  if (first + traits_t::header_size + message->length() > last)
   {
     error = make_error_code(errc::insufficient_payload_data);
     return {};
   }
 
   // cookie
-  if (message->cookie() != Protocol::cookie)
+  if (message->cookie() != traits_t::cookie)
   {
     error = make_error_code(errc::invalid_message_cookie);
     return {};

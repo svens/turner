@@ -16,7 +16,7 @@ __turner_begin
 namespace __bits {
 
 
-// RFC5389, 6
+// see https://tools.ietf.org/html/rfc5389#section-6
 __turner_inline_var constexpr uint16_t
   method_mask =            0b110'0000'0000'0000,
   class_mask =             0b000'0001'0001'0000,
@@ -64,25 +64,48 @@ inline constexpr const uint8_t *to_ptr (It it) noexcept
 // turner/protocol.hpp
 //
 
-template <typename Protocol>
-class basic_protocol_t;
+template <typename ProtocolTraits>
+class protocol_t;
 
 //
 // turner/message.hpp
 //
 
-template <typename Protocol>
+template <typename ProtocolTraits>
 class any_message_t;
 
-template <typename Protocol, uint16_t Type>
-class basic_message_t;
+template <typename ProtocolTraits, uint16_t MessageType>
+class message_reader_t;
 
 //
 // turner/message_type.hpp
 //
 
-template <typename Protocol, uint16_t Type>
-class basic_message_type_t;
+template <typename ProtocolTraits, uint16_t MessageType>
+class message_type_t;
+
+//
+// turner/attribute.hpp
+//
+
+class any_attribute_t;
+
+template <
+  typename ProtocolTraits,
+  uint16_t AttributeType,
+  typename AttributeProcessor
+>
+class attribute_type_t;
+
+//
+// turner/attribute_processor.hpp
+//
+
+template <typename ProtocolTraits> struct address_attribute_processor_t;
+template <typename ProtocolTraits> struct array_attribute_processor_t;
+template <typename ProtocolTraits> struct error_attribute_processor_t;
+template <typename ProtocolTraits> struct string_attribute_processor_t;
+template <typename ProtocolTraits> struct uint32_attribute_processor_t;
 
 
 __turner_end

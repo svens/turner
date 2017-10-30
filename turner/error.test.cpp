@@ -32,7 +32,11 @@ INSTANTIATE_TEST_CASE_P(error, errc,
     turner::errc::insufficient_payload_data,
     turner::errc::invalid_message_type,
     turner::errc::invalid_message_length,
-    turner::errc::invalid_message_cookie
+    turner::errc::invalid_message_cookie,
+    turner::errc::unexpected_message_type,
+    turner::errc::attribute_not_found,
+    turner::errc::unexpected_attribute_length,
+    turner::errc::unexpected_address_family
   )
 );
 
@@ -50,6 +54,23 @@ TEST_P(errc, make_error_code)
 
   EXPECT_FALSE(error.message().empty());
   EXPECT_NE("unknown error", error.message());
+}
+
+
+TEST(error, success)
+{
+  EXPECT_EQ(0U, turner::success.code);
+  EXPECT_EQ("Success", turner::success.message);
+
+  constexpr const turner::error_t ok{0, "Ok"};
+  EXPECT_EQ(ok, turner::success);
+
+  constexpr const turner::error_t fail{500, "Fail"};
+  EXPECT_NE(fail, turner::success);
+
+  std::ostringstream oss;
+  oss << turner::success;
+  EXPECT_EQ("0 Success", oss.str());
 }
 
 

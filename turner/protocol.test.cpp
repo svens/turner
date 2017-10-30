@@ -10,14 +10,6 @@ using protocol = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(protocol, protocol_types);
 
 
-TYPED_TEST(protocol, message_type)
-{
-  auto t = TypeParam::template message_type<x_message_type_value(TypeParam())>();
-  EXPECT_EQ(typeid(x_message_type(TypeParam())), typeid(t));
-  EXPECT_NE(typeid(t), typeid(unused_message_type<TypeParam>));
-}
-
-
 TYPED_TEST(protocol, name)
 {
   const char *expected;
@@ -53,14 +45,14 @@ TEST(protocol, ostream_unnamed)
 
 TYPED_TEST(protocol, from_wire)
 {
-  auto data = x_request(TypeParam());
+  auto data = msg_data(TypeParam());
 
   std::error_code error;
   auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
-  EXPECT_EQ(x_message_type(TypeParam()), msg->type());
+  EXPECT_EQ(msg_type(TypeParam()), msg->type());
 }
 
 
