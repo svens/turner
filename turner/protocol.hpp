@@ -93,8 +93,9 @@ public:
   static const message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
-    auto begin = __bits::to_ptr(first);
-    return parse(begin, begin + (last - first), error);
+    auto begin = __bits::to_cptr(first);
+    auto end = begin + (last - first) * sizeof(*first);
+    return parse(begin, end, error);
   }
 
 

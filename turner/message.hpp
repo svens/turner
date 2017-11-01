@@ -82,7 +82,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
+      __bits::to_cptr(this) + ProtocolTraits::cookie_offset
     );
   }
 
@@ -93,7 +93,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset
+      __bits::to_cptr(this) + ProtocolTraits::transaction_id_offset
     );
   }
 
@@ -150,7 +150,7 @@ private:
 
 
 /**
- * Concrete protocol's message.
+ * Concrete protocol's message reader.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
 class message_reader_t
@@ -201,14 +201,14 @@ private:
   const any_attribute_t *begin () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::header_size
+      __bits::to_cptr(this) + ProtocolTraits::header_size
     );
   }
 
   const any_attribute_t *end () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::header_size + this->length()
+      __bits::to_cptr(this) + ProtocolTraits::header_size + this->length()
     );
   }
 };
@@ -225,7 +225,7 @@ typename AttributeProcessor::value_t
   {
     if (it->type() == AttributeType)
     {
-      if (it->data() + it->length() <= __bits::to_ptr(e))
+      if (it->data() + it->length() <= __bits::to_cptr(e))
       {
         return AttributeProcessor::read(*this, *it, error);
       }
