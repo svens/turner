@@ -65,6 +65,42 @@ public:
 
 
   /**
+   * Return true if message type is request (i.e. not response or indication).
+   */
+  bool is_request () const noexcept
+  {
+    return (type() & __bits::class_mask) == 0;
+  }
+
+
+  /**
+   * Return true if message type is success response.
+   */
+  bool is_success_response () const noexcept
+  {
+    return (type() & __bits::class_mask) == __bits::success_response_class;
+  }
+
+
+  /**
+   * Return true if message type is error response.
+   */
+  bool is_error_response () const noexcept
+  {
+    return (type() & __bits::class_mask) == __bits::error_response_class;
+  }
+
+
+  /**
+   * Return true if message type is indication.
+   */
+  bool is_indication () const noexcept
+  {
+    return (type() & __bits::class_mask) == __bits::indication_class;
+  }
+
+
+  /**
    * Return message size as claimed by message length field. It does not
    * include message header length.
    */

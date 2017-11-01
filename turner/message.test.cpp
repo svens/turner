@@ -36,6 +36,10 @@ TYPED_TEST(any_message, type)
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
   EXPECT_EQ(msg_type_v(TypeParam()), msg->type());
+  EXPECT_TRUE(msg->is_request());
+  EXPECT_FALSE(msg->is_success_response());
+  EXPECT_FALSE(msg->is_error_response());
+  EXPECT_FALSE(msg->is_indication());
 }
 
 
@@ -204,6 +208,10 @@ TYPED_TEST(any_message, try_as_success_response_valid)
 
   auto any_msg = TypeParam::parse(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
+  EXPECT_FALSE(any_msg->is_request());
+  EXPECT_TRUE(any_msg->is_success_response());
+  EXPECT_FALSE(any_msg->is_error_response());
+  EXPECT_FALSE(any_msg->is_indication());
 
   auto msg = any_msg->try_as(t.success_response());
   ASSERT_NE(nullptr, msg);
@@ -261,6 +269,10 @@ TYPED_TEST(any_message, try_as_error_response_valid)
 
   auto any_msg = TypeParam::parse(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
+  EXPECT_FALSE(any_msg->is_request());
+  EXPECT_FALSE(any_msg->is_success_response());
+  EXPECT_TRUE(any_msg->is_error_response());
+  EXPECT_FALSE(any_msg->is_indication());
 
   auto msg = any_msg->try_as(t.error_response());
   ASSERT_NE(nullptr, msg);
@@ -318,6 +330,10 @@ TYPED_TEST(any_message, try_as_indication_valid)
 
   auto any_msg = TypeParam::parse(data.begin(), data.end());
   ASSERT_TRUE(any_msg);
+  EXPECT_FALSE(any_msg->is_request());
+  EXPECT_FALSE(any_msg->is_success_response());
+  EXPECT_FALSE(any_msg->is_error_response());
+  EXPECT_TRUE(any_msg->is_indication());
 
   auto msg = any_msg->try_as(t.indication());
   ASSERT_NE(nullptr, msg);

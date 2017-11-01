@@ -25,6 +25,10 @@ TYPED_TEST(message_type, type)
     msg_type_v(TypeParam()),
     msg_type(TypeParam()).type()
   );
+  EXPECT_TRUE(msg_type(TypeParam()).is_request());
+  EXPECT_FALSE(msg_type(TypeParam()).is_success_response());
+  EXPECT_FALSE(msg_type(TypeParam()).is_error_response());
+  EXPECT_FALSE(msg_type(TypeParam()).is_indication());
 }
 
 
@@ -116,10 +120,10 @@ TYPED_TEST(message_type, success_response)
   EXPECT_NE(t, ts);
   EXPECT_NE(ts, t);
 
-  EXPECT_EQ(
-    t.type() | turner::__bits::success_response_class,
-    ts.type()
-  );
+  EXPECT_FALSE(ts.is_request());
+  EXPECT_TRUE(ts.is_success_response());
+  EXPECT_FALSE(ts.is_error_response());
+  EXPECT_FALSE(ts.is_indication());
 
   EXPECT_EQ(
     typeid(typename decltype(t)::success_response_t),
@@ -141,10 +145,10 @@ TYPED_TEST(message_type, error_response)
   EXPECT_NE(t, ts);
   EXPECT_NE(ts, t);
 
-  EXPECT_EQ(
-    t.type() | turner::__bits::error_response_class,
-    ts.type()
-  );
+  EXPECT_FALSE(ts.is_request());
+  EXPECT_FALSE(ts.is_success_response());
+  EXPECT_TRUE(ts.is_error_response());
+  EXPECT_FALSE(ts.is_indication());
 
   EXPECT_EQ(
     typeid(typename decltype(t)::error_response_t),
@@ -166,10 +170,10 @@ TYPED_TEST(message_type, indication)
   EXPECT_NE(t, ts);
   EXPECT_NE(ts, t);
 
-  EXPECT_EQ(
-    t.type() | turner::__bits::indication_class,
-    ts.type()
-  );
+  EXPECT_FALSE(ts.is_request());
+  EXPECT_FALSE(ts.is_success_response());
+  EXPECT_FALSE(ts.is_error_response());
+  EXPECT_TRUE(ts.is_indication());
 
   EXPECT_EQ(
     typeid(typename decltype(t)::indication_t),

@@ -61,6 +61,42 @@ public:
 
 
   /**
+   * Return true if MessageType is request (i.e. not response or indication).
+   */
+  static constexpr bool is_request () noexcept
+  {
+    return (MessageType & __bits::class_mask) == 0;
+  }
+
+
+  /**
+   * Return true if MessageType is success response.
+   */
+  static constexpr bool is_success_response () noexcept
+  {
+    return (MessageType & __bits::class_mask) == __bits::success_response_class;
+  }
+
+
+  /**
+   * Return true if MessageType is error response.
+   */
+  static constexpr bool is_error_response () noexcept
+  {
+    return (MessageType & __bits::class_mask) == __bits::error_response_class;
+  }
+
+
+  /**
+   * Return true if MessageType is indication.
+   */
+  static constexpr bool is_indication () noexcept
+  {
+    return (MessageType & __bits::class_mask) == __bits::indication_class;
+  }
+
+
+  /**
    * Return \a MessageType name (if defined).
    *
    * \a MessageType name is defined, if
