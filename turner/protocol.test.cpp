@@ -43,12 +43,12 @@ TEST(protocol, ostream_unnamed)
 }
 
 
-TYPED_TEST(protocol, from_wire)
+TYPED_TEST(protocol, parse)
 {
   auto data = msg_data(TypeParam());
 
   std::error_code error;
-  auto msg = TypeParam::from_wire(data.begin(), data.end(), error);
+  auto msg = TypeParam::parse(data.begin(), data.end(), error);
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 

@@ -29,7 +29,7 @@ auto wire_data (Protocol, const char (&data)[N])
 template <typename Protocol, typename Data>
 inline auto &from_wire (Protocol p, const Data &d)
 {
-  return Protocol::from_wire(d.begin(), d.end())->as(msg_type(p));
+  return Protocol::parse(d.begin(), d.end())->as(msg_type(p));
 }
 
 

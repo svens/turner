@@ -86,15 +86,15 @@ public:
    * specified memory range [\a first, \a last). Each time any of
    * any_message_t method is invocated, it parses fields relative to \a this.
    *
-   * If during call to from_wire() message validation fails, nullptr is
+   * If during call to parse() message validation fails, nullptr is
    * returned and error is set to code describing failure.
    */
   template <typename It>
-  static const message_t *from_wire (It first, It last,
+  static const message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
     auto begin = __bits::to_ptr(first);
-    return from_wire(begin, begin + (last - first), error);
+    return parse(begin, begin + (last - first), error);
   }
 
 
@@ -106,14 +106,14 @@ public:
    * specified memory range [\a first, \a last). Each time any of
    * any_message_t method is invocated, it parses fields relative to \a this.
    *
-   * \throws std::system_error if during call to from_wire() message
+   * \throws std::system_error if during call to parse() message
    * validation fails.
    */
   template <typename It>
-  static const message_t *from_wire (It first, It last)
+  static const message_t *parse (It first, It last)
   {
-    return from_wire(first, last,
-      sal::throw_on_error("protocol::from_wire")
+    return parse(first, last,
+      sal::throw_on_error("protocol::parse")
     );
   }
 
@@ -137,7 +137,7 @@ public:
 
 private:
 
-  static const message_t *from_wire (
+  static const message_t *parse (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error
@@ -147,7 +147,7 @@ private:
 
 template <typename ProtocolTraits>
 const typename protocol_t<ProtocolTraits>::message_t *
-  protocol_t<ProtocolTraits>::from_wire (
+  protocol_t<ProtocolTraits>::parse (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error) noexcept

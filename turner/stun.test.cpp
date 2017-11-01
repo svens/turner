@@ -35,7 +35,7 @@ auto wire_data (const char (&data)[N])
 template <typename Data>
 inline auto &from_wire (const Data &d)
 {
-  return STUN::from_wire(d.begin(), d.end())->as(msg_type(STUN()));
+  return STUN::parse(d.begin(), d.end())->as(msg_type(STUN()));
 }
 
 

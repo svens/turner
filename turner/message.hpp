@@ -21,7 +21,7 @@ __turner_begin
  * header layout depends on corresponding protocol header layout.
  *
  * This type is not meant to be instantiated directly but from
- * protocol_t<ProtocolTraits>::from_wire() that does message validation.
+ * protocol_t<ProtocolTraits>::parse() that does message validation.
  * On success, returned pointed object does not have any own storage. It is
  * overlayed on top of memory range containing raw network formatted message
  * and all getter methods operate on fields offset relative from \a this and
