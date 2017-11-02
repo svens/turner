@@ -36,7 +36,8 @@ INSTANTIATE_TEST_CASE_P(error, errc,
     turner::errc::unexpected_message_type,
     turner::errc::attribute_not_found,
     turner::errc::unexpected_attribute_length,
-    turner::errc::unexpected_address_family
+    turner::errc::unexpected_address_family,
+    turner::errc::not_enough_room
   )
 );
 
