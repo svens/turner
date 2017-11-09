@@ -84,6 +84,9 @@ class any_message_t;
 template <typename ProtocolTraits, uint16_t MessageType>
 class message_reader_t;
 
+template <typename ProtocolTraits, uint16_t MessageType>
+class message_writer_t;
+
 //
 // turner/message_type.hpp
 //

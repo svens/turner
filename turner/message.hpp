@@ -9,6 +9,8 @@
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
 #include <sal/byte_order.hpp>
+#include <sal/crypto/random.hpp>
+#include <memory>
 
 
 __turner_begin
@@ -169,6 +171,12 @@ public:
 
 private:
 
+  any_message_t () = delete;
+  any_message_t (const any_message_t &) = delete;
+  any_message_t &operator= (const any_message_t &) = delete;
+  any_message_t (any_message_t &&) = delete;
+  any_message_t &operator= (any_message_t &&) = delete;
+
   template <size_t N>
   static void unexpected_message_type [[noreturn]] (const char (&msg)[N])
   {
@@ -177,11 +185,28 @@ private:
     );
   }
 
-  any_message_t () = delete;
-  any_message_t (const any_message_t &) = delete;
-  any_message_t &operator= (const any_message_t &) = delete;
-  any_message_t (any_message_t &&) = delete;
-  any_message_t &operator= (any_message_t &&) = delete;
+  void build_header (uint16_t message_type) noexcept
+  {
+    // type
+    reinterpret_cast<uint16_t *>(this)[0] =
+      sal::native_to_network_byte_order(message_type);
+
+    // length
+    reinterpret_cast<uint16_t *>(this)[1] = 0;
+
+    // cookie
+    std::uninitialized_copy(
+      ProtocolTraits::cookie.begin(),
+      ProtocolTraits::cookie.end(),
+      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
+    );
+
+    // transaction id
+    auto p = __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset;
+    sal::crypto::random(p, p + ProtocolTraits::transaction_id_size);
+  }
+
+  friend class turner::protocol_t<ProtocolTraits>;
 };
 
 
@@ -274,6 +299,84 @@ typename AttributeProcessor::value_t
   }
   error = make_error_code(errc::attribute_not_found);
   return {};
+}
+
+
+/**
+ * Concrete protocol's message writer.
+ */
+template <typename ProtocolTraits, uint16_t MessageType>
+class message_writer_t
+{
+public:
+
+  /**
+   * Protocol class describing raw network message format.
+   */
+  using protocol_t = turner::protocol_t<ProtocolTraits>;
+
+  /**
+   * Message type.
+   */
+  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
+
+
+  /**
+   * Return message type.
+   */
+  static constexpr message_type_t type () noexcept
+  {
+    return {};
+  }
+
+
+  /**
+   */
+  template <uint16_t AttributeType, typename AttributeProcessor>
+  message_writer_t &write (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+    const typename AttributeProcessor::value_t &value,
+    std::error_code &error
+  ) noexcept;
+
+
+  /**
+   */
+  template <uint16_t AttributeType, typename AttributeProcessor>
+  message_writer_t &write (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute,
+    const typename AttributeProcessor::value_t &value)
+  {
+    return write(attribute, value,
+      sal::throw_on_error("message_writer::write")
+    );
+  }
+
+
+private:
+
+  uint8_t * const first_, * const last_;
+
+  message_writer_t (uint8_t *first, uint8_t *last) noexcept
+    : first_(first)
+    , last_(last)
+  {}
+
+  friend class turner::protocol_t<ProtocolTraits>;
+};
+
+
+template <typename ProtocolTraits, uint16_t MessageType>
+template <uint16_t AttributeType, typename AttributeProcessor>
+message_writer_t<ProtocolTraits, MessageType> &
+  message_writer_t<ProtocolTraits, MessageType>::write (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+    const typename AttributeProcessor::value_t &value,
+    std::error_code &error) noexcept
+{
+  (void)value;
+  (void)error;
+  return *this;
 }
 
 

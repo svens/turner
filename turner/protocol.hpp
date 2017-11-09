@@ -8,6 +8,7 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
+#include <turner/message.hpp>
 #include <array>
 #include <ostream>
 #include <type_traits>
@@ -57,9 +58,9 @@ public:
   /**
    * Return protocol name (if defined).
    *
-   * Protocol name is defined, if \c "void operator>> (ProtocolTraits, const char *&name)"
-   * is provided. On operator invocation, name should be assigned to protocol
-   * name.
+   * Protocol name is defined, if \c "void operator>> (ProtocolTraits, const
+   * char *&name)" is provided. On operator invocation, name should be
+   * assigned to protocol name.
    *
    * If this operator is not provided, nullptr is returned.
    */
@@ -120,6 +121,55 @@ public:
 
 
   /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area [\a first, \a last).
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes nor set valid message length. Use returned object to add
+   * attributes and finalize message.
+   *
+   * On error, set \a error.
+   */
+  template <uint16_t MessageType, typename It>
+  static message_writer_t<ProtocolTraits, MessageType> build (
+    message_type_t<MessageType> message_type,
+    It first,
+    It last,
+    std::error_code &error) noexcept
+  {
+    static_assert(message_type.is_request() || message_type.is_indication(),
+      "expected request or indication message type"
+    );
+    auto begin = __bits::to_ptr(first);
+    auto end = begin + (last - first) * sizeof(*first);
+    build(MessageType, begin, end, error);
+    return {begin, end};
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area [\a first, \a last).
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes nor set valid message length. Use returned object to add
+   * attributes and finalize message.
+   *
+   * \throws std::system_error on message header building failure.
+   */
+  template <uint16_t MessageType, typename It>
+  static message_writer_t<ProtocolTraits, MessageType> build (
+    message_type_t<MessageType> message_type,
+    It first,
+    It last)
+  {
+    return build(message_type, first, last,
+      sal::throw_on_error("protocol::build")
+    );
+  }
+
+
+  /**
    * Write to \a stream protocol name. If name is not defined, nothing is
    * written.
    */
@@ -138,9 +188,18 @@ public:
 
 private:
 
+  static_assert(std::is_trivially_destructible_v<message_t>);
+
   static const message_t *parse (
     const uint8_t *first,
     const uint8_t *last,
+    std::error_code &error
+  ) noexcept;
+
+  static void build (
+    uint16_t message_type,
+    uint8_t *first,
+    uint8_t *last,
     std::error_code &error
   ) noexcept;
 };
@@ -161,7 +220,6 @@ const typename protocol_t<ProtocolTraits>::message_t *
   }
 
   // passed initial checks, overlay any_message_t on top of specified area
-  static_assert(std::is_trivially_destructible_v<message_t>);
   auto message = reinterpret_cast<const message_t *>(first);
 
   // message type
@@ -192,6 +250,25 @@ const typename protocol_t<ProtocolTraits>::message_t *
 
   error.clear();
   return message;
+}
+
+
+template <typename ProtocolTraits>
+void protocol_t<ProtocolTraits>::build (uint16_t message_type,
+  uint8_t *first,
+  uint8_t *last,
+  std::error_code &error) noexcept
+{
+  if (size_t(last - first) >= traits_t::header_size)
+  {
+    auto message = reinterpret_cast<message_t *>(first);
+    message->build_header(message_type);
+    error.clear();
+  }
+  else
+  {
+    error = make_error_code(errc::not_enough_room);
+  }
 }
 
 
