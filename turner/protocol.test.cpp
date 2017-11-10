@@ -59,7 +59,7 @@ TYPED_TEST(protocol, parse)
 TYPED_TEST(protocol, build)
 {
   std::array<uint8_t, TypeParam::traits_t::header_size> data;
-  std::fill(data.begin(), data.end(), 0);
+  data.fill(0);
 
   std::error_code error;
   TypeParam::build(msg_type(TypeParam()),

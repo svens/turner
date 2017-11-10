@@ -10,7 +10,6 @@
 #include <turner/error.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/random.hpp>
-#include <memory>
 
 
 __turner_begin
@@ -195,11 +194,9 @@ private:
     reinterpret_cast<uint16_t *>(this)[1] = 0;
 
     // cookie
-    std::uninitialized_copy(
-      ProtocolTraits::cookie.begin(),
-      ProtocolTraits::cookie.end(),
+    *reinterpret_cast<cookie_t *>(
       __bits::to_ptr(this) + ProtocolTraits::cookie_offset
-    );
+    ) = ProtocolTraits::cookie;
 
     // transaction id
     auto p = __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset;
