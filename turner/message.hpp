@@ -328,6 +328,33 @@ public:
 
 
   /**
+   * Return true if this object is in valid state. Calling any other method is
+   * undefined behavious if object is not in valid state.
+   */
+  explicit operator bool () const noexcept
+  {
+    return first_ + ProtocolTraits::header_size <= last_;
+  }
+
+
+  /**
+   * Return available room for building message (in bytes).
+   */
+  uint16_t available () const noexcept
+  {
+    auto message_length = sal::native_to_network_byte_order(
+      reinterpret_cast<uint16_t *>(first_)[1]
+    );
+    return static_cast<uint16_t>(
+      last_ - first_ - ProtocolTraits::header_size - message_length
+    );
+  }
+
+
+  /**
+   * Encode \a value and append to message as \a AttributeType. If there is
+   * no enough room in internal buffer, \a set error to errc::not_enough_room
+   * and do nothing.
    */
   template <uint16_t AttributeType, typename AttributeProcessor>
   message_writer_t &write (
@@ -338,6 +365,8 @@ public:
 
 
   /**
+   * Encode \a value and append to message as \a AttributeType. If there is
+   * no enough room in internal buffer, throw std::system_error.
    */
   template <uint16_t AttributeType, typename AttributeProcessor>
   message_writer_t &write (
@@ -371,8 +400,28 @@ message_writer_t<ProtocolTraits, MessageType> &
     const typename AttributeProcessor::value_t &value,
     std::error_code &error) noexcept
 {
-  (void)value;
-  (void)error;
+  auto &message = *reinterpret_cast<any_message_t<ProtocolTraits> *>(first_);
+  auto message_size = message.length();
+
+  auto attribute = first_ + ProtocolTraits::header_size + message_size;
+  auto attribute_size = AttributeProcessor::write(message,
+    attribute + 2 * sizeof(uint16_t),
+    last_,
+    value,
+    error
+  );
+
+  if (!error)
+  {
+    reinterpret_cast<uint16_t *>(attribute)[0] =
+      sal::native_to_network_byte_order(AttributeType);
+    reinterpret_cast<uint16_t *>(attribute)[1] =
+      sal::native_to_network_byte_order(attribute_size);
+    message_size += 2 * sizeof(uint16_t) + ((attribute_size + 3) & ~3);
+    reinterpret_cast<uint16_t *>(first_)[1] =
+      sal::native_to_network_byte_order(message_size);
+  }
+
   return *this;
 }
 

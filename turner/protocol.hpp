@@ -128,7 +128,7 @@ public:
    * attributes nor set valid message length. Use returned object to add
    * attributes and finalize message.
    *
-   * On error, set \a error.
+   * On error, set \a error and return undefined message_writer_t object.
    */
   template <uint16_t MessageType, typename It>
   static message_writer_t<ProtocolTraits, MessageType> build (
@@ -142,8 +142,11 @@ public:
     );
     auto begin = __bits::to_ptr(first);
     auto end = begin + (last - first) * sizeof(*first);
-    build(MessageType, begin, end, error);
-    return {begin, end};
+    if (build(MessageType, begin, end, error))
+    {
+      return {begin, end};
+    }
+    return {nullptr, nullptr};
   }
 
 
@@ -196,7 +199,7 @@ private:
     std::error_code &error
   ) noexcept;
 
-  static void build (
+  static bool build (
     uint16_t message_type,
     uint8_t *first,
     uint8_t *last,
@@ -254,7 +257,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
 
 
 template <typename ProtocolTraits>
-void protocol_t<ProtocolTraits>::build (uint16_t message_type,
+bool protocol_t<ProtocolTraits>::build (uint16_t message_type,
   uint8_t *first,
   uint8_t *last,
   std::error_code &error) noexcept
@@ -264,11 +267,10 @@ void protocol_t<ProtocolTraits>::build (uint16_t message_type,
     auto message = reinterpret_cast<message_t *>(first);
     message->build_header(message_type);
     error.clear();
+    return true;
   }
-  else
-  {
-    error = make_error_code(errc::not_enough_room);
-  }
+  error = make_error_code(errc::not_enough_room);
+  return false;
 }
 
 
