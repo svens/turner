@@ -19,6 +19,24 @@
 __turner_begin
 
 
+namespace __bits {
+
+inline bool has_enough_room (const uint8_t *first, const uint8_t *last,
+  uint16_t required_size,
+  std::error_code &error) noexcept
+{
+  if (first + required_size <= last)
+  {
+    error.clear();
+    return true;
+  }
+  error = make_error_code(errc::not_enough_room);
+  return false;
+}
+
+} // namespace __bits
+
+
 /**
  * Generic uint32 type attribute reader/writer.
  */
@@ -49,6 +67,25 @@ struct uint32_attribute_processor_t
     }
     error = make_error_code(errc::unexpected_attribute_length);
     return {};
+  }
+
+
+  /**
+   * Write \a value at \a first, not exceeding \a last. If \a value does not
+   * fit into [\a first, \a last), \a error is set to errc::not_enough_room
+   * and nothing is writtern. Returns \a value size.
+   */
+  static uint16_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    if (__bits::has_enough_room(first, last, sizeof(value_t), error))
+    {
+      *reinterpret_cast<uint32_t *>(first) =
+        sal::native_to_network_byte_order(value);
+    }
+    return sizeof(value_t);
   }
 };
 

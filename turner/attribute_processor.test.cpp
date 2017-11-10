@@ -33,6 +33,13 @@ inline auto &from_wire (Protocol p, const Data &d)
 }
 
 
+template <typename Protocol, typename Data>
+auto to_wire (Protocol p, Data &d)
+{
+  return Protocol::build(msg_type(p), d.begin(), d.end());
+}
+
+
 template <
   typename Protocol,
   template <typename> typename AttributeProcessor
@@ -47,6 +54,10 @@ using attr_t = turner::attribute_type_t<
 // uint32 {{{1
 
 
+template <typename Protocol>
+const attr_t<Protocol, turner::uint32_attribute_processor_t> uint32_attr{};
+
+
 TYPED_TEST(attribute_processor, read_uint32)
 {
   auto data = wire_data(TypeParam(),
@@ -56,13 +67,12 @@ TYPED_TEST(attribute_processor, read_uint32)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(uint32_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ(0x12345678U, value);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(uint32_attr<TypeParam>));
 }
 
 
@@ -78,13 +88,12 @@ TYPED_TEST(attribute_processor, read_uint32_last_attribute)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(uint32_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ(0x12345678U, value);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(uint32_attr<TypeParam>));
 }
 
 
@@ -97,13 +106,12 @@ TYPED_TEST(attribute_processor, read_uint32_attribute_not_found)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(uint32_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::attribute_not_found, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(uint32_attr<TypeParam>),
     std::system_error
   );
 }
@@ -118,13 +126,12 @@ TYPED_TEST(attribute_processor, read_uint32_length_past_message_end)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(uint32_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(uint32_attr<TypeParam>),
     std::system_error
   );
 }
@@ -139,19 +146,53 @@ TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::uint32_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(uint32_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(uint32_attr<TypeParam>),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_uint32)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  writer.write(uint32_attr<TypeParam>, 0x12345678, error);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(8U, msg.length());
+  EXPECT_EQ(0x12345678U, msg.read(uint32_attr<TypeParam>));
+}
+
+
+TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  writer.write(uint32_attr<TypeParam>, 0x12345678, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(uint32_attr<TypeParam>, 0x12345678),
     std::system_error
   );
 }
 
 
 // string {{{1
+
+
+template <typename Protocol>
+const attr_t<Protocol, turner::string_attribute_processor_t> string_attr{};
 
 
 TYPED_TEST(attribute_processor, read_string)
@@ -163,13 +204,12 @@ TYPED_TEST(attribute_processor, read_string)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(string_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ("str", value);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(string_attr<TypeParam>));
 }
 
 
@@ -185,13 +225,12 @@ TYPED_TEST(attribute_processor, read_string_last_attribute)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(string_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ("str", value);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(string_attr<TypeParam>));
 }
 
 
@@ -204,13 +243,12 @@ TYPED_TEST(attribute_processor, read_string_attribute_not_found)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(string_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::attribute_not_found, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(string_attr<TypeParam>),
     std::system_error
   );
 }
@@ -225,13 +263,12 @@ TYPED_TEST(attribute_processor, read_string_length_past_message_end)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(string_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(string_attr<TypeParam>),
     std::system_error
   );
 }
@@ -245,17 +282,20 @@ TYPED_TEST(attribute_processor, read_string_empty)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::string_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(string_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ("", value);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(string_attr<TypeParam>));
 }
 
 
 // array {{{1
+
+
+template <typename Protocol>
+const attr_t<Protocol, turner::array_attribute_processor_t> array_attr{};
 
 
 TYPED_TEST(attribute_processor, read_array)
@@ -267,13 +307,12 @@ TYPED_TEST(attribute_processor, read_array)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
-  auto [ begin, end ] = msg.read(attr, error);
+  auto [ begin, end ] = msg.read(array_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ("str", std::string(begin, end));
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(array_attr<TypeParam>));
 }
 
 
@@ -289,13 +328,12 @@ TYPED_TEST(attribute_processor, read_array_last_attribute)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
-  auto [ begin, end ] = msg.read(attr, error);
+  auto [ begin, end ] = msg.read(array_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ("str", std::string(begin, end));
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(array_attr<TypeParam>));
 }
 
 
@@ -308,13 +346,12 @@ TYPED_TEST(attribute_processor, read_array_attribute_not_found)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(array_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::attribute_not_found, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(array_attr<TypeParam>),
     std::system_error
   );
 }
@@ -329,13 +366,12 @@ TYPED_TEST(attribute_processor, read_array_length_past_message_end)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(array_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(array_attr<TypeParam>),
     std::system_error
   );
 }
@@ -349,17 +385,20 @@ TYPED_TEST(attribute_processor, read_array_empty)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::array_attribute_processor_t> attr;
   std::error_code error;
-  auto [ begin, end ] = msg.read(attr, error);
+  auto [ begin, end ] = msg.read(array_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ(begin, end);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(array_attr<TypeParam>));
 }
 
 
 // error {{{1
+
+
+template <typename Protocol>
+const attr_t<Protocol, turner::error_attribute_processor_t> error_attr{};
 
 
 __turner_inline_var constexpr const turner::error_t expected_error{300, "Text"};
@@ -375,14 +414,13 @@ TYPED_TEST(attribute_processor, read_error)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(error_attr<TypeParam>, error);
   EXPECT_TRUE(!error) << error.message();
   EXPECT_EQ(expected_error, value);
   EXPECT_EQ("Msg", value.message);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(error_attr<TypeParam>));
 }
 
 
@@ -399,14 +437,13 @@ TYPED_TEST(attribute_processor, read_error_last_attribute)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
-  auto value = msg.read(attr, error);
+  auto value = msg.read(error_attr<TypeParam>, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ(expected_error, value);
   EXPECT_EQ("Msg", value.message);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(error_attr<TypeParam>));
 }
 
 
@@ -420,13 +457,12 @@ TYPED_TEST(attribute_processor, read_error_attribute_not_found)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(error_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::attribute_not_found, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(error_attr<TypeParam>),
     std::system_error
   );
 }
@@ -442,13 +478,12 @@ TYPED_TEST(attribute_processor, read_error_length_past_message_end)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(error_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(error_attr<TypeParam>),
     std::system_error
   );
 }
@@ -462,19 +497,22 @@ TYPED_TEST(attribute_processor, read_error_unexpected_attribute_length)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::error_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(error_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(error_attr<TypeParam>),
     std::system_error
   );
 }
 
 
 // address {{{1
+
+
+template <typename Protocol>
+const attr_t<Protocol, turner::address_attribute_processor_t> addr_attr{};
 
 
 __turner_inline_var const auto expected_address_v4 =
@@ -497,14 +535,13 @@ TYPED_TEST(attribute_processor, read_address_v4)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  auto [ address, port ] = msg.read(attr, error);
+  auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
   EXPECT_TRUE(!error) << error.message();
   EXPECT_EQ(expected_address_v4, address);
   EXPECT_EQ(expected_port, port);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(addr_attr<TypeParam>));
 }
 
 
@@ -522,14 +559,13 @@ TYPED_TEST(attribute_processor, read_address_v6)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  auto [ address, port ] = msg.read(attr, error);
+  auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
   EXPECT_TRUE(!error) << error.message();
   EXPECT_EQ(expected_address_v6, address);
   EXPECT_EQ(expected_port, port);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(addr_attr<TypeParam>));
 }
 
 
@@ -547,14 +583,13 @@ TYPED_TEST(attribute_processor, read_address_v4_last_attribute)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  auto [ address, port ] = msg.read(attr, error);
+  auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
   EXPECT_TRUE(!error) << error.message();
   EXPECT_EQ(expected_address_v4, address);
   EXPECT_EQ(expected_port, port);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(addr_attr<TypeParam>));
 }
 
 
@@ -575,14 +610,13 @@ TYPED_TEST(attribute_processor, read_address_v6_last_attribute)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  auto [ address, port ] = msg.read(attr, error);
+  auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
   EXPECT_TRUE(!error) << error.message();
   EXPECT_EQ(expected_address_v6, address);
   EXPECT_EQ(expected_port, port);
 
-  EXPECT_NO_THROW(msg.read(attr));
+  EXPECT_NO_THROW(msg.read(addr_attr<TypeParam>));
 }
 
 
@@ -597,13 +631,12 @@ TYPED_TEST(attribute_processor, read_address_attribute_not_found)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(addr_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::attribute_not_found, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(addr_attr<TypeParam>),
     std::system_error
   );
 }
@@ -620,13 +653,12 @@ TYPED_TEST(attribute_processor, read_address_v4_length_past_message_end)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(addr_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(addr_attr<TypeParam>),
     std::system_error
   );
 }
@@ -646,13 +678,12 @@ TYPED_TEST(attribute_processor, read_address_v6_length_past_message_end)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(addr_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(addr_attr<TypeParam>),
     std::system_error
   );
 }
@@ -672,13 +703,12 @@ TYPED_TEST(attribute_processor, read_address_v4_unexpected_attribute_length)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(addr_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(addr_attr<TypeParam>),
     std::system_error
   );
 }
@@ -695,13 +725,12 @@ TYPED_TEST(attribute_processor, read_address_v6_unexpected_attribute_length)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(addr_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(addr_attr<TypeParam>),
     std::system_error
   );
 }
@@ -718,13 +747,12 @@ TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
   );
   auto &msg = from_wire(TypeParam(), data);
 
-  attr_t<TypeParam, turner::address_attribute_processor_t> attr;
   std::error_code error;
-  msg.read(attr, error);
+  msg.read(addr_attr<TypeParam>, error);
   EXPECT_EQ(turner::errc::unexpected_address_family, error);
 
   EXPECT_THROW(
-    msg.read(attr),
+    msg.read(addr_attr<TypeParam>),
     std::system_error
   );
 }
