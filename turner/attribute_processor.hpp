@@ -22,7 +22,7 @@ __turner_begin
 namespace __bits {
 
 inline bool has_enough_room (const uint8_t *first, const uint8_t *last,
-  uint16_t required_size,
+  size_t required_size,
   std::error_code &error) noexcept
 {
   if (first + required_size <= last)
@@ -33,6 +33,18 @@ inline bool has_enough_room (const uint8_t *first, const uint8_t *last,
   error = make_error_code(errc::not_enough_room);
   return false;
 }
+
+
+template <typename It>
+inline auto make_output_iterator (It first, It) noexcept
+{
+#if defined(_MSC_VER)
+  return stdext::make_unchecked_array_iterator(first);
+#else
+  return first;
+#endif
+}
+
 
 } // namespace __bits
 
@@ -71,11 +83,11 @@ struct uint32_attribute_processor_t
 
 
   /**
-   * Write \a value at \a first, not exceeding \a last. If \a value does not
-   * fit into [\a first, \a last), \a error is set to errc::not_enough_room
-   * and nothing is writtern. Returns \a value size.
+   * Write \a value into [\a first, \a last). If \a value does not fit into
+   * specified region, \a error is set to errc::not_enough_room and nothing
+   * is writtern. Returns \a value size.
    */
-  static uint16_t write (const any_message_t<ProtocolTraits> &,
+  static size_t write (const any_message_t<ProtocolTraits> &,
     uint8_t *first, uint8_t *last,
     const value_t &value,
     std::error_code &error) noexcept
@@ -97,14 +109,13 @@ template <typename ProtocolTraits>
 struct string_attribute_processor_t
 {
   /**
-   * Attribute value type.
+   * \copydoc uint32_attribute_processor_t::value_t
    */
   using value_t = std::string_view;
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
   static value_t read (
     const any_message_t<ProtocolTraits> &,
@@ -117,6 +128,25 @@ struct string_attribute_processor_t
       reinterpret_cast<const char *>(attribute.data()),
       attribute.length()
     };
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    auto required_size = (value.size() + 3) & ~3;
+    if (__bits::has_enough_room(first, last, required_size, error))
+    {
+      std::uninitialized_copy(value.begin(), value.end(),
+        __bits::make_output_iterator(first, last)
+      );
+    }
+    return value.size();
   }
 };
 

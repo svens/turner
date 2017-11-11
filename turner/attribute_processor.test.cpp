@@ -160,8 +160,11 @@ TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
 TYPED_TEST(attribute_processor, write_uint32)
 {
   std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+
   std::error_code error;
   auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(8U, writer.available());
+
   writer.write(uint32_attr<TypeParam>, 0x12345678, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ(0U, writer.available());
@@ -175,8 +178,11 @@ TYPED_TEST(attribute_processor, write_uint32)
 TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
 {
   std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+
   std::error_code error;
   auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(7U, writer.available());
+
   writer.write(uint32_attr<TypeParam>, 0x12345678, error);
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_EQ(7U, writer.available());
@@ -288,6 +294,80 @@ TYPED_TEST(attribute_processor, read_string_empty)
   EXPECT_EQ("", value);
 
   EXPECT_NO_THROW(msg.read(string_attr<TypeParam>));
+}
+
+
+TYPED_TEST(attribute_processor, write_string)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(8U, writer.available());
+
+  writer.write(string_attr<TypeParam>, "1234", error);
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(8U, msg.length());
+  EXPECT_EQ("1234", msg.read(string_attr<TypeParam>));
+}
+
+
+TYPED_TEST(attribute_processor, write_string_empty)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(4U, writer.available());
+
+  writer.write(string_attr<TypeParam>, "", error);
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(4U, msg.length());
+  EXPECT_EQ("", msg.read(string_attr<TypeParam>));
+}
+
+
+TYPED_TEST(attribute_processor, write_string_not_enough_room)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(7U, writer.available());
+
+  writer.write(string_attr<TypeParam>, "1234", error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(string_attr<TypeParam>, "1234"),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_string_not_enough_room_for_padding)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(7U, writer.available());
+
+  writer.write(string_attr<TypeParam>, "123", error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(string_attr<TypeParam>, "123"),
+    std::system_error
+  );
 }
 
 

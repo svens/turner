@@ -416,7 +416,7 @@ message_writer_t<ProtocolTraits, MessageType> &
     reinterpret_cast<uint16_t *>(attribute)[0] =
       sal::native_to_network_byte_order(AttributeType);
     reinterpret_cast<uint16_t *>(attribute)[1] =
-      sal::native_to_network_byte_order(attribute_size);
+      sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
     message_size += 2 * sizeof(uint16_t) + ((attribute_size + 3) & ~3);
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(message_size);
