@@ -474,6 +474,90 @@ TYPED_TEST(attribute_processor, read_array_empty)
 }
 
 
+TYPED_TEST(attribute_processor, write_array)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(8U, writer.available());
+
+  std::vector<uint8_t> array = { 1, 2, 3, 4 };
+  auto value = std::make_pair(array.data(), array.data() + array.size());
+  writer.write(array_attr<TypeParam>, value, error);
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(8U, msg.length());
+  auto [ begin, end ] = msg.read(array_attr<TypeParam>);
+  EXPECT_TRUE(std::equal(begin, end, array.begin()));
+}
+
+
+TYPED_TEST(attribute_processor, write_array_empty)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(4U, writer.available());
+
+  std::vector<uint8_t> array;
+  auto value = std::make_pair(array.data(), array.data() + array.size());
+  writer.write(array_attr<TypeParam>, value, error);
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(4U, msg.length());
+  auto [ begin, end ] = msg.read(array_attr<TypeParam>);
+  EXPECT_EQ(begin, end);
+}
+
+
+TYPED_TEST(attribute_processor, write_array_not_enough_room)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(7U, writer.available());
+
+  std::vector<uint8_t> array = { 1, 2, 3, 4 };
+  auto value = std::make_pair(array.data(), array.data() + array.size());
+  writer.write(array_attr<TypeParam>, value, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(array_attr<TypeParam>, value),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_array_not_enough_room_for_padding)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(7U, writer.available());
+
+  std::vector<uint8_t> array = { 1, 2, 3 };
+  auto value = std::make_pair(array.data(), array.data() + array.size());
+  writer.write(array_attr<TypeParam>, value, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(array_attr<TypeParam>, value),
+    std::system_error
+  );
+}
+
+
 // error {{{1
 
 

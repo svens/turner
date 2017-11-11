@@ -166,8 +166,7 @@ struct array_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
   static value_t read (
     const any_message_t<ProtocolTraits> &,
@@ -177,6 +176,25 @@ struct array_attribute_processor_t
     error.clear();
     auto data = reinterpret_cast<const uint8_t *>(attribute.data());
     return {data, data + attribute.length()};
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    auto required_size = (value.second - value.first + 3) & ~3;
+    if (__bits::has_enough_room(first, last, required_size, error))
+    {
+      std::uninitialized_copy(value.first, value.second,
+        __bits::make_output_iterator(first, last)
+      );
+    }
+    return value.second - value.first;
   }
 };
 
