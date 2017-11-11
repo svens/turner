@@ -980,6 +980,25 @@ TYPED_TEST(attribute_processor, read_address_v6_unexpected_attribute_length)
 }
 
 
+TYPED_TEST(attribute_processor, read_address_empty)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x00"          // Length (empty)
+  );
+  auto &msg = from_wire(TypeParam(), data);
+
+  std::error_code error;
+  msg.read(addr_attr<TypeParam>, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+
+  EXPECT_THROW(
+    msg.read(addr_attr<TypeParam>),
+    std::system_error
+  );
+}
+
+
 TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
 {
   auto data = wire_data(TypeParam(),
@@ -997,6 +1016,128 @@ TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
 
   EXPECT_THROW(
     msg.read(addr_attr<TypeParam>),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_address_v4)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 12> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(12U, writer.available());
+
+  writer.write(addr_attr<TypeParam>,
+    {expected_address_v4, expected_port},
+    error
+  );
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(12U, msg.length());
+  auto [ address, port ] = msg.read(addr_attr<TypeParam>);
+  EXPECT_EQ(expected_address_v4, address);
+  EXPECT_EQ(expected_port, port);
+}
+
+
+TYPED_TEST(attribute_processor, write_address_v6)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 24> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(24, writer.available());
+
+  writer.write(addr_attr<TypeParam>,
+    {expected_address_v6, expected_port},
+    error
+  );
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(24, msg.length());
+  auto [ address, port ] = msg.read(addr_attr<TypeParam>);
+  EXPECT_EQ(expected_address_v6, address);
+  EXPECT_EQ(expected_port, port);
+}
+
+
+TYPED_TEST(attribute_processor, write_address_v4_not_enough_room)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(11, writer.available());
+
+  writer.write(addr_attr<TypeParam>,
+    {expected_address_v4, expected_port},
+    error
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(11, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(addr_attr<TypeParam>,
+      {expected_address_v4, expected_port}
+    ),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_address_v6_not_enough_room)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 23> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(23, writer.available());
+
+  writer.write(addr_attr<TypeParam>,
+    {expected_address_v6, expected_port},
+    error
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(23, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(addr_attr<TypeParam>,
+      {expected_address_v6, expected_port}
+    ),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_address_unexpected_family)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 24> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(24, writer.available());
+
+  auto address = expected_address_v4;
+  reinterpret_cast<uint8_t *>(&address)[0] = 99;
+
+  writer.write(addr_attr<TypeParam>,
+    {address, expected_port},
+    error
+  );
+
+  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(24, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(addr_attr<TypeParam>,
+      {address, expected_port}
+    ),
     std::system_error
   );
 }

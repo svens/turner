@@ -1,6 +1,7 @@
 list(APPEND turner
   turner/attribute.hpp
   turner/attribute_processor.hpp
+  turner/attribute_processor.cpp
   turner/error.hpp
   turner/error.cpp
   turner/fwd.hpp
