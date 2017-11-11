@@ -85,7 +85,7 @@ struct uint32_attribute_processor_t
   /**
    * Write \a value into [\a first, \a last). If \a value does not fit into
    * specified region, \a error is set to errc::not_enough_room and nothing
-   * is writtern. Returns \a value size.
+   * is writtern. Returns \a value size (without possible padding roundup).
    */
   static size_t write (const any_message_t<ProtocolTraits> &,
     uint8_t *first, uint8_t *last,
@@ -212,8 +212,7 @@ struct error_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
   static value_t read (
     const any_message_t<ProtocolTraits> &,
@@ -232,6 +231,29 @@ struct error_attribute_processor_t
     }
     error = make_error_code(errc::unexpected_attribute_length);
     return {};
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    auto required_size = sizeof(uint32_t) + ((value.message.size() + 3) & ~3);
+    if (__bits::has_enough_room(first, last, required_size, error))
+    {
+      *first++ = 0;
+      *first++ = 0;
+      *first++ = static_cast<uint8_t>(value.code/100);
+      *first++ = static_cast<uint8_t>(value.code%100);
+      std::uninitialized_copy(value.message.begin(), value.message.end(),
+        __bits::make_output_iterator(first, last)
+      );
+    }
+    return sizeof(uint32_t) + value.message.size();
   }
 };
 

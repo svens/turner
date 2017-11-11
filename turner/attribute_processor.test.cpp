@@ -672,6 +672,86 @@ TYPED_TEST(attribute_processor, read_error_unexpected_attribute_length)
 }
 
 
+TYPED_TEST(attribute_processor, write_error)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 12> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(12U, writer.available());
+
+  writer.write(error_attr<TypeParam>, expected_error, error);
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(12, msg.length());
+  auto error_code = msg.read(error_attr<TypeParam>);
+  EXPECT_EQ(expected_error, error_code);
+  EXPECT_EQ(expected_error.message, error_code.message);
+}
+
+
+TYPED_TEST(attribute_processor, write_error_empty)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(8U, writer.available());
+
+  constexpr const turner::error_t empty_error{300, ""};
+  writer.write(error_attr<TypeParam>, empty_error, error);
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(TypeParam(), data);
+  EXPECT_EQ(8U, msg.length());
+  auto error_code = msg.read(error_attr<TypeParam>);
+  EXPECT_EQ(empty_error, error_code);
+  EXPECT_EQ(empty_error.message, error_code.message);
+}
+
+
+TYPED_TEST(attribute_processor, write_error_not_enough_room)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(11U, writer.available());
+
+  writer.write(error_attr<TypeParam>, expected_error, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(11U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(error_attr<TypeParam>, expected_error),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
+{
+  std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
+
+  std::error_code error;
+  auto writer = to_wire(TypeParam(), data);
+  EXPECT_EQ(11U, writer.available());
+
+  constexpr const turner::error_t padded_error{300, "123"};
+  writer.write(error_attr<TypeParam>, padded_error, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(11U, writer.available());
+
+  EXPECT_THROW(
+    to_wire(TypeParam(), data).write(error_attr<TypeParam>, padded_error),
+    std::system_error
+  );
+}
+
+
 // address {{{1
 
 
