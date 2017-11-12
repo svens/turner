@@ -7,13 +7,8 @@
 
 
 #include <turner/config.hpp>
-#include <turner/attribute.hpp>
-#include <turner/error.hpp>
-#include <turner/message.hpp>
-#include <sal/byte_order.hpp>
-#include <sal/net/ip/address.hpp>
-#include <string_view>
-#include <utility>
+#include <turner/fwd.hpp>
+#include <turner/__bits/attribute_processor.hpp>
 
 
 __turner_begin
@@ -35,20 +30,25 @@ struct uint32_attribute_processor_t
    * Read \a attribute value. On failure return default value and set \a error
    * to code describing failure reason.
    */
-  static value_t read (
-    const any_message_t<ProtocolTraits> &,
+  static value_t read (const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
-    if (attribute.length() == sizeof(value_t))
-    {
-      error.clear();
-      return sal::network_to_native_byte_order(
-        *reinterpret_cast<const uint32_t *>(attribute.data())
-      );
-    }
-    error = make_error_code(errc::unexpected_attribute_length);
-    return {};
+    return __bits::read_uint32(attribute, error);
+  }
+
+
+  /**
+   * Write \a value into [\a first, \a last). If \a value does not fit into
+   * specified region, \a error is set to errc::not_enough_room and nothing
+   * is writtern. Returns \a value size (without possible padding roundup).
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last, value, error);
   }
 };
 
@@ -66,20 +66,25 @@ struct string_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
-  static value_t read (
-    const any_message_t<ProtocolTraits> &,
+  static value_t read (const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
-    error.clear();
-    return
-    {
-      reinterpret_cast<const char *>(attribute.data()),
-      attribute.length()
-    };
+    return __bits::read_string(attribute, error);
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_string(first, last, value, error);
   }
 };
 
@@ -99,17 +104,25 @@ struct array_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
-  static value_t read (
-    const any_message_t<ProtocolTraits> &,
+  static value_t read (const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
-    error.clear();
-    auto data = reinterpret_cast<const uint8_t *>(attribute.data());
-    return {data, data + attribute.length()};
+    return __bits::read_array(attribute, error);
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_array(first, last, value, error);
   }
 };
 
@@ -127,26 +140,25 @@ struct error_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
-  static value_t read (
-    const any_message_t<ProtocolTraits> &,
+  static value_t read (const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
-    if (attribute.length() >= 4)
-    {
-      return error_t(
-        (attribute.data()[2] & 0x7) * 100 + attribute.data()[3],
-        std::string_view(
-          reinterpret_cast<const char *>(attribute.data() + 4),
-          attribute.length() - 4
-        )
-      );
-    }
-    error = make_error_code(errc::unexpected_attribute_length);
-    return {};
+    return __bits::read_error(attribute, error);
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_error(first, last, value, error);
   }
 };
 
@@ -166,69 +178,27 @@ struct address_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
-  static value_t read (
-    const any_message_t<ProtocolTraits> &,
-    const any_attribute_t &attribute,
-    std::error_code &error
-  ) noexcept;
-};
-
-
-template <typename ProtocolTraits>
-typename address_attribute_processor_t<ProtocolTraits>::value_t
-  address_attribute_processor_t<ProtocolTraits>::read (
-    const any_message_t<ProtocolTraits> &,
+  static value_t read (const any_message_t<ProtocolTraits> &,
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
-{
-  const auto family = attribute.data()[1];
-  if (family == 0x01)
   {
-    if (attribute.length() == 8)
-    {
-      error.clear();
-      return
-      {
-        sal::net::ip::make_address_v4(
-          *reinterpret_cast<const sal::net::ip::address_v4_t::bytes_t *>(
-            attribute.data() + 4
-          )
-        ),
-        sal::network_to_native_byte_order(
-          reinterpret_cast<const uint16_t *>(attribute.data())[1]
-        )
-      };
-    }
-    error = make_error_code(errc::unexpected_attribute_length);
+    return __bits::read_address(attribute, error);
   }
-  else if (family == 0x02)
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
   {
-    if (attribute.length() == 20)
-    {
-      error.clear();
-      return
-      {
-        sal::net::ip::make_address_v6(
-          *reinterpret_cast<const sal::net::ip::address_v6_t::bytes_t *>(
-            attribute.data() + 4
-          )
-        ),
-        sal::network_to_native_byte_order(
-          reinterpret_cast<const uint16_t *>(attribute.data())[1]
-        )
-      };
-    }
-    error = make_error_code(errc::unexpected_attribute_length);
+    return __bits::write_address(first, last, value, error);
   }
-  else
-  {
-    error = make_error_code(errc::unexpected_address_family);
-  }
-  return {};
-}
+};
 
 
 __turner_end

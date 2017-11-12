@@ -29,6 +29,8 @@ inline constexpr const char *to_message (errc e) noexcept
       return "unexpected attribute length";
     case errc::unexpected_address_family:
       return "unexpected address family";
+    case errc::not_enough_room:
+      return "not enough room";
   }
   return "unknown error";
 }

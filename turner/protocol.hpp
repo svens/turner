@@ -8,6 +8,8 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
+#include <turner/message.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <array>
 #include <ostream>
 #include <type_traits>
@@ -57,9 +59,9 @@ public:
   /**
    * Return protocol name (if defined).
    *
-   * Protocol name is defined, if \c "void operator>> (ProtocolTraits, const char *&name)"
-   * is provided. On operator invocation, name should be assigned to protocol
-   * name.
+   * Protocol name is defined, if \c "void operator>> (ProtocolTraits, const
+   * char *&name)" is provided. On operator invocation, name should be
+   * assigned to protocol name.
    *
    * If this operator is not provided, nullptr is returned.
    */
@@ -86,15 +88,16 @@ public:
    * specified memory range [\a first, \a last). Each time any of
    * any_message_t method is invocated, it parses fields relative to \a this.
    *
-   * If during call to from_wire() message validation fails, nullptr is
+   * If during call to parse() message validation fails, nullptr is
    * returned and error is set to code describing failure.
    */
   template <typename It>
-  static const message_t *from_wire (It first, It last,
+  static const message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
-    auto begin = __bits::to_ptr(first);
-    return from_wire(begin, begin + (last - first), error);
+    auto begin = __bits::to_cptr(first);
+    auto end = begin + (last - first) * sizeof(*first);
+    return parse(begin, end, error);
   }
 
 
@@ -106,14 +109,66 @@ public:
    * specified memory range [\a first, \a last). Each time any of
    * any_message_t method is invocated, it parses fields relative to \a this.
    *
-   * \throws std::system_error if during call to from_wire() message
+   * \throws std::system_error if during call to parse() message
    * validation fails.
    */
   template <typename It>
-  static const message_t *from_wire (It first, It last)
+  static const message_t *parse (It first, It last)
   {
-    return from_wire(first, last,
-      sal::throw_on_error("protocol::from_wire")
+    return parse(first, last,
+      sal::throw_on_error("protocol::parse")
+    );
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area [\a first, \a last).
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes nor set valid message length. Use returned object to add
+   * attributes and finalize message.
+   *
+   * On error, set \a error and return undefined message_writer_t object.
+   */
+  template <uint16_t MessageType, typename It>
+  static message_writer_t<ProtocolTraits, MessageType> build (
+    message_type_t<MessageType> message_type,
+    It first,
+    It last,
+    std::error_code &error) noexcept
+  {
+    static_assert(message_type.is_request() || message_type.is_indication(),
+      "expected request or indication message type"
+    );
+    auto begin = __bits::to_ptr(first);
+    auto end = begin + (last - first) * sizeof(*first);
+    if (build(MessageType, begin, end, error))
+    {
+      return {begin, end};
+    }
+    return {nullptr, nullptr};
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area [\a first, \a last).
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes nor set valid message length. Use returned object to add
+   * attributes and finalize message.
+   *
+   * \throws std::system_error on message header building failure.
+   */
+  template <uint16_t MessageType, typename It>
+  static message_writer_t<ProtocolTraits, MessageType> build (
+    message_type_t<MessageType> message_type,
+    It first,
+    It last)
+  {
+    return build(message_type, first, last,
+      sal::throw_on_error("protocol::build")
     );
   }
 
@@ -137,9 +192,18 @@ public:
 
 private:
 
-  static const message_t *from_wire (
+  static_assert(std::is_trivially_destructible_v<message_t>);
+
+  static const message_t *parse (
     const uint8_t *first,
     const uint8_t *last,
+    std::error_code &error
+  ) noexcept;
+
+  static bool build (
+    uint16_t message_type,
+    uint8_t *first,
+    uint8_t *last,
     std::error_code &error
   ) noexcept;
 };
@@ -147,7 +211,7 @@ private:
 
 template <typename ProtocolTraits>
 const typename protocol_t<ProtocolTraits>::message_t *
-  protocol_t<ProtocolTraits>::from_wire (
+  protocol_t<ProtocolTraits>::parse (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error) noexcept
@@ -160,7 +224,6 @@ const typename protocol_t<ProtocolTraits>::message_t *
   }
 
   // passed initial checks, overlay any_message_t on top of specified area
-  static_assert(std::is_trivially_destructible_v<message_t>);
   auto message = reinterpret_cast<const message_t *>(first);
 
   // message type
@@ -191,6 +254,24 @@ const typename protocol_t<ProtocolTraits>::message_t *
 
   error.clear();
   return message;
+}
+
+
+template <typename ProtocolTraits>
+bool protocol_t<ProtocolTraits>::build (uint16_t message_type,
+  uint8_t *first,
+  uint8_t *last,
+  std::error_code &error) noexcept
+{
+  if (size_t(last - first) >= traits_t::header_size)
+  {
+    auto message = reinterpret_cast<message_t *>(first);
+    message->build_header(message_type);
+    error.clear();
+    return true;
+  }
+  error = make_error_code(errc::not_enough_room);
+  return false;
 }
 
 

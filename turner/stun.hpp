@@ -150,12 +150,20 @@ struct xor_address_attribute_processor_t
 
 
   /**
-   * Read \a attribute value. On failure return default value and set \a error
-   * to code describing failure reason.
+   * \copydoc uint32_attribute_processor_t::read()
    */
-  static value_t read (
-    const any_message_t<protocol_traits_t> &message,
+  static value_t read (const any_message_t<protocol_traits_t> &message,
     const any_attribute_t &attribute,
+    std::error_code &error
+  ) noexcept;
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<protocol_traits_t> &message,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
     std::error_code &error
   ) noexcept;
 };

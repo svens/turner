@@ -6,9 +6,11 @@
  */
 
 #include <turner/config.hpp>
-#include <turner/fwd.hpp>
 #include <turner/error.hpp>
+#include <turner/fwd.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <sal/byte_order.hpp>
+#include <sal/crypto/random.hpp>
 
 
 __turner_begin
@@ -21,7 +23,7 @@ __turner_begin
  * header layout depends on corresponding protocol header layout.
  *
  * This type is not meant to be instantiated directly but from
- * protocol_t<ProtocolTraits>::from_wire() that does message validation.
+ * protocol_t<ProtocolTraits>::parse() that does message validation.
  * On success, returned pointed object does not have any own storage. It is
  * overlayed on top of memory range containing raw network formatted message
  * and all getter methods operate on fields offset relative from \a this and
@@ -65,6 +67,42 @@ public:
 
 
   /**
+   * Return true if message type is request (i.e. not response or indication).
+   */
+  bool is_request () const noexcept
+  {
+    return (type() & __bits::class_mask) == 0;
+  }
+
+
+  /**
+   * Return true if message type is success response.
+   */
+  bool is_success_response () const noexcept
+  {
+    return (type() & __bits::class_mask) == __bits::success_response_class;
+  }
+
+
+  /**
+   * Return true if message type is error response.
+   */
+  bool is_error_response () const noexcept
+  {
+    return (type() & __bits::class_mask) == __bits::error_response_class;
+  }
+
+
+  /**
+   * Return true if message type is indication.
+   */
+  bool is_indication () const noexcept
+  {
+    return (type() & __bits::class_mask) == __bits::indication_class;
+  }
+
+
+  /**
    * Return message size as claimed by message length field. It does not
    * include message header length.
    */
@@ -82,7 +120,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
+      __bits::to_cptr(this) + ProtocolTraits::cookie_offset
     );
   }
 
@@ -93,7 +131,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset
+      __bits::to_cptr(this) + ProtocolTraits::transaction_id_offset
     );
   }
 
@@ -133,6 +171,12 @@ public:
 
 private:
 
+  any_message_t () = delete;
+  any_message_t (const any_message_t &) = delete;
+  any_message_t &operator= (const any_message_t &) = delete;
+  any_message_t (any_message_t &&) = delete;
+  any_message_t &operator= (any_message_t &&) = delete;
+
   template <size_t N>
   static void unexpected_message_type [[noreturn]] (const char (&msg)[N])
   {
@@ -141,16 +185,31 @@ private:
     );
   }
 
-  any_message_t () = delete;
-  any_message_t (const any_message_t &) = delete;
-  any_message_t &operator= (const any_message_t &) = delete;
-  any_message_t (any_message_t &&) = delete;
-  any_message_t &operator= (any_message_t &&) = delete;
+  void build_header (uint16_t message_type) noexcept
+  {
+    // type
+    reinterpret_cast<uint16_t *>(this)[0] =
+      sal::native_to_network_byte_order(message_type);
+
+    // length
+    reinterpret_cast<uint16_t *>(this)[1] = 0;
+
+    // cookie
+    *reinterpret_cast<cookie_t *>(
+      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
+    ) = ProtocolTraits::cookie;
+
+    // transaction id
+    auto p = __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset;
+    sal::crypto::random(p, p + ProtocolTraits::transaction_id_size);
+  }
+
+  friend class turner::protocol_t<ProtocolTraits>;
 };
 
 
 /**
- * Concrete protocol's message.
+ * Concrete protocol's message reader.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
 class message_reader_t
@@ -201,14 +260,14 @@ private:
   const any_attribute_t *begin () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::header_size
+      __bits::to_cptr(this) + ProtocolTraits::header_size
     );
   }
 
   const any_attribute_t *end () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::header_size + this->length()
+      __bits::to_cptr(this) + ProtocolTraits::header_size + this->length()
     );
   }
 };
@@ -225,7 +284,7 @@ typename AttributeProcessor::value_t
   {
     if (it->type() == AttributeType)
     {
-      if (it->data() + it->length() <= __bits::to_ptr(e))
+      if (it->data() + it->length() <= __bits::to_cptr(e))
       {
         return AttributeProcessor::read(*this, *it, error);
       }
@@ -238,6 +297,133 @@ typename AttributeProcessor::value_t
   }
   error = make_error_code(errc::attribute_not_found);
   return {};
+}
+
+
+/**
+ * Concrete protocol's message writer.
+ */
+template <typename ProtocolTraits, uint16_t MessageType>
+class message_writer_t
+{
+public:
+
+  /**
+   * Protocol class describing raw network message format.
+   */
+  using protocol_t = turner::protocol_t<ProtocolTraits>;
+
+  /**
+   * Message type.
+   */
+  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
+
+
+  /**
+   * Return message type.
+   */
+  static constexpr message_type_t type () noexcept
+  {
+    return {};
+  }
+
+
+  /**
+   * Return true if this object is in valid state. Calling any other method is
+   * undefined behavious if object is not in valid state.
+   */
+  explicit operator bool () const noexcept
+  {
+    return first_ + ProtocolTraits::header_size <= last_;
+  }
+
+
+  /**
+   * Return available room for building message (in bytes).
+   */
+  uint16_t available () const noexcept
+  {
+    auto message_length = sal::native_to_network_byte_order(
+      reinterpret_cast<uint16_t *>(first_)[1]
+    );
+    return static_cast<uint16_t>(
+      last_ - first_ - ProtocolTraits::header_size - message_length
+    );
+  }
+
+
+  /**
+   * Encode \a value and append to message as \a AttributeType. If there is
+   * no enough room in internal buffer, \a set error to errc::not_enough_room
+   * and do nothing.
+   */
+  template <uint16_t AttributeType, typename AttributeProcessor>
+  message_writer_t &write (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+    const typename AttributeProcessor::value_t &value,
+    std::error_code &error
+  ) noexcept;
+
+
+  /**
+   * Encode \a value and append to message as \a AttributeType. If there is
+   * no enough room in internal buffer, throw std::system_error.
+   */
+  template <uint16_t AttributeType, typename AttributeProcessor>
+  message_writer_t &write (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute,
+    const typename AttributeProcessor::value_t &value)
+  {
+    return write(attribute, value,
+      sal::throw_on_error("message_writer::write")
+    );
+  }
+
+
+private:
+
+  uint8_t * const first_, * const last_;
+
+  message_writer_t (uint8_t *first, uint8_t *last) noexcept
+    : first_(first)
+    , last_(last)
+  {}
+
+  friend class turner::protocol_t<ProtocolTraits>;
+};
+
+
+template <typename ProtocolTraits, uint16_t MessageType>
+template <uint16_t AttributeType, typename AttributeProcessor>
+message_writer_t<ProtocolTraits, MessageType> &
+  message_writer_t<ProtocolTraits, MessageType>::write (
+    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+    const typename AttributeProcessor::value_t &value,
+    std::error_code &error) noexcept
+{
+  auto &message = *reinterpret_cast<any_message_t<ProtocolTraits> *>(first_);
+  auto message_size = message.length();
+
+  auto attribute = first_ + ProtocolTraits::header_size + message_size;
+  auto attribute_size = AttributeProcessor::write(message,
+    attribute + 2 * sizeof(uint16_t),
+    last_,
+    value,
+    error
+  );
+
+  if (!error)
+  {
+    reinterpret_cast<uint16_t *>(attribute)[0] =
+      sal::native_to_network_byte_order(AttributeType);
+    reinterpret_cast<uint16_t *>(attribute)[1] =
+      sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
+    message_size += 2 * sizeof(uint16_t) + ((attribute_size + 3) & ~3);
+    reinterpret_cast<uint16_t *>(first_)[1] =
+      sal::native_to_network_byte_order(message_size);
+  }
+
+  return *this;
 }
 
 

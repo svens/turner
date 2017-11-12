@@ -8,6 +8,7 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <sal/byte_order.hpp>
 
 
@@ -69,7 +70,7 @@ public:
   const any_attribute_t *next () const noexcept
   {
     return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_ptr(this) + size()
+      __bits::to_cptr(this) + size()
     );
   }
 
