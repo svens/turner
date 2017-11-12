@@ -6,8 +6,9 @@
  */
 
 #include <turner/config.hpp>
-#include <turner/fwd.hpp>
 #include <turner/error.hpp>
+#include <turner/fwd.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/random.hpp>
 

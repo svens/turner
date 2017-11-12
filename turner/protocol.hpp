@@ -9,6 +9,7 @@
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
 #include <turner/message.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <array>
 #include <ostream>
 #include <type_traits>

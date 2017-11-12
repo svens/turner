@@ -8,6 +8,7 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <sal/byte_order.hpp>
 
 

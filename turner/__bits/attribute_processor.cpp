@@ -1,4 +1,5 @@
-#include <turner/attribute_processor.hpp>
+#include <turner/__bits/attribute_processor.hpp>
+#include <turner/__bits/helpers.hpp>
 #include <turner/attribute.hpp>
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>
@@ -22,16 +23,6 @@ inline bool has_enough_room (const uint8_t *first, const uint8_t *last,
   }
   error = make_error_code(errc::not_enough_room);
   return false;
-}
-
-template <typename It>
-inline auto make_output_iterator (It first, It) noexcept
-{
-#if defined(_MSC_VER)
-  return stdext::make_unchecked_array_iterator(first);
-#else
-  return first;
-#endif
 }
 
 } // namespace

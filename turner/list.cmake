@@ -1,7 +1,6 @@
 list(APPEND turner
   turner/attribute.hpp
   turner/attribute_processor.hpp
-  turner/attribute_processor.cpp
   turner/error.hpp
   turner/error.cpp
   turner/fwd.hpp
@@ -12,6 +11,11 @@ list(APPEND turner
   # specific protocol headers
   turner/stun.hpp
   turner/stun.cpp
+
+  # internals
+  turner/__bits/attribute_processor.hpp
+  turner/__bits/attribute_processor.cpp
+  turner/__bits/helpers.hpp
 )
 
 list(APPEND turner_unittests
