@@ -39,6 +39,13 @@ inline auto &from_wire (const Data &d)
 }
 
 
+template <typename Data>
+inline auto to_wire (Data &d)
+{
+  return STUN::build(msg_type(STUN()), d.begin(), d.end());
+}
+
+
 __turner_inline_var const auto expected_address_v4 =
   sal::net::ip::make_address("1.2.3.4");
 
@@ -277,6 +284,128 @@ TEST_F(stun, read_xor_address_unexpected_address_family)
 
   EXPECT_THROW(
     msg.read(turner::stun::xor_mapped_address),
+    std::system_error
+  );
+}
+
+
+TEST_F(stun, write_xor_address_v4)
+{
+  std::array<uint8_t, STUN::traits_t::header_size + 12> data;
+
+  std::error_code error;
+  auto writer = to_wire(data);
+  EXPECT_EQ(12U, writer.available());
+
+  writer.write(turner::stun::xor_mapped_address,
+    {expected_address_v4, expected_port},
+    error
+  );
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(data);
+  EXPECT_EQ(12U, msg.length());
+  auto [ address, port ] = msg.read(turner::stun::xor_mapped_address);
+  EXPECT_EQ(expected_address_v4, address);
+  EXPECT_EQ(expected_port, port);
+}
+
+
+TEST_F(stun, write_xor_address_v6)
+{
+  std::array<uint8_t, STUN::traits_t::header_size + 24> data;
+
+  std::error_code error;
+  auto writer = to_wire(data);
+  EXPECT_EQ(24, writer.available());
+
+  writer.write(turner::stun::xor_mapped_address,
+    {expected_address_v6, expected_port},
+    error
+  );
+  EXPECT_TRUE(!error) << error;
+  EXPECT_EQ(0U, writer.available());
+
+  auto &msg = from_wire(data);
+  EXPECT_EQ(24, msg.length());
+  auto [ address, port ] = msg.read(turner::stun::xor_mapped_address);
+  EXPECT_EQ(expected_address_v6, address);
+  EXPECT_EQ(expected_port, port);
+}
+
+
+TEST_F(stun, write_xor_address_v4_not_enough_room)
+{
+  std::array<uint8_t, STUN::traits_t::header_size + 11> data;
+
+  std::error_code error;
+  auto writer = to_wire(data);
+  EXPECT_EQ(11, writer.available());
+
+  writer.write(turner::stun::xor_mapped_address,
+    {expected_address_v4, expected_port},
+    error
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(11, writer.available());
+
+  EXPECT_THROW(
+    to_wire(data).write(turner::stun::xor_mapped_address,
+      {expected_address_v4, expected_port}
+    ),
+    std::system_error
+  );
+}
+
+
+TEST_F(stun, write_xor_address_v6_not_enough_room)
+{
+  std::array<uint8_t, STUN::traits_t::header_size + 23> data;
+
+  std::error_code error;
+  auto writer = to_wire(data);
+  EXPECT_EQ(23, writer.available());
+
+  writer.write(turner::stun::xor_mapped_address,
+    {expected_address_v6, expected_port},
+    error
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(23, writer.available());
+
+  EXPECT_THROW(
+    to_wire(data).write(turner::stun::xor_mapped_address,
+      {expected_address_v6, expected_port}
+    ),
+    std::system_error
+  );
+}
+
+
+TEST_F(stun, write_xor_address_unexpected_family)
+{
+  std::array<uint8_t, STUN::traits_t::header_size + 24> data;
+
+  std::error_code error;
+  auto writer = to_wire(data);
+  EXPECT_EQ(24, writer.available());
+
+  auto address = expected_address_v4;
+  reinterpret_cast<uint8_t *>(&address)[0] = 99;
+
+  writer.write(turner::stun::xor_mapped_address,
+    {address, expected_port},
+    error
+  );
+
+  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(24, writer.available());
+
+  EXPECT_THROW(
+    to_wire(data).write(turner::stun::xor_mapped_address,
+      {address, expected_port}
+    ),
     std::system_error
   );
 }

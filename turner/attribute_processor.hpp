@@ -60,7 +60,7 @@ template <typename ProtocolTraits>
 struct string_attribute_processor_t
 {
   /**
-   * \copydoc uint32_attribute_processor_t::value_t
+   * Attribute value type.
    */
   using value_t = std::string_view;
 

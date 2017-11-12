@@ -34,7 +34,7 @@ inline auto &from_wire (Protocol p, const Data &d)
 
 
 template <typename Protocol, typename Data>
-auto to_wire (Protocol p, Data &d)
+inline auto to_wire (Protocol p, Data &d)
 {
   return Protocol::build(msg_type(p), d.begin(), d.end());
 }
