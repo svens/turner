@@ -217,7 +217,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
     std::error_code &error) noexcept
 {
   // validate arguments
-  if (size_t(last - first) < traits_t::header_size)
+  if (first + traits_t::header_size > last)
   {
     error = make_error_code(errc::insufficient_header_data);
     return {};
@@ -263,7 +263,7 @@ bool protocol_t<ProtocolTraits>::build (uint16_t message_type,
   uint8_t *last,
   std::error_code &error) noexcept
 {
-  if (size_t(last - first) >= traits_t::header_size)
+  if (first + traits_t::header_size <= last)
   {
     auto message = reinterpret_cast<message_t *>(first);
     message->build_header(message_type);
