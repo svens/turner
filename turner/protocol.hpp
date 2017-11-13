@@ -10,6 +10,8 @@
 #include <turner/error.hpp>
 #include <turner/message.hpp>
 #include <turner/__bits/helpers.hpp>
+#include <sal/byte_order.hpp>
+#include <sal/crypto/random.hpp>
 #include <array>
 #include <ostream>
 #include <type_traits>
@@ -265,11 +267,25 @@ bool protocol_t<ProtocolTraits>::build (uint16_t message_type,
 {
   if (first + traits_t::header_size <= last)
   {
-    auto message = reinterpret_cast<message_t *>(first);
-    message->build_header(message_type);
+    // message type
+    reinterpret_cast<uint16_t *>(first)[0] =
+      sal::native_to_network_byte_order(message_type);
+
+    // message length
+    reinterpret_cast<uint16_t *>(first)[1] = 0;
+
+    // cookie
+    *reinterpret_cast<cookie_t *>(first + ProtocolTraits::cookie_offset) =
+      ProtocolTraits::cookie;
+
+    // transaction id
+    auto p = first + ProtocolTraits::transaction_id_offset;
+    sal::crypto::random(p, p + ProtocolTraits::transaction_id_size);
+
     error.clear();
     return true;
   }
+
   error = make_error_code(errc::not_enough_room);
   return false;
 }

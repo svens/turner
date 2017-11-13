@@ -11,7 +11,6 @@
 #include <turner/__bits/helpers.hpp>
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
-#include <sal/crypto/random.hpp>
 
 
 __turner_begin
@@ -185,27 +184,6 @@ private:
       make_error_code(errc::unexpected_message_type), msg
     );
   }
-
-  void build_header (uint16_t message_type) noexcept
-  {
-    // type
-    reinterpret_cast<uint16_t *>(this)[0] =
-      sal::native_to_network_byte_order(message_type);
-
-    // length
-    reinterpret_cast<uint16_t *>(this)[1] = 0;
-
-    // cookie
-    *reinterpret_cast<cookie_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
-    ) = ProtocolTraits::cookie;
-
-    // transaction id
-    auto p = __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset;
-    sal::crypto::random(p, p + ProtocolTraits::transaction_id_size);
-  }
-
-  friend class turner::protocol_t<ProtocolTraits>;
 };
 
 
