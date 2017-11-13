@@ -15,6 +15,8 @@ list(APPEND turner
   # internals
   turner/__bits/attribute_processor.hpp
   turner/__bits/attribute_processor.cpp
+  turner/__bits/message.hpp
+  turner/__bits/message.cpp
   turner/__bits/helpers.hpp
 )
 

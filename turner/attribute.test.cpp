@@ -77,23 +77,4 @@ TEST_F(any_attribute, size)
 }
 
 
-TEST_F(any_attribute, next)
-{
-  auto expected = as_attribute(&data[4]);
-  data[3] = 0; EXPECT_EQ(expected, as_attribute(data)->next());
-
-  expected = as_attribute(&data[8]);
-  data[3] = 1; EXPECT_EQ(expected, as_attribute(data)->next());
-  data[3] = 2; EXPECT_EQ(expected, as_attribute(data)->next());
-  data[3] = 3; EXPECT_EQ(expected, as_attribute(data)->next());
-  data[3] = 4; EXPECT_EQ(expected, as_attribute(data)->next());
-
-  expected = as_attribute(&data[12]);
-  data[3] = 5; EXPECT_EQ(expected, as_attribute(data)->next());
-  data[3] = 6; EXPECT_EQ(expected, as_attribute(data)->next());
-  data[3] = 7; EXPECT_EQ(expected, as_attribute(data)->next());
-  data[3] = 8; EXPECT_EQ(expected, as_attribute(data)->next());
-}
-
-
 }} // namespace turner_test

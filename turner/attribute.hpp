@@ -64,17 +64,6 @@ public:
   }
 
 
-  /**
-   * Pointer to next attribute.
-   */
-  const any_attribute_t *next () const noexcept
-  {
-    return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_cptr(this) + size()
-    );
-  }
-
-
 private:
 
   any_attribute_t () = delete;

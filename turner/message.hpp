@@ -9,6 +9,7 @@
 #include <turner/error.hpp>
 #include <turner/fwd.hpp>
 #include <turner/__bits/helpers.hpp>
+#include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/random.hpp>
 
@@ -239,8 +240,16 @@ public:
   template <uint16_t AttributeType, typename AttributeProcessor>
   typename AttributeProcessor::value_t read (
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    std::error_code &error
-  ) const noexcept;
+    std::error_code &error) const noexcept
+  {
+    auto p = __bits::to_cptr(this) + ProtocolTraits::header_size;
+    if (auto attribute = __bits::find_attribute(p, p + this->length(),
+        AttributeType, error))
+    {
+      return AttributeProcessor::read(*this, *attribute, error);
+    }
+    return {};
+  }
 
 
   /**
@@ -253,51 +262,7 @@ public:
   {
     return read(attribute, sal::throw_on_error("message_reader::read"));
   }
-
-
-private:
-
-  const any_attribute_t *begin () const noexcept
-  {
-    return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_cptr(this) + ProtocolTraits::header_size
-    );
-  }
-
-  const any_attribute_t *end () const noexcept
-  {
-    return reinterpret_cast<const any_attribute_t *>(
-      __bits::to_cptr(this) + ProtocolTraits::header_size + this->length()
-    );
-  }
 };
-
-
-template <typename ProtocolTraits, uint16_t MessageType>
-template <uint16_t AttributeType, typename AttributeProcessor>
-typename AttributeProcessor::value_t
-  message_reader_t<ProtocolTraits, MessageType>::read (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    std::error_code &error) const noexcept
-{
-  for (auto it = begin(), e = end();  it < e;  it = it->next())
-  {
-    if (it->type() == AttributeType)
-    {
-      if (it->data() + it->length() <= __bits::to_cptr(e))
-      {
-        return AttributeProcessor::read(*this, *it, error);
-      }
-      else
-      {
-        error = make_error_code(errc::unexpected_attribute_length);
-        return {};
-      }
-    }
-  }
-  error = make_error_code(errc::attribute_not_found);
-  return {};
-}
 
 
 /**
