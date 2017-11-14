@@ -101,7 +101,7 @@ inline constexpr auto msg_len (STUN)
   return 8;
 }
 
-inline constexpr auto txn_id (STUN)
+inline constexpr auto msg_txn_id (STUN)
 {
   return turner::stun::protocol_t::transaction_id_t
   {{
@@ -109,6 +109,18 @@ inline constexpr auto txn_id (STUN)
     0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b,
   }};
+}
+
+inline constexpr auto msg_success_type (STUN)
+{
+  return turner::stun::binding_success;
+}
+
+inline constexpr auto msg_error_type (STUN)
+{
+  // there is no error response for STUN Binding
+  // let's invent it for testing
+  return turner::stun::binding_t::error_response_t{};
 }
 
 
