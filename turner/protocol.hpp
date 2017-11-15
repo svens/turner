@@ -196,6 +196,11 @@ private:
 
   static_assert(std::is_trivially_destructible_v<message_t>);
 
+  static_assert(
+    (traits_t::padding_size & (traits_t::padding_size - 1)) == 0,
+    "expected value of traits_t::padding_size to be power of 2"
+  );
+
   static const message_t *parse (
     const uint8_t *first,
     const uint8_t *last,
@@ -235,11 +240,14 @@ const typename protocol_t<ProtocolTraits>::message_t *
     return {};
   }
 
-  // message length (must be padded to 4B boundary)
-  if (message->length() % 4 != 0)
+  // message length
+  if constexpr (ProtocolTraits::padding_size > 1)
   {
-    error = make_error_code(errc::invalid_message_length);
-    return {};
+    if (message->length() % ProtocolTraits::padding_size != 0)
+    {
+      error = make_error_code(errc::invalid_message_length);
+      return {};
+    }
   }
   if (first + traits_t::header_size + message->length() > last)
   {

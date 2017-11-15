@@ -12,12 +12,19 @@ namespace {
 
 constexpr const size_t type_and_length = 2 * sizeof(uint16_t);
 
+inline constexpr size_t round_up (size_t size, size_t padding_size)
+  noexcept
+{
+  return type_and_length + ((size + padding_size - 1) & ~(padding_size - 1));
+}
+
 } // namespae
 
 
 const any_attribute_t *find_attribute (
   const uint8_t *first, const uint8_t *last,
   uint16_t attribute_type,
+  size_t padding_size,
   std::error_code &error) noexcept
 {
   while (first + type_and_length <= last)
@@ -25,7 +32,7 @@ const any_attribute_t *find_attribute (
     auto attribute = reinterpret_cast<const any_attribute_t *>(first);
     if (attribute->type() == attribute_type)
     {
-      if (first + attribute->size() <= last)
+      if (first + round_up(attribute->length(), padding_size) <= last)
       {
         return attribute;
       }
@@ -35,7 +42,7 @@ const any_attribute_t *find_attribute (
         return {};
       }
     }
-    first += attribute->size();
+    first += round_up(attribute->length(), padding_size);
   }
 
   error = make_error_code(errc::attribute_not_found);

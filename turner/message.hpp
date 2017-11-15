@@ -222,7 +222,7 @@ public:
   {
     auto p = __bits::to_cptr(this) + ProtocolTraits::header_size;
     if (auto attribute = __bits::find_attribute(p, p + this->length(),
-        AttributeType, error))
+        AttributeType, ProtocolTraits::padding_size, error))
     {
       return AttributeProcessor::read(*this, *attribute, error);
     }
@@ -509,11 +509,27 @@ message_writer_t<ProtocolTraits, MessageType> &
 
   if (!error)
   {
+    if constexpr (ProtocolTraits::padding_size > 1)
+    {
+      // AttributeProcessor does not check for padding, do it here
+      constexpr const auto r = ProtocolTraits::padding_size - 1;
+      message_size += 2 * sizeof(uint16_t) + ((attribute_size + r) & ~r);
+      if (first_ + ProtocolTraits::header_size + message_size > last_)
+      {
+        error = make_error_code(errc::not_enough_room);
+        return *this;
+      }
+    }
+
+    // attribute type
     reinterpret_cast<uint16_t *>(attribute)[0] =
       sal::native_to_network_byte_order(AttributeType);
+
+    // attribute length
     reinterpret_cast<uint16_t *>(attribute)[1] =
       sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
-    message_size += 2 * sizeof(uint16_t) + ((attribute_size + 3) & ~3);
+
+    // message length
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(message_size);
   }

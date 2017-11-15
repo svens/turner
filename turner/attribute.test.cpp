@@ -61,20 +61,4 @@ TEST_F(any_attribute, data)
 }
 
 
-TEST_F(any_attribute, size)
-{
-  data[3] = 0; EXPECT_EQ(4U, as_attribute(data)->size());
-
-  data[3] = 1; EXPECT_EQ(8U, as_attribute(data)->size());
-  data[3] = 2; EXPECT_EQ(8U, as_attribute(data)->size());
-  data[3] = 3; EXPECT_EQ(8U, as_attribute(data)->size());
-  data[3] = 4; EXPECT_EQ(8U, as_attribute(data)->size());
-
-  data[3] = 5; EXPECT_EQ(12U, as_attribute(data)->size());
-  data[3] = 6; EXPECT_EQ(12U, as_attribute(data)->size());
-  data[3] = 7; EXPECT_EQ(12U, as_attribute(data)->size());
-  data[3] = 8; EXPECT_EQ(12U, as_attribute(data)->size());
-}
-
-
 }} // namespace turner_test
