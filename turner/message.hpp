@@ -11,7 +11,6 @@
 #include <turner/__bits/helpers.hpp>
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
-#include <sal/crypto/random.hpp>
 
 
 __turner_begin
@@ -178,34 +177,13 @@ private:
   any_message_t (any_message_t &&) = delete;
   any_message_t &operator= (any_message_t &&) = delete;
 
-  template <size_t N>
-  static void unexpected_message_type [[noreturn]] (const char (&msg)[N])
+  static void unexpected_message_type [[noreturn]] (const char msg[])
   {
     sal::throw_system_error(
-      make_error_code(errc::unexpected_message_type), msg
+      make_error_code(errc::unexpected_message_type),
+      msg
     );
   }
-
-  void build_header (uint16_t message_type) noexcept
-  {
-    // type
-    reinterpret_cast<uint16_t *>(this)[0] =
-      sal::native_to_network_byte_order(message_type);
-
-    // length
-    reinterpret_cast<uint16_t *>(this)[1] = 0;
-
-    // cookie
-    *reinterpret_cast<cookie_t *>(
-      __bits::to_ptr(this) + ProtocolTraits::cookie_offset
-    ) = ProtocolTraits::cookie;
-
-    // transaction id
-    auto p = __bits::to_ptr(this) + ProtocolTraits::transaction_id_offset;
-    sal::crypto::random(p, p + ProtocolTraits::transaction_id_size);
-  }
-
-  friend class turner::protocol_t<ProtocolTraits>;
 };
 
 
@@ -244,7 +222,7 @@ public:
   {
     auto p = __bits::to_cptr(this) + ProtocolTraits::header_size;
     if (auto attribute = __bits::find_attribute(p, p + this->length(),
-        AttributeType, error))
+        AttributeType, ProtocolTraits::padding_size, error))
     {
       return AttributeProcessor::read(*this, *attribute, error);
     }
@@ -261,6 +239,112 @@ public:
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute) const
   {
     return read(attribute, sal::throw_on_error("message_reader::read"));
+  }
+
+
+  /**
+   * Create success response for this message into region [\a first, \a last).
+   * On failure, set \a error and returned object is in undefined state.
+   *
+   * Specified region [\a first, \a last) can overlap with memory area
+   * occupied by this object. In which case, after call to this method,
+   * \a this becomes invalid.
+   */
+  template <typename It>
+  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+    to_success_response (It first, It last, std::error_code &error) const noexcept
+  {
+    return to_response<MessageType | __bits::success_response_class>(
+      first, last, error
+    );
+  }
+
+
+  /**
+   * Create success response for this message into region [\a first, \a last).
+   * On failure, throw \c std::system_error
+   *
+   * Specified region [\a first, \a last) can overlap with memory area
+   * occupied by this object. In which case, after call to this method,
+   * \a this becomes invalid.
+   */
+  template <typename It>
+  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+    to_success_response (It first, It last) const
+  {
+    return to_success_response(first, last,
+      sal::throw_on_error("message_reader::to_success_response")
+    );
+  }
+
+
+  /**
+   * Create error response for this message into region [\a first, \a last).
+   * On failure, set \a error and returned object is in undefined state.
+   *
+   * Specified region [\a first, \a last) can overlap with memory area
+   * occupied by this object. In which case, after call to this method,
+   * \a this becomes invalid.
+   */
+  template <typename It>
+  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+    to_error_response (It first, It last, std::error_code &error) const noexcept
+  {
+    return to_response<MessageType | __bits::error_response_class>(
+      first, last, error
+    );
+  }
+
+
+  /**
+   * Create error response for this message into region [\a first, \a last).
+   * On failure, throw \c std::system_error
+   *
+   * Specified region [\a first, \a last) can overlap with memory area
+   * occupied by this object. In which case, after call to this method,
+   * \a this becomes invalid.
+   */
+  template <typename It>
+  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+    to_error_response (It first, It last) const
+  {
+    return to_error_response(first, last,
+      sal::throw_on_error("message_reader::to_error_response")
+    );
+  }
+
+
+private:
+
+  template <uint16_t ResponseMessageType, typename It>
+  message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
+    It first, It last, std::error_code &error) const noexcept
+  {
+    static_assert((MessageType & __bits::class_mask) == 0,
+      "expected request message type"
+    );
+
+    auto begin = __bits::to_ptr(first);
+    auto end = begin + (last - first) * sizeof(*first);
+
+    if (begin + ProtocolTraits::header_size <= end)
+    {
+      auto src = __bits::to_cptr(this);
+      if (src != begin)
+      {
+        std::memmove(begin, src, ProtocolTraits::header_size);
+      }
+
+      reinterpret_cast<uint16_t *>(begin)[0] =
+        sal::native_to_network_byte_order(ResponseMessageType);
+      reinterpret_cast<uint16_t *>(begin)[1] = 0;
+
+      error.clear();
+      return { begin, end };
+    }
+
+    error = make_error_code(errc::not_enough_room);
+    return { nullptr, nullptr };
   }
 };
 
@@ -285,6 +369,20 @@ public:
 
 
   /**
+   * Per protocol magic cookie type. It is additional helper to detect
+   * network message protocol if multiple protocols are multiplexed on single
+   * channel.
+   */
+  using cookie_t = typename protocol_t::cookie_t;
+
+
+  /**
+   * Per message unique transaction ID.
+   */
+  using transaction_id_t = typename protocol_t::transaction_id_t;
+
+
+  /**
    * Return message type.
    */
   static constexpr message_type_t type () noexcept
@@ -304,15 +402,46 @@ public:
 
 
   /**
+   * Return message size as claimed by message length field. It does not
+   * include message header length.
+   */
+  uint16_t length () const noexcept
+  {
+    return sal::network_to_native_byte_order(
+      reinterpret_cast<const uint16_t *>(first_)[1]
+    );
+  }
+
+
+  /**
+   * Return message cookie.
+   */
+  const cookie_t &cookie () const noexcept
+  {
+    return *reinterpret_cast<const cookie_t *>(
+      __bits::to_cptr(first_) + ProtocolTraits::cookie_offset
+    );
+  }
+
+
+  /**
+   * Return message transaction ID.
+   */
+  const transaction_id_t &transaction_id () const noexcept
+  {
+    return *reinterpret_cast<const transaction_id_t *>(
+      __bits::to_cptr(first_) + ProtocolTraits::transaction_id_offset
+    );
+  }
+
+
+  /**
    * Return available room for building message (in bytes).
    */
   uint16_t available () const noexcept
   {
-    auto message_length = sal::native_to_network_byte_order(
-      reinterpret_cast<uint16_t *>(first_)[1]
-    );
     return static_cast<uint16_t>(
-      last_ - first_ - ProtocolTraits::header_size - message_length
+      last_ - first_ - ProtocolTraits::header_size - length()
     );
   }
 
@@ -355,6 +484,7 @@ private:
   {}
 
   friend class turner::protocol_t<ProtocolTraits>;
+  friend class message_reader_t<ProtocolTraits, MessageType & ~__bits::class_mask>;
 };
 
 
@@ -379,11 +509,27 @@ message_writer_t<ProtocolTraits, MessageType> &
 
   if (!error)
   {
+    if constexpr (ProtocolTraits::padding_size > 1)
+    {
+      // AttributeProcessor does not check for padding, do it here
+      constexpr const auto r = ProtocolTraits::padding_size - 1;
+      message_size += 2 * sizeof(uint16_t) + ((attribute_size + r) & ~r);
+      if (first_ + ProtocolTraits::header_size + message_size > last_)
+      {
+        error = make_error_code(errc::not_enough_room);
+        return *this;
+      }
+    }
+
+    // attribute type
     reinterpret_cast<uint16_t *>(attribute)[0] =
       sal::native_to_network_byte_order(AttributeType);
+
+    // attribute length
     reinterpret_cast<uint16_t *>(attribute)[1] =
       sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
-    message_size += 2 * sizeof(uint16_t) + ((attribute_size + 3) & ~3);
+
+    // message length
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(message_size);
   }

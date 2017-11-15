@@ -61,6 +61,12 @@ struct protocol_traits_t
    * Transaction ID size in bytes.
    */
   static __turner_inline_var constexpr const size_t transaction_id_size = 12;
+
+
+  /**
+   * Attributes (TLV) padding boundary.
+   */
+  static __turner_inline_var constexpr const size_t padding_size = 4;
 };
 
 

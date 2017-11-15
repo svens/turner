@@ -71,8 +71,7 @@ size_t write_string (uint8_t *first, uint8_t *last,
   const std::string_view &value,
   std::error_code &error) noexcept
 {
-  auto required_size = (value.size() + 3) & ~3;
-  if (has_enough_room(first, last, required_size, error))
+  if (has_enough_room(first, last, value.size(), error))
   {
     std::uninitialized_copy(value.begin(), value.end(),
       __bits::make_output_iterator(first, last)
@@ -96,8 +95,7 @@ size_t write_array (uint8_t *first, uint8_t *last,
   const std::pair<const uint8_t *, const uint8_t *> &value,
   std::error_code &error) noexcept
 {
-  auto required_size = (value.second - value.first + 3) & ~3;
-  if (has_enough_room(first, last, required_size, error))
+  if (has_enough_room(first, last, (value.second - value.first), error))
   {
     std::uninitialized_copy(value.first, value.second,
       __bits::make_output_iterator(first, last)
@@ -128,8 +126,7 @@ error_t read_error (const any_attribute_t &attribute,
 size_t write_error (uint8_t *first, uint8_t *last, const error_t &value,
   std::error_code &error) noexcept
 {
-  auto required_size = sizeof(uint32_t) + ((value.message.size() + 3) & ~3);
-  if (has_enough_room(first, last, required_size, error))
+  if (has_enough_room(first, last, sizeof(uint32_t) + value.message.size(), error))
   {
     *first++ = 0;
     *first++ = 0;

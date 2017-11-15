@@ -14,6 +14,7 @@ namespace __bits {
 const any_attribute_t *find_attribute (
   const uint8_t *first, const uint8_t *last,
   uint16_t attribute_type,
+  size_t padding_size,
   std::error_code &error
 ) noexcept;
 

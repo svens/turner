@@ -47,15 +47,6 @@ public:
 
 
   /**
-   * Attribute size in bytes over all TLV fields and possible padding.
-   */
-  size_t size () const noexcept
-  {
-    return 2 * sizeof(uint16_t) + ((length() + 3) & ~3);
-  }
-
-
-  /**
    * Return pointer to attribute's value data area.
    */
   const uint8_t *data () const noexcept
