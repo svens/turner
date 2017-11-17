@@ -7,15 +7,6 @@ namespace turner_test { namespace {
 using stun = turner_test::fixture;
 
 
-TEST_F(stun, binding_success_name)
-{
-  EXPECT_STREQ("binding_success", turner::stun::binding_success.name());
-}
-
-
-// read_xor_address {{{1
-
-
 template <size_t N>
 auto wire_data (const char (&data)[N])
 {
@@ -409,9 +400,6 @@ TEST_F(stun, write_xor_address_unexpected_family)
     std::system_error
   );
 }
-
-
-// }}}1
 
 
 }} // namespace turner_test

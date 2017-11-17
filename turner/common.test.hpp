@@ -49,9 +49,6 @@ class with_value
 
 // Test data {{{1
 
-// note: functions returning protocol specific test data are prefixed with x_
-// to differentiate them from test case names
-
 using STUN = turner::stun::protocol_t;
 
 using protocol_types = ::testing::Types<
