@@ -27,3 +27,4 @@ list(APPEND turner_unittests
 )
 
 include(turner/stun/list.cmake)
+include(turner/turn/list.cmake)

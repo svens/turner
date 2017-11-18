@@ -2,6 +2,7 @@
 
 #include <turner/config.hpp>
 #include <turner/stun/stun.hpp>
+#include <turner/turn/turn.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
@@ -14,6 +15,11 @@
 struct STUN: public turner::stun::protocol_t
 {
   static constexpr const char expected_name[] = "STUN";
+};
+
+struct TURN: public turner::turn::protocol_t
+{
+  static constexpr const char expected_name[] = "TURN";
 };
 
 
@@ -58,7 +64,8 @@ class with_value
 
 
 using protocol_types = ::testing::Types<
-  STUN
+  STUN,
+  TURN
 >;
 
 
@@ -125,6 +132,64 @@ inline constexpr auto msg_error_type (STUN)
   // there is no error response for STUN Binding
   // let's invent it for testing
   return turner::stun::binding_t::error_response_t{};
+}
+
+
+// TURN {{{1
+
+inline auto msg_data (TURN)
+{
+  return std::vector<uint8_t>
+  {{
+    // header
+    0x00, 0x03,                 // Type (Allocation)
+    0x00, 0x08,                 // Length
+    0x21, 0x12, 0xa4, 0x42,     // Cookie
+    0x00, 0x01, 0x02, 0x03,     // Transaction ID
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+
+    // attributes
+    0x00, 0x01,                 // Type (XXX)
+    0x00, 0x01,                 // Length
+    0x01, 0x00,                 // Value + padding
+    0x00, 0x00,
+  }};
+}
+
+inline constexpr auto msg_type (TURN)
+{
+  return turner::turn::allocation;
+}
+
+inline constexpr auto msg_type_v (TURN)
+{
+  return turner::turn::allocation.type();
+}
+
+inline constexpr auto msg_len (TURN)
+{
+  return 8;
+}
+
+inline constexpr auto msg_txn_id (TURN)
+{
+  return turner::turn::protocol_t::transaction_id_t
+  {{
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+  }};
+}
+
+inline constexpr auto msg_success_type (TURN)
+{
+  return turner::turn::allocation_success;
+}
+
+inline constexpr auto msg_error_type (TURN)
+{
+  return turner::turn::allocation_error;
 }
 
 
