@@ -393,13 +393,6 @@ using message_reader = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(message_reader, protocol_types);
 
 
-template <typename Protocol, typename Data>
-auto &parse (Protocol, const Data &data)
-{
-  return Protocol::parse(data.begin(), data.end())->as(msg_type(Protocol()));
-}
-
-
 TYPED_TEST(message_reader, to_success_response_new_region)
 {
   auto data = msg_data(TypeParam());

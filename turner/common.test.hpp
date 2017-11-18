@@ -7,6 +7,16 @@
 #include <gtest/gtest.h>
 
 
+//
+// protocol types are intentionally out of namespace for gtest TypeParam tests
+//
+
+struct STUN: public turner::stun::protocol_t
+{
+  static constexpr const char expected_name[] = "STUN";
+};
+
+
 namespace turner_test {
 
 
@@ -47,11 +57,10 @@ class with_value
 {};
 
 
-using STUN = turner::stun::protocol_t;
-
 using protocol_types = ::testing::Types<
   STUN
 >;
+
 
 template <typename Protocol>
 class with_protocol
