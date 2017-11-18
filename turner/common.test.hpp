@@ -47,8 +47,6 @@ class with_value
 {};
 
 
-// Test data {{{1
-
 using STUN = turner::stun::protocol_t;
 
 using protocol_types = ::testing::Types<
@@ -149,6 +147,36 @@ inline constexpr void operator>> (unnamed_protocol_message_type_t,
 
 
 //}}}1
+
+
+template <typename Protocol, size_t N>
+auto wire_data (Protocol protocol, const char (&data)[N])
+{
+  // get message and remove existing body
+  auto raw = msg_data(protocol);
+  raw.resize(Protocol::traits_t::header_size);
+
+  // append new body and update message length
+  raw.insert(raw.end(), data, data + N - 1);
+  reinterpret_cast<uint16_t *>(&raw[0])[1] =
+    sal::native_to_network_byte_order((uint16_t)(N - 1));
+
+  return raw;
+}
+
+
+template <typename Protocol, typename Data>
+inline auto &parse (Protocol protocol, const Data &d)
+{
+  return Protocol::parse(d.begin(), d.end())->as(msg_type(protocol));
+}
+
+
+template <typename Protocol, typename Data>
+inline auto build (Protocol protocol, Data &d)
+{
+  return Protocol::build(msg_type(protocol), d.begin(), d.end());
+}
 
 
 } // namespace turner_test
