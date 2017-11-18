@@ -2,7 +2,7 @@
 
 /**
  * \file turner/stun/attributes.hpp
- * STUN protocol attributes
+ * STUN protocol attributes.
  */
 
 

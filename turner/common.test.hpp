@@ -1,7 +1,7 @@
 #pragma once
 
 #include <turner/config.hpp>
-#include <turner/stun.hpp>
+#include <turner/stun/stun.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
