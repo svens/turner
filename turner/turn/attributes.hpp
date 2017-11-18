@@ -59,6 +59,48 @@ struct channel_number_attribute_processor_t
 
 
 /**
+ * TURN attribute REQUESTED-TRANSPORT reader/writer.
+ */
+template <typename ProtocolTraits>
+struct requested_transport_attribute_processor_t
+{
+  /**
+   * \copydoc uint32_attribute_processor_t::value_t
+   */
+  using value_t = uint8_t;
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    auto value = __bits::read_uint32(attribute, error);
+    if (!error)
+    {
+      value = (value & 0xff00'0000) >> 24;
+    }
+    return static_cast<value_t>(value);
+  }
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      (static_cast<uint32_t>(value) << 24) & 0xff00'0000,
+      error
+    );
+  }
+};
+
+
+/**
  * \defgroup TURN_attributes TURN attributes
  * \{
  *
@@ -72,7 +114,8 @@ struct channel_number_attribute_processor_t
 
 
 /**
- * TURN CHANNEL-NUMBER type (https://tools.ietf.org/html/rfc5766#section-14.1)
+ * TURN CHANNEL-NUMBER attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.1)
  */
 using channel_number_t = protocol_t::attribute_type_t<0x000c,
   channel_number_attribute_processor_t
@@ -80,9 +123,90 @@ using channel_number_t = protocol_t::attribute_type_t<0x000c,
 
 
 /**
- * Instance of TURN CHANNEL-NUMBER (https://tools.ietf.org/html/rfc5766#section-14.1)
+ * Instance of TURN CHANNEL-NUMBER attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.1)
  */
 __turner_inline_var constexpr const channel_number_t channel_number;
+
+
+/**
+ * TURN LIFETIME attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.2)
+ */
+using lifetime_t = protocol_t::attribute_type_t<0x000d,
+  uint32_attribute_processor_t
+>;
+
+
+/**
+ * Instance of TURN LIFETIME attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.2)
+ */
+__turner_inline_var constexpr const lifetime_t lifetime;
+
+
+/**
+ * TURN XOR-PEER-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.3)
+ */
+using xor_peer_address_t = protocol_t::attribute_type_t<0x0012,
+  stun::xor_address_attribute_processor_t
+>;
+
+
+/**
+ * Instance of TURN XOR-PEER-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.3)
+ */
+__turner_inline_var constexpr const xor_peer_address_t xor_peer_address;
+
+
+/**
+ * TURN DATA attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.4)
+ */
+using data_t = protocol_t::attribute_type_t<0x0013,
+  array_attribute_processor_t
+>;
+
+
+/**
+ * Instance of TURN DATA attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.4)
+ */
+__turner_inline_var constexpr const data_t data;
+
+
+/**
+ * TURN XOR-RELAYED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.5)
+ */
+using xor_relayed_address_t = protocol_t::attribute_type_t<0x0016,
+  stun::xor_address_attribute_processor_t
+>;
+
+
+/**
+ * Instance of TURN XOR-RELAYED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.5)
+ */
+__turner_inline_var constexpr const xor_relayed_address_t xor_relayed_address;
+
+
+/**
+ * TURN REQUESTED-TRANSPORT attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.7)
+ */
+using requested_transport_t = protocol_t::attribute_type_t<0x0019,
+  requested_transport_attribute_processor_t
+>;
+
+
+/**
+ * Instance of TURN REQUESTED-TRANSPORT attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.7)
+ */
+__turner_inline_var constexpr const requested_transport_t requested_transport;
 
 
 /// \}

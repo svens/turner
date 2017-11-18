@@ -214,6 +214,133 @@ TEST_F(turn, write_channel_number_too_big)
 }
 
 
+// REQUESTED-TRANSPORT {{{1
+
+
+TEST_F(turn, read_requested_transport)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x19"  // Type
+    "\x00\x04"  // Length
+    "\x11\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  auto value = msg.read(turner::turn::requested_transport, error);
+  ASSERT_TRUE(!error);
+  EXPECT_EQ(IPPROTO_UDP, value);
+
+  EXPECT_NO_THROW(
+    msg.read(turner::turn::requested_transport)
+  );
+}
+
+
+TEST_F(turn, read_requested_transport_last_attribute)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x21"  // Type (not expected)
+    "\x00\x00"  // Length
+
+    "\x00\x19"  // Type
+    "\x00\x04"  // Length
+    "\x11\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  auto value = msg.read(turner::turn::requested_transport, error);
+  ASSERT_TRUE(!error);
+  EXPECT_EQ(IPPROTO_UDP, value);
+
+  EXPECT_NO_THROW(
+    msg.read(turner::turn::requested_transport)
+  );
+}
+
+
+TEST_F(turn, read_requested_transport_attribute_not_found)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x21"  // Type
+    "\x00\x04"  // Length
+    "\x11\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  msg.read(turner::turn::requested_transport, error);
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+
+  EXPECT_THROW(
+    msg.read(turner::turn::requested_transport),
+    std::system_error
+  );
+}
+
+
+TEST_F(turn, read_requested_transport_unexpected_attribute_length)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x19"  // Type
+    "\x00\x03"  // Length
+    "\x11\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  msg.read(turner::turn::requested_transport, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+
+  EXPECT_THROW(
+    msg.read(turner::turn::requested_transport),
+    std::system_error
+  );
+}
+
+
+TEST_F(turn, write_requested_transport)
+{
+  std::array<uint8_t, TURN::traits_t::header_size + 8> data;
+
+  std::error_code error;
+  auto writer = build(TURN(), data);
+  EXPECT_EQ(8, writer.available());
+
+  writer.write(turner::turn::requested_transport, IPPROTO_UDP, error);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(0, writer.available());
+
+  auto &msg = parse(TURN(), data);
+  EXPECT_EQ(8, msg.length());
+  EXPECT_EQ(IPPROTO_UDP, msg.read(turner::turn::requested_transport));
+}
+
+
+TEST_F(turn, write_requested_transport_not_enough_room)
+{
+  std::array<uint8_t, TURN::traits_t::header_size + 7> data;
+
+  std::error_code error;
+  auto writer = build(TURN(), data);
+  EXPECT_EQ(7, writer.available());
+
+  writer.write(turner::turn::requested_transport, IPPROTO_UDP, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7, writer.available());
+
+  EXPECT_THROW(
+    build(TURN(), data).write(turner::turn::requested_transport, IPPROTO_UDP),
+    std::system_error
+  );
+}
+
+
 // }}}1
 
 
