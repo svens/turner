@@ -196,7 +196,7 @@ std::pair<sal::net::ip::address_t, uint16_t> read_address (
   // unknown
   else
   {
-    error = make_error_code(errc::unexpected_address_family);
+    error = make_error_code(errc::unexpected_attribute_value);
   }
 
   return {};
@@ -246,7 +246,7 @@ size_t write_address (uint8_t *first, uint8_t *last,
   }
 
   // unknown
-  error = make_error_code(errc::unexpected_address_family);
+  error = make_error_code(errc::unexpected_attribute_value);
   return 0;
 }
 

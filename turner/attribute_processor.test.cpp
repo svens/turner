@@ -968,7 +968,7 @@ TYPED_TEST(attribute_processor, read_address_empty)
 }
 
 
-TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
+TYPED_TEST(attribute_processor, read_address_unexpected_attribute_value)
 {
   auto data = wire_data(TypeParam(),
     "\x00\x01"          // Type
@@ -981,7 +981,7 @@ TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
 
   EXPECT_THROW(
     msg.read(addr_attr<TypeParam>),
@@ -1100,7 +1100,7 @@ TYPED_TEST(attribute_processor, write_address_unexpected_family)
     error
   );
 
-  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
   EXPECT_EQ(24, writer.available());
 
   EXPECT_THROW(

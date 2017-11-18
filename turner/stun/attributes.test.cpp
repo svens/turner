@@ -228,7 +228,7 @@ TEST_F(stun, read_xor_address_v6_unexpected_attribute_length)
 }
 
 
-TEST_F(stun, read_xor_address_unexpected_address_family)
+TEST_F(stun, read_xor_address_unexpected_attribute_value)
 {
   auto data = wire_data(STUN(),
     "\x00\x20"          // Type
@@ -241,7 +241,7 @@ TEST_F(stun, read_xor_address_unexpected_address_family)
 
   std::error_code error;
   msg.read(turner::stun::xor_mapped_address, error);
-  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
 
   EXPECT_THROW(
     msg.read(turner::stun::xor_mapped_address),
@@ -344,7 +344,7 @@ TEST_F(stun, write_xor_address_v6_not_enough_room)
 }
 
 
-TEST_F(stun, write_xor_address_unexpected_family)
+TEST_F(stun, write_xor_address_unexpected_attribute_value)
 {
   std::array<uint8_t, STUN::traits_t::header_size + 24> data;
 
@@ -360,7 +360,7 @@ TEST_F(stun, write_xor_address_unexpected_family)
     error
   );
 
-  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
   EXPECT_EQ(24, writer.available());
 
   EXPECT_THROW(
