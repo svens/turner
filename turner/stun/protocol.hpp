@@ -75,7 +75,7 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 /**
  * STUN protocol instance.
  */
-__turner_inline_var constexpr const protocol_t protocol{};
+__turner_inline_var constexpr const protocol_t protocol;
 
 
 /**

@@ -57,6 +57,16 @@ public:
    */
   using message_t = any_message_t<traits_t>;
 
+  /**
+   * Attribute type as defined by protocol.
+   */
+  template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
+  using attribute_type_t = turner::attribute_type_t<
+    ProtocolTraits,
+    AttributeType,
+    AttributeProcessor<ProtocolTraits>
+  >;
+
 
   /**
    * Return protocol name (if defined).

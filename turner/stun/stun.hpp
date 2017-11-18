@@ -1,7 +1,7 @@
 #pragma once
 
 /**
- * \file turner/stun.hpp
+ * \file turner/stun/stun.hpp
  * STUN protocol (https://tools.ietf.org/html/rfc5389)
  */
 
