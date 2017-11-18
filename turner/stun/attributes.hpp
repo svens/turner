@@ -69,7 +69,8 @@ private:
 
 
 /**
- * STUN MAPPED-ADDRESS type (https://tools.ietf.org/html/rfc5389#section-15.1)
+ * STUN MAPPED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
 using mapped_address_t = protocol_t::attribute_type_t<0x0001,
   address_attribute_processor_t
@@ -77,13 +78,15 @@ using mapped_address_t = protocol_t::attribute_type_t<0x0001,
 
 
 /**
- * Instance of STUN MAPPED-ADDRESS (https://tools.ietf.org/html/rfc5389#section-15.1)
+ * STUN MAPPED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
 __turner_inline_var constexpr const mapped_address_t mapped_address;
 
 
 /**
- * STUN USERNAME type (https://tools.ietf.org/html/rfc5389#section-15.3)
+ * STUN USERNAME attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.3)
  */
 using username_t = protocol_t::attribute_type_t<0x0006,
   string_attribute_processor_t
@@ -91,16 +94,15 @@ using username_t = protocol_t::attribute_type_t<0x0006,
 
 
 /**
- * Instance of STUN USERNAME (https://tools.ietf.org/html/rfc5389#section-15.3)
+ * STUN USERNAME attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.3)
  */
 __turner_inline_var constexpr const username_t username;
 
 
-// 0x0008 message-integrity
-
-
 /**
- * STUN ERROR-CODE type (https://tools.ietf.org/html/rfc5389#section-15.6)
+ * STUN ERROR-CODE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
 using error_code_t = protocol_t::attribute_type_t<0x0009,
   error_attribute_processor_t
@@ -108,13 +110,15 @@ using error_code_t = protocol_t::attribute_type_t<0x0009,
 
 
 /**
- * Instance of STUN ERROR-CODE (https://tools.ietf.org/html/rfc5389#section-15.6)
+ * STUN ERROR-CODE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
 __turner_inline_var constexpr const error_code_t error_code;
 
 
 /**
- * STUN REALM type (https://tools.ietf.org/html/rfc5389#section-15.7)
+ * STUN REALM attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.7)
  */
 using realm_t = protocol_t::attribute_type_t<0x0014,
   string_attribute_processor_t
@@ -122,13 +126,15 @@ using realm_t = protocol_t::attribute_type_t<0x0014,
 
 
 /**
- * Instance of STUN REALM type (https://tools.ietf.org/html/rfc5389#section-15.7)
+ * STUN REALM attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.7)
  */
 __turner_inline_var constexpr const realm_t realm;
 
 
 /**
- * STUN NONCE type (https://tools.ietf.org/html/rfc5389#section-15.8)
+ * STUN NONCE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
 using nonce_t = protocol_t::attribute_type_t<0x0015,
   array_attribute_processor_t
@@ -136,13 +142,15 @@ using nonce_t = protocol_t::attribute_type_t<0x0015,
 
 
 /**
- * Instance of STUN NONCE (https://tools.ietf.org/html/rfc5389#section-15.8)
+ * STUN NONCE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
 __turner_inline_var constexpr const nonce_t nonce;
 
 
 /**
- * STUN XOR-MAPPED-ADDRESS type (https://tools.ietf.org/html/rfc5389#section-15.2)
+ * STUN XOR-MAPPED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.2)
  */
 using xor_mapped_address_t = protocol_t::attribute_type_t<0x0020,
   xor_address_attribute_processor_t
@@ -150,13 +158,15 @@ using xor_mapped_address_t = protocol_t::attribute_type_t<0x0020,
 
 
 /**
- * Instance of STUN XOR-MAPPED-ADDRESS (https://tools.ietf.org/html/rfc5389#section-15.2)
+ * STUN XOR-MAPPED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.2)
  */
 __turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
 
 
 /**
- * STUN SOFTWARE type (https://tools.ietf.org/html/rfc5389#section-15.10)
+ * STUN SOFTWARE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
 using software_t = protocol_t::attribute_type_t<0x8022,
   string_attribute_processor_t
@@ -164,13 +174,15 @@ using software_t = protocol_t::attribute_type_t<0x8022,
 
 
 /**
- * Instance of STUN SOFTWARE (https://tools.ietf.org/html/rfc5389#section-15.10)
+ * STUN SOFTWARE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
 __turner_inline_var constexpr const software_t software;
 
 
 /**
- * STUN ALTERNATE-SERVER type (https://tools.ietf.org/html/rfc5389#section-15.11)
+ * STUN ALTERNATE-SERVER attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
 using alternate_server_t = protocol_t::attribute_type_t<0x8023,
   address_attribute_processor_t
@@ -178,7 +190,8 @@ using alternate_server_t = protocol_t::attribute_type_t<0x8023,
 
 
 /**
- * Instance of STUN ALTERNATE-SERVER (https://tools.ietf.org/html/rfc5389#section-15.11)
+ * STUN ALTERNATE-SERVER attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
 __turner_inline_var constexpr const alternate_server_t alternate_server;
 

@@ -71,7 +71,7 @@ private:
 template <
   typename ProtocolTraits,
   uint16_t AttributeType,
-  typename AttributeProcessor
+  template <typename> typename AttributeProcessor
 >
 class attribute_type_t
 {
@@ -86,7 +86,7 @@ public:
   /**
    * Concrete \a AttributeType reader/writer.
    */
-  using processor_t = AttributeProcessor;
+  using processor_t = AttributeProcessor<ProtocolTraits>;
 
 
   /**
@@ -102,6 +102,17 @@ public:
   {
     return AttributeType;
   }
+
+
+  /**
+   * Helper for protocol_t::reuse_attribute_t to extract basic
+   * AttributeProcessor without ProtocolTraits for rebinding with different
+   * traits.
+   *
+   * \internal
+   */
+  template <typename OtherProtocolTraits>
+  using rebind_processor_t = AttributeProcessor<OtherProtocolTraits>;
 };
 
 

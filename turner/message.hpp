@@ -215,8 +215,11 @@ public:
    * Decode and return \a AttributeType value from message. On failure set \a
    * error to code describing failure and return default value.
    */
-  template <uint16_t AttributeType, typename AttributeProcessor>
-  typename AttributeProcessor::value_t read (
+  template <
+    uint16_t AttributeType,
+    template <typename> typename AttributeProcessor
+  >
+  typename AttributeProcessor<ProtocolTraits>::value_t read (
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
@@ -224,7 +227,7 @@ public:
     if (auto attribute = __bits::find_attribute(p, p + this->length(),
         AttributeType, ProtocolTraits::padding_size, error))
     {
-      return AttributeProcessor::read(*this, *attribute, error);
+      return AttributeProcessor<ProtocolTraits>::read(*this, *attribute, error);
     }
     return {};
   }
@@ -234,8 +237,11 @@ public:
    * Decode and return \a AttributeType value from message. On failure throw
    * \a std::system_error.
    */
-  template <uint16_t AttributeType, typename AttributeProcessor>
-  typename AttributeProcessor::value_t read (
+  template <
+    uint16_t AttributeType,
+    template <typename> typename AttributeProcessor
+  >
+  typename AttributeProcessor<ProtocolTraits>::value_t read (
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute) const
   {
     return read(attribute, sal::throw_on_error("message_reader::read"));
@@ -451,10 +457,10 @@ public:
    * no enough room in internal buffer, \a set error to errc::not_enough_room
    * and do nothing.
    */
-  template <uint16_t AttributeType, typename AttributeProcessor>
+  template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
   message_writer_t &write (
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    const typename AttributeProcessor::value_t &value,
+    const typename AttributeProcessor<ProtocolTraits>::value_t &value,
     std::error_code &error
   ) noexcept;
 
@@ -463,10 +469,10 @@ public:
    * Encode \a value and append to message as \a AttributeType. If there is
    * no enough room in internal buffer, throw std::system_error.
    */
-  template <uint16_t AttributeType, typename AttributeProcessor>
+  template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
   message_writer_t &write (
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute,
-    const typename AttributeProcessor::value_t &value)
+    const typename AttributeProcessor<ProtocolTraits>::value_t &value)
   {
     return write(attribute, value,
       sal::throw_on_error("message_writer::write")
@@ -489,18 +495,18 @@ private:
 
 
 template <typename ProtocolTraits, uint16_t MessageType>
-template <uint16_t AttributeType, typename AttributeProcessor>
+template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
 message_writer_t<ProtocolTraits, MessageType> &
   message_writer_t<ProtocolTraits, MessageType>::write (
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    const typename AttributeProcessor::value_t &value,
+    const typename AttributeProcessor<ProtocolTraits>::value_t &value,
     std::error_code &error) noexcept
 {
   auto &message = *reinterpret_cast<any_message_t<ProtocolTraits> *>(first_);
   auto message_size = message.length();
 
   auto attribute = first_ + ProtocolTraits::header_size + message_size;
-  auto attribute_size = AttributeProcessor::write(message,
+  auto attribute_size = AttributeProcessor<ProtocolTraits>::write(message,
     attribute + 2 * sizeof(uint16_t),
     last_,
     value,

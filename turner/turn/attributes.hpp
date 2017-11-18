@@ -123,7 +123,7 @@ using channel_number_t = protocol_t::attribute_type_t<0x000c,
 
 
 /**
- * Instance of TURN CHANNEL-NUMBER attribute
+ * TURN CHANNEL-NUMBER attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.1)
  */
 __turner_inline_var constexpr const channel_number_t channel_number;
@@ -139,14 +139,14 @@ using lifetime_t = protocol_t::attribute_type_t<0x000d,
 
 
 /**
- * Instance of TURN LIFETIME attribute
+ * TURN LIFETIME attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.2)
  */
 __turner_inline_var constexpr const lifetime_t lifetime;
 
 
 /**
- * TURN XOR-PEER-ADDRESS attribute
+ * TURN XOR-PEER-ADDRESS attribute type
  * (https://tools.ietf.org/html/rfc5766#section-14.3)
  */
 using xor_peer_address_t = protocol_t::attribute_type_t<0x0012,
@@ -155,14 +155,14 @@ using xor_peer_address_t = protocol_t::attribute_type_t<0x0012,
 
 
 /**
- * Instance of TURN XOR-PEER-ADDRESS attribute
+ * TURN XOR-PEER-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.3)
  */
 __turner_inline_var constexpr const xor_peer_address_t xor_peer_address;
 
 
 /**
- * TURN DATA attribute
+ * TURN DATA attribute type
  * (https://tools.ietf.org/html/rfc5766#section-14.4)
  */
 using data_t = protocol_t::attribute_type_t<0x0013,
@@ -171,14 +171,14 @@ using data_t = protocol_t::attribute_type_t<0x0013,
 
 
 /**
- * Instance of TURN DATA attribute
+ * TURN DATA attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.4)
  */
 __turner_inline_var constexpr const data_t data;
 
 
 /**
- * TURN XOR-RELAYED-ADDRESS attribute
+ * TURN XOR-RELAYED-ADDRESS attribute type
  * (https://tools.ietf.org/html/rfc5766#section-14.5)
  */
 using xor_relayed_address_t = protocol_t::attribute_type_t<0x0016,
@@ -187,7 +187,7 @@ using xor_relayed_address_t = protocol_t::attribute_type_t<0x0016,
 
 
 /**
- * Instance of TURN XOR-RELAYED-ADDRESS attribute
+ * TURN XOR-RELAYED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.5)
  */
 __turner_inline_var constexpr const xor_relayed_address_t xor_relayed_address;
@@ -203,10 +203,136 @@ using requested_transport_t = protocol_t::attribute_type_t<0x0019,
 
 
 /**
- * Instance of TURN REQUESTED-TRANSPORT attribute
+ * TURN REQUESTED-TRANSPORT attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.7)
  */
 __turner_inline_var constexpr const requested_transport_t requested_transport;
+
+
+/// \}
+
+
+/**
+ * \defgroup STUN_TURN_attributes STUN attributes reused in TURN
+ * \{
+ *
+ * Only purpose of following attributes is to pull STUN attributes into
+ * TURN protocol scope for reuse.
+ *
+ * \see https://tools.ietf.org/html/rfc5389#section-15
+ */
+
+
+/**
+ * STUN MAPPED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.1)
+ */
+using mapped_address_t = protocol_t::reuse_attribute_t<stun::mapped_address_t>;
+
+
+/**
+ * STUN MAPPED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.1)
+ */
+__turner_inline_var constexpr const mapped_address_t mapped_address;
+
+
+/**
+ * STUN USERNAME attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.3)
+ */
+using username_t = protocol_t::reuse_attribute_t<stun::username_t>;
+
+
+/**
+ * STUN USERNAME attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.3)
+ */
+__turner_inline_var constexpr const username_t username;
+
+
+/**
+ * STUN ERROR-CODE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.6)
+ */
+using error_code_t = protocol_t::reuse_attribute_t<stun::error_code_t>;
+
+
+/**
+ * STUN ERROR-CODE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.6)
+ */
+__turner_inline_var constexpr const error_code_t error_code;
+
+
+/**
+ * STUN REALM attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.7)
+ */
+using realm_t = protocol_t::reuse_attribute_t<stun::realm_t>;
+
+
+/**
+ * STUN REALM attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.7)
+ */
+__turner_inline_var constexpr const realm_t realm;
+
+
+/**
+ * STUN NONCE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.8)
+ */
+using nonce_t = protocol_t::reuse_attribute_t<stun::nonce_t>;
+
+
+/**
+ * STUN NONCE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.8)
+ */
+__turner_inline_var constexpr const nonce_t nonce;
+
+
+/**
+ * STUN XOR-MAPPED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.2)
+ */
+using xor_mapped_address_t = protocol_t::reuse_attribute_t<stun::xor_mapped_address_t>;
+
+
+/**
+ * STUN XOR-MAPPED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.2)
+ */
+__turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
+
+
+/**
+ * STUN SOFTWARE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
+ */
+using software_t = protocol_t::reuse_attribute_t<stun::software_t>;
+
+
+/**
+ * STUN SOFTWARE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
+ */
+__turner_inline_var constexpr const software_t software;
+
+
+/**
+ * STUN ALTERNATE-SERVER attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.11)
+ */
+using alternate_server_t = protocol_t::reuse_attribute_t<stun::alternate_server_t>;
+
+
+/**
+ * STUN ALTERNATE-SERVER attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.11)
+ */
+__turner_inline_var constexpr const alternate_server_t alternate_server;
 
 
 /// \}
