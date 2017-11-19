@@ -209,20 +209,6 @@ using requested_transport_t = protocol_t::attribute_type_t<0x0019,
 __turner_inline_var constexpr const requested_transport_t requested_transport;
 
 
-/// \}
-
-
-/**
- * \defgroup STUN_TURN_attributes STUN attributes reused in TURN
- * \{
- *
- * Only purpose of following attributes is to pull STUN attributes into
- * TURN protocol scope for reuse.
- *
- * \see https://tools.ietf.org/html/rfc5389#section-15
- */
-
-
 /**
  * STUN MAPPED-ADDRESS attribute type
  * (https://tools.ietf.org/html/rfc5389#section-15.1)
