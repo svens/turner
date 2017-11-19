@@ -1,0 +1,12 @@
+list(APPEND turner
+  turner/stun/stun.hpp
+  turner/stun/attributes.hpp
+  turner/stun/errors.hpp
+  turner/stun/messages.hpp
+  turner/stun/protocol.hpp
+)
+
+list(APPEND turner_unittests
+  turner/stun/attributes.test.cpp
+  turner/stun/messages.test.cpp
+)

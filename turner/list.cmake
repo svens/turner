@@ -8,10 +8,6 @@ list(APPEND turner
   turner/message_type.hpp
   turner/protocol.hpp
 
-  # specific protocol headers
-  turner/stun.hpp
-  turner/stun.cpp
-
   # internals
   turner/__bits/attribute_processor.hpp
   turner/__bits/attribute_processor.cpp
@@ -28,7 +24,7 @@ list(APPEND turner_unittests
   turner/message.test.cpp
   turner/message_type.test.cpp
   turner/protocol.test.cpp
-
-  # STUN tests
-  turner/stun.test.cpp
 )
+
+include(turner/stun/list.cmake)
+include(turner/turn/list.cmake)

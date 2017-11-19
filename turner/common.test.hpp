@@ -1,10 +1,26 @@
 #pragma once
 
 #include <turner/config.hpp>
-#include <turner/stun.hpp>
+#include <turner/stun/stun.hpp>
+#include <turner/turn/turn.hpp>
 
 #define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
+
+
+//
+// protocol types are intentionally out of namespace for gtest TypeParam tests
+//
+
+struct STUN: public turner::stun::protocol_t
+{
+  static constexpr const char expected_name[] = "STUN";
+};
+
+struct TURN: public turner::turn::protocol_t
+{
+  static constexpr const char expected_name[] = "TURN";
+};
 
 
 namespace turner_test {
@@ -47,16 +63,11 @@ class with_value
 {};
 
 
-// Test data {{{1
-
-// note: functions returning protocol specific test data are prefixed with x_
-// to differentiate them from test case names
-
-using STUN = turner::stun::protocol_t;
-
 using protocol_types = ::testing::Types<
-  STUN
+  STUN,
+  TURN
 >;
+
 
 template <typename Protocol>
 class with_protocol
@@ -124,6 +135,64 @@ inline constexpr auto msg_error_type (STUN)
 }
 
 
+// TURN {{{1
+
+inline auto msg_data (TURN)
+{
+  return std::vector<uint8_t>
+  {{
+    // header
+    0x00, 0x03,                 // Type (Allocation)
+    0x00, 0x08,                 // Length
+    0x21, 0x12, 0xa4, 0x42,     // Cookie
+    0x00, 0x01, 0x02, 0x03,     // Transaction ID
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+
+    // attributes
+    0x00, 0x01,                 // Type (XXX)
+    0x00, 0x01,                 // Length
+    0x01, 0x00,                 // Value + padding
+    0x00, 0x00,
+  }};
+}
+
+inline constexpr auto msg_type (TURN)
+{
+  return turner::turn::allocation;
+}
+
+inline constexpr auto msg_type_v (TURN)
+{
+  return turner::turn::allocation.type();
+}
+
+inline constexpr auto msg_len (TURN)
+{
+  return 8;
+}
+
+inline constexpr auto msg_txn_id (TURN)
+{
+  return turner::turn::protocol_t::transaction_id_t
+  {{
+    0x00, 0x01, 0x02, 0x03,
+    0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0a, 0x0b,
+  }};
+}
+
+inline constexpr auto msg_success_type (TURN)
+{
+  return turner::turn::allocation_success;
+}
+
+inline constexpr auto msg_error_type (TURN)
+{
+  return turner::turn::allocation_error;
+}
+
+
 // Unnamed protocol for testing {{{1
 
 // unused message type (0 is unused for STUN/TURN/MSTURN)
@@ -152,6 +221,36 @@ inline constexpr void operator>> (unnamed_protocol_message_type_t,
 
 
 //}}}1
+
+
+template <typename Protocol, size_t N>
+auto wire_data (Protocol protocol, const char (&data)[N])
+{
+  // get message and remove existing body
+  auto raw = msg_data(protocol);
+  raw.resize(Protocol::traits_t::header_size);
+
+  // append new body and update message length
+  raw.insert(raw.end(), data, data + N - 1);
+  reinterpret_cast<uint16_t *>(&raw[0])[1] =
+    sal::native_to_network_byte_order((uint16_t)(N - 1));
+
+  return raw;
+}
+
+
+template <typename Protocol, typename Data>
+inline auto &parse (Protocol protocol, const Data &d)
+{
+  return Protocol::parse(d.begin(), d.end())->as(msg_type(protocol));
+}
+
+
+template <typename Protocol, typename Data>
+inline auto build (Protocol protocol, Data &d)
+{
+  return Protocol::build(msg_type(protocol), d.begin(), d.end());
+}
 
 
 } // namespace turner_test

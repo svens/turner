@@ -10,15 +10,6 @@ using message_type = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(message_type, protocol_types);
 
 
-TYPED_TEST(message_type, protocol)
-{
-  EXPECT_EQ(
-    typeid(typename decltype(msg_type(TypeParam()))::protocol_t),
-    typeid(TypeParam)
-  );
-}
-
-
 TYPED_TEST(message_type, type)
 {
   EXPECT_EQ(
@@ -129,11 +120,6 @@ TYPED_TEST(message_type, success_response)
     typeid(typename decltype(t)::success_response_t),
     typeid(ts)
   );
-
-  EXPECT_EQ(
-    typeid(typename decltype(ts)::protocol_t),
-    typeid(TypeParam)
-  );
 }
 
 
@@ -154,11 +140,6 @@ TYPED_TEST(message_type, error_response)
     typeid(typename decltype(t)::error_response_t),
     typeid(ts)
   );
-
-  EXPECT_EQ(
-    typeid(typename decltype(ts)::protocol_t),
-    typeid(TypeParam)
-  );
 }
 
 
@@ -178,11 +159,6 @@ TYPED_TEST(message_type, indication)
   EXPECT_EQ(
     typeid(typename decltype(t)::indication_t),
     typeid(ts)
-  );
-
-  EXPECT_EQ(
-    typeid(typename decltype(ts)::protocol_t),
-    typeid(TypeParam)
   );
 }
 

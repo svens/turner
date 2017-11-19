@@ -12,9 +12,7 @@ TYPED_TEST_CASE(protocol, protocol_types);
 
 TYPED_TEST(protocol, name)
 {
-  const char *expected;
-  TypeParam() >> expected;
-  EXPECT_STREQ(expected, TypeParam::name());
+  EXPECT_STREQ(TypeParam::expected_name, TypeParam::name());
 }
 
 
@@ -26,12 +24,9 @@ TEST(protocol, name_unnamed)
 
 TYPED_TEST(protocol, ostream)
 {
-  const char *expected;
-  TypeParam() >> expected;
-
   std::ostringstream oss;
   oss << TypeParam();
-  EXPECT_EQ(expected, oss.str());
+  EXPECT_EQ(TypeParam::expected_name, oss.str());
 }
 
 

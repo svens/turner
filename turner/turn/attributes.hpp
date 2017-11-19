@@ -1,0 +1,370 @@
+#pragma once
+
+/**
+ * \file turner/turn/attributes.hpp
+ * TURN protocol attributes.
+ */
+
+
+#include <turner/config.hpp>
+#include <turner/turn/protocol.hpp>
+#include <turner/stun/attributes.hpp>
+#include <turner/__bits/attribute_processor.hpp>
+
+
+__turner_begin
+
+
+namespace turn {
+
+
+/**
+ * TURN attribute CHANNEL-NUMBER reader/writer.
+ */
+template <typename ProtocolTraits>
+struct channel_number_attribute_processor_t
+{
+  /**
+   * \copydoc uint32_attribute_processor_t::value_t
+   */
+  using value_t = uint16_t;
+
+  /**
+   * Minimum valid value for CHANNEL-NUMBER.
+   */
+  static constexpr const value_t min_channel_number = 0x4000;
+
+  /**
+   * Maximum valid value for CHANNEL-NUMBER.
+   */
+  static constexpr const value_t max_channel_number = 0x7fff;
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error
+  ) noexcept;
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error
+  ) noexcept;
+};
+
+
+/**
+ * TURN attribute REQUESTED-TRANSPORT reader/writer.
+ */
+template <typename ProtocolTraits>
+struct requested_transport_attribute_processor_t
+{
+  /**
+   * \copydoc uint32_attribute_processor_t::value_t
+   */
+  using value_t = uint8_t;
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    auto value = __bits::read_uint32(attribute, error);
+    if (!error)
+    {
+      value = (value & 0xff00'0000) >> 24;
+    }
+    return static_cast<value_t>(value);
+  }
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      (static_cast<uint32_t>(value) << 24) & 0xff00'0000,
+      error
+    );
+  }
+};
+
+
+/**
+ * \defgroup TURN_attributes TURN attributes
+ * \{
+ *
+ * \see https://tools.ietf.org/html/rfc5766#section-14
+ *
+ * \note This library does not implement following attributes:
+ *   - EVEN-PORT (https://tools.ietf.org/html/rfc5766#section-14.6)
+ *   - DONT-FRAGMENT (https://tools.ietf.org/html/rfc5766#section-14.8)
+ *   - RESERVATION-TOKEN (https://tools.ietf.org/html/rfc5766#section-14.9)
+ */
+
+
+/**
+ * TURN CHANNEL-NUMBER attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.1)
+ */
+using channel_number_t = protocol_t::attribute_type_t<0x000c,
+  channel_number_attribute_processor_t
+>;
+
+
+/**
+ * TURN CHANNEL-NUMBER attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.1)
+ */
+__turner_inline_var constexpr const channel_number_t channel_number;
+
+
+/**
+ * TURN LIFETIME attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.2)
+ */
+using lifetime_t = protocol_t::attribute_type_t<0x000d,
+  uint32_attribute_processor_t
+>;
+
+
+/**
+ * TURN LIFETIME attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.2)
+ */
+__turner_inline_var constexpr const lifetime_t lifetime;
+
+
+/**
+ * TURN XOR-PEER-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.3)
+ */
+using xor_peer_address_t = protocol_t::attribute_type_t<0x0012,
+  stun::xor_address_attribute_processor_t
+>;
+
+
+/**
+ * TURN XOR-PEER-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.3)
+ */
+__turner_inline_var constexpr const xor_peer_address_t xor_peer_address;
+
+
+/**
+ * TURN DATA attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.4)
+ */
+using data_t = protocol_t::attribute_type_t<0x0013,
+  array_attribute_processor_t
+>;
+
+
+/**
+ * TURN DATA attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.4)
+ */
+__turner_inline_var constexpr const data_t data;
+
+
+/**
+ * TURN XOR-RELAYED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.5)
+ */
+using xor_relayed_address_t = protocol_t::attribute_type_t<0x0016,
+  stun::xor_address_attribute_processor_t
+>;
+
+
+/**
+ * TURN XOR-RELAYED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.5)
+ */
+__turner_inline_var constexpr const xor_relayed_address_t xor_relayed_address;
+
+
+/**
+ * TURN REQUESTED-TRANSPORT attribute type
+ * (https://tools.ietf.org/html/rfc5766#section-14.7)
+ */
+using requested_transport_t = protocol_t::attribute_type_t<0x0019,
+  requested_transport_attribute_processor_t
+>;
+
+
+/**
+ * TURN REQUESTED-TRANSPORT attribute
+ * (https://tools.ietf.org/html/rfc5766#section-14.7)
+ */
+__turner_inline_var constexpr const requested_transport_t requested_transport;
+
+
+/**
+ * STUN MAPPED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.1)
+ */
+using mapped_address_t = protocol_t::reuse_attribute_t<stun::mapped_address_t>;
+
+
+/**
+ * STUN MAPPED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.1)
+ */
+__turner_inline_var constexpr const mapped_address_t mapped_address;
+
+
+/**
+ * STUN USERNAME attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.3)
+ */
+using username_t = protocol_t::reuse_attribute_t<stun::username_t>;
+
+
+/**
+ * STUN USERNAME attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.3)
+ */
+__turner_inline_var constexpr const username_t username;
+
+
+/**
+ * STUN ERROR-CODE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.6)
+ */
+using error_code_t = protocol_t::reuse_attribute_t<stun::error_code_t>;
+
+
+/**
+ * STUN ERROR-CODE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.6)
+ */
+__turner_inline_var constexpr const error_code_t error_code;
+
+
+/**
+ * STUN REALM attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.7)
+ */
+using realm_t = protocol_t::reuse_attribute_t<stun::realm_t>;
+
+
+/**
+ * STUN REALM attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.7)
+ */
+__turner_inline_var constexpr const realm_t realm;
+
+
+/**
+ * STUN NONCE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.8)
+ */
+using nonce_t = protocol_t::reuse_attribute_t<stun::nonce_t>;
+
+
+/**
+ * STUN NONCE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.8)
+ */
+__turner_inline_var constexpr const nonce_t nonce;
+
+
+/**
+ * STUN XOR-MAPPED-ADDRESS attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.2)
+ */
+using xor_mapped_address_t = protocol_t::reuse_attribute_t<stun::xor_mapped_address_t>;
+
+
+/**
+ * STUN XOR-MAPPED-ADDRESS attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.2)
+ */
+__turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
+
+
+/**
+ * STUN SOFTWARE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
+ */
+using software_t = protocol_t::reuse_attribute_t<stun::software_t>;
+
+
+/**
+ * STUN SOFTWARE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
+ */
+__turner_inline_var constexpr const software_t software;
+
+
+/**
+ * STUN ALTERNATE-SERVER attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.11)
+ */
+using alternate_server_t = protocol_t::reuse_attribute_t<stun::alternate_server_t>;
+
+
+/**
+ * STUN ALTERNATE-SERVER attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.11)
+ */
+__turner_inline_var constexpr const alternate_server_t alternate_server;
+
+
+/// \}
+
+
+template <typename ProtocolTraits>
+typename channel_number_attribute_processor_t<ProtocolTraits>::value_t
+  channel_number_attribute_processor_t<ProtocolTraits>::read (
+    const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+{
+  auto value = __bits::read_uint32(attribute, error);
+  if (!error)
+  {
+    value = (value & 0xffff'0000) >> 16;
+    if (min_channel_number <= value && value <= max_channel_number)
+    {
+      return static_cast<value_t>(value);
+    }
+    error = make_error_code(errc::unexpected_attribute_value);
+  }
+  return {};
+}
+
+
+template <typename ProtocolTraits>
+size_t channel_number_attribute_processor_t<ProtocolTraits>::write (
+  const any_message_t<ProtocolTraits> &,
+  uint8_t *first, uint8_t *last,
+  const value_t &value,
+  std::error_code &error) noexcept
+{
+  if (min_channel_number <= value && value <= max_channel_number)
+  {
+    return __bits::write_uint32(first, last,
+      (static_cast<uint32_t>(value) << 16) & 0xffff'0000,
+      error
+    );
+  }
+  error = make_error_code(errc::unexpected_attribute_value);
+  return sizeof(uint32_t);
+}
+
+
+} // namespace turn
+
+
+__turner_end

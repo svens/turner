@@ -57,6 +57,29 @@ public:
    */
   using message_t = any_message_t<traits_t>;
 
+  /**
+   * Attribute type as defined by protocol.
+   */
+  template <
+    uint16_t AttributeType,
+    template <typename> typename AttributeProcessor
+  >
+  using attribute_type_t = turner::attribute_type_t<
+    ProtocolTraits,
+    AttributeType,
+    AttributeProcessor
+  >;
+
+  /**
+   * Pull attribute from different protocol into this protocol i.e. reuse
+   * attribute type value and processor but this protocol's traits.
+   */
+  template <typename Attribute>
+  using reuse_attribute_t = attribute_type_t<
+    Attribute::type(),
+    Attribute::template rebind_processor_t
+  >;
+
 
   /**
    * Return protocol name (if defined).

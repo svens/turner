@@ -48,7 +48,7 @@ class any_attribute_t;
 template <
   typename ProtocolTraits,
   uint16_t AttributeType,
-  typename AttributeProcessor
+  template <typename> typename AttributeProcessor
 >
 class attribute_type_t;
 

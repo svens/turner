@@ -10,52 +10,13 @@ using attribute_processor = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(attribute_processor, protocol_types);
 
 
-template <typename Protocol, size_t N>
-auto wire_data (Protocol, const char (&data)[N])
-{
-  // get message and remove existing body
-  auto raw = msg_data(Protocol());
-  raw.resize(Protocol::traits_t::header_size);
-
-  // append new body and update message length
-  raw.insert(raw.end(), data, data + N - 1);
-  reinterpret_cast<uint16_t *>(&raw[0])[1] =
-    sal::native_to_network_byte_order((uint16_t)(N - 1));
-
-  return raw;
-}
-
-
-template <typename Protocol, typename Data>
-inline auto &from_wire (Protocol p, const Data &d)
-{
-  return Protocol::parse(d.begin(), d.end())->as(msg_type(p));
-}
-
-
-template <typename Protocol, typename Data>
-inline auto to_wire (Protocol p, Data &d)
-{
-  return Protocol::build(msg_type(p), d.begin(), d.end());
-}
-
-
-template <
-  typename Protocol,
-  template <typename> typename AttributeProcessor
->
-using attr_t = turner::attribute_type_t<
-  typename Protocol::traits_t,
-  0x01,
-  AttributeProcessor<typename Protocol::traits_t>
->;
-
-
 // uint32 {{{1
 
 
 template <typename Protocol>
-const attr_t<Protocol, turner::uint32_attribute_processor_t> uint32_attr{};
+constexpr const typename Protocol::template attribute_type_t<0x01,
+  turner::uint32_attribute_processor_t
+> uint32_attr{};
 
 
 TYPED_TEST(attribute_processor, read_uint32)
@@ -65,7 +26,7 @@ TYPED_TEST(attribute_processor, read_uint32)
     "\x00\x04"          // Length
     "\x12\x34\x56\x78"  // Value
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(uint32_attr<TypeParam>, error);
@@ -86,7 +47,7 @@ TYPED_TEST(attribute_processor, read_uint32_last_attribute)
     "\x00\x04"          // Length
     "\x12\x34\x56\x78"  // Value
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(uint32_attr<TypeParam>, error);
@@ -104,7 +65,7 @@ TYPED_TEST(attribute_processor, read_uint32_attribute_not_found)
     "\00\x04"           // Length
     "\12\x34\56\x78"    // Value
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(uint32_attr<TypeParam>, error);
@@ -124,7 +85,7 @@ TYPED_TEST(attribute_processor, read_uint32_length_past_message_end)
     "\00\x08"           // Length (past message)
     "\12\x34\56\x78"    // Value
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(uint32_attr<TypeParam>, error);
@@ -144,7 +105,7 @@ TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
     "\00\x03"           // Length (!= sizeof(uint32_t))
     "\12\x34\56\x78"    // Value
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(uint32_attr<TypeParam>, error);
@@ -162,14 +123,14 @@ TYPED_TEST(attribute_processor, write_uint32)
   std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(8U, writer.available());
 
   writer.write(uint32_attr<TypeParam>, 0x12345678, error);
   EXPECT_TRUE(!error);
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(8U, msg.length());
   EXPECT_EQ(0x12345678U, msg.read(uint32_attr<TypeParam>));
 }
@@ -180,7 +141,7 @@ TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
   std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(7U, writer.available());
 
   writer.write(uint32_attr<TypeParam>, 0x12345678, error);
@@ -188,7 +149,7 @@ TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
   EXPECT_EQ(7U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(uint32_attr<TypeParam>, 0x12345678),
+    build(TypeParam(), data).write(uint32_attr<TypeParam>, 0x12345678),
     std::system_error
   );
 }
@@ -198,7 +159,9 @@ TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
 
 
 template <typename Protocol>
-const attr_t<Protocol, turner::string_attribute_processor_t> string_attr{};
+constexpr const typename Protocol::template attribute_type_t<0x01,
+  turner::string_attribute_processor_t
+> string_attr{};
 
 
 TYPED_TEST(attribute_processor, read_string)
@@ -208,7 +171,7 @@ TYPED_TEST(attribute_processor, read_string)
     "\x00\x03"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(string_attr<TypeParam>, error);
@@ -229,7 +192,7 @@ TYPED_TEST(attribute_processor, read_string_last_attribute)
     "\x00\x03"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(string_attr<TypeParam>, error);
@@ -247,7 +210,7 @@ TYPED_TEST(attribute_processor, read_string_attribute_not_found)
     "\x00\x03"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(string_attr<TypeParam>, error);
@@ -267,7 +230,7 @@ TYPED_TEST(attribute_processor, read_string_length_past_message_end)
     "\x00\x05"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(string_attr<TypeParam>, error);
@@ -286,7 +249,7 @@ TYPED_TEST(attribute_processor, read_string_empty)
     "\x00\x01" // Type
     "\x00\x00" // Length
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(string_attr<TypeParam>, error);
@@ -302,14 +265,14 @@ TYPED_TEST(attribute_processor, write_string)
   std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(8U, writer.available());
 
   writer.write(string_attr<TypeParam>, "1234", error);
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(8U, msg.length());
   EXPECT_EQ("1234", msg.read(string_attr<TypeParam>));
 }
@@ -320,14 +283,14 @@ TYPED_TEST(attribute_processor, write_string_empty)
   std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(4U, writer.available());
 
   writer.write(string_attr<TypeParam>, "", error);
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(4U, msg.length());
   EXPECT_EQ("", msg.read(string_attr<TypeParam>));
 }
@@ -338,7 +301,7 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room)
   std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(7U, writer.available());
 
   writer.write(string_attr<TypeParam>, "1234", error);
@@ -346,7 +309,7 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room)
   EXPECT_EQ(7U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(string_attr<TypeParam>, "1234"),
+    build(TypeParam(), data).write(string_attr<TypeParam>, "1234"),
     std::system_error
   );
 }
@@ -357,7 +320,7 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room_for_padding)
   std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(7U, writer.available());
 
   writer.write(string_attr<TypeParam>, "123", error);
@@ -365,7 +328,7 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room_for_padding)
   EXPECT_EQ(7U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(string_attr<TypeParam>, "123"),
+    build(TypeParam(), data).write(string_attr<TypeParam>, "123"),
     std::system_error
   );
 }
@@ -375,7 +338,9 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room_for_padding)
 
 
 template <typename Protocol>
-const attr_t<Protocol, turner::array_attribute_processor_t> array_attr{};
+constexpr const typename Protocol::template attribute_type_t<0x01,
+  turner::array_attribute_processor_t
+> array_attr{};
 
 
 TYPED_TEST(attribute_processor, read_array)
@@ -385,7 +350,7 @@ TYPED_TEST(attribute_processor, read_array)
     "\x00\x03"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ begin, end ] = msg.read(array_attr<TypeParam>, error);
@@ -406,7 +371,7 @@ TYPED_TEST(attribute_processor, read_array_last_attribute)
     "\x00\x03"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ begin, end ] = msg.read(array_attr<TypeParam>, error);
@@ -424,7 +389,7 @@ TYPED_TEST(attribute_processor, read_array_attribute_not_found)
     "\x00\x03"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(array_attr<TypeParam>, error);
@@ -444,7 +409,7 @@ TYPED_TEST(attribute_processor, read_array_length_past_message_end)
     "\x00\x05"  // Length
     "str\0"     // Value + padding
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(array_attr<TypeParam>, error);
@@ -463,7 +428,7 @@ TYPED_TEST(attribute_processor, read_array_empty)
     "\x00\x01"  // Type
     "\x00\x00"  // Length
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ begin, end ] = msg.read(array_attr<TypeParam>, error);
@@ -479,7 +444,7 @@ TYPED_TEST(attribute_processor, write_array)
   std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(8U, writer.available());
 
   std::vector<uint8_t> array = { 1, 2, 3, 4 };
@@ -488,7 +453,7 @@ TYPED_TEST(attribute_processor, write_array)
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(8U, msg.length());
   auto [ begin, end ] = msg.read(array_attr<TypeParam>);
   EXPECT_TRUE(std::equal(begin, end, array.begin()));
@@ -500,7 +465,7 @@ TYPED_TEST(attribute_processor, write_array_empty)
   std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(4U, writer.available());
 
   std::vector<uint8_t> array;
@@ -509,7 +474,7 @@ TYPED_TEST(attribute_processor, write_array_empty)
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(4U, msg.length());
   auto [ begin, end ] = msg.read(array_attr<TypeParam>);
   EXPECT_EQ(begin, end);
@@ -521,7 +486,7 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room)
   std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(7U, writer.available());
 
   std::vector<uint8_t> array = { 1, 2, 3, 4 };
@@ -531,7 +496,7 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room)
   EXPECT_EQ(7U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(array_attr<TypeParam>, value),
+    build(TypeParam(), data).write(array_attr<TypeParam>, value),
     std::system_error
   );
 }
@@ -542,7 +507,7 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room_for_padding)
   std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(7U, writer.available());
 
   std::vector<uint8_t> array = { 1, 2, 3 };
@@ -552,7 +517,7 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room_for_padding)
   EXPECT_EQ(7U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(array_attr<TypeParam>, value),
+    build(TypeParam(), data).write(array_attr<TypeParam>, value),
     std::system_error
   );
 }
@@ -562,7 +527,9 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room_for_padding)
 
 
 template <typename Protocol>
-const attr_t<Protocol, turner::error_attribute_processor_t> error_attr{};
+constexpr const typename Protocol::template attribute_type_t<0x01,
+  turner::error_attribute_processor_t
+> error_attr{};
 
 
 __turner_inline_var constexpr const turner::error_t expected_error{300, "Text"};
@@ -576,7 +543,7 @@ TYPED_TEST(attribute_processor, read_error)
     "\x00\x00\x03\x00"  // Value
     "Msg\xab"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(error_attr<TypeParam>, error);
@@ -599,7 +566,7 @@ TYPED_TEST(attribute_processor, read_error_last_attribute)
     "\x00\x00\x03\x00"  // Value
     "Msg\xab"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto value = msg.read(error_attr<TypeParam>, error);
@@ -619,7 +586,7 @@ TYPED_TEST(attribute_processor, read_error_attribute_not_found)
     "\x00\x00\x03\x00"  // Value
     "Msg\xab"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(error_attr<TypeParam>, error);
@@ -640,7 +607,7 @@ TYPED_TEST(attribute_processor, read_error_length_past_message_end)
     "\x00\x00\x03\x00"  // Value
     "Msg\xab"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(error_attr<TypeParam>, error);
@@ -659,7 +626,7 @@ TYPED_TEST(attribute_processor, read_error_unexpected_attribute_length)
     "\x00\x01"  // Type
     "\x00\x00"  // Length (need at least 4B)
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(error_attr<TypeParam>, error);
@@ -677,14 +644,14 @@ TYPED_TEST(attribute_processor, write_error)
   std::array<uint8_t, TypeParam::traits_t::header_size + 12> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(12U, writer.available());
 
   writer.write(error_attr<TypeParam>, expected_error, error);
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(12, msg.length());
   auto error_code = msg.read(error_attr<TypeParam>);
   EXPECT_EQ(expected_error, error_code);
@@ -697,7 +664,7 @@ TYPED_TEST(attribute_processor, write_error_empty)
   std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(8U, writer.available());
 
   constexpr const turner::error_t empty_error{300, ""};
@@ -705,7 +672,7 @@ TYPED_TEST(attribute_processor, write_error_empty)
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(8U, msg.length());
   auto error_code = msg.read(error_attr<TypeParam>);
   EXPECT_EQ(empty_error, error_code);
@@ -718,7 +685,7 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room)
   std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(11U, writer.available());
 
   writer.write(error_attr<TypeParam>, expected_error, error);
@@ -726,7 +693,7 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room)
   EXPECT_EQ(11U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(error_attr<TypeParam>, expected_error),
+    build(TypeParam(), data).write(error_attr<TypeParam>, expected_error),
     std::system_error
   );
 }
@@ -737,7 +704,7 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
   std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(11U, writer.available());
 
   constexpr const turner::error_t padded_error{300, "123"};
@@ -746,7 +713,7 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
   EXPECT_EQ(11U, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(error_attr<TypeParam>, padded_error),
+    build(TypeParam(), data).write(error_attr<TypeParam>, padded_error),
     std::system_error
   );
 }
@@ -756,7 +723,9 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
 
 
 template <typename Protocol>
-const attr_t<Protocol, turner::address_attribute_processor_t> addr_attr{};
+constexpr const typename Protocol::template attribute_type_t<0x01,
+  turner::address_attribute_processor_t
+> addr_attr{};
 
 
 __turner_inline_var const auto expected_address_v4 =
@@ -777,7 +746,7 @@ TYPED_TEST(attribute_processor, read_address_v4)
     "\x12\x34"          // Port
     "\x01\x02\x03\x04"  // IPv4
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
@@ -801,7 +770,7 @@ TYPED_TEST(attribute_processor, read_address_v6)
     "\x09\x0a\x0b\x0c"
     "\x0d\x0e\x0f\x10"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
@@ -825,7 +794,7 @@ TYPED_TEST(attribute_processor, read_address_v4_last_attribute)
     "\x12\x34"          // Port
     "\x01\x02\x03\x04"  // IPv4
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
@@ -852,7 +821,7 @@ TYPED_TEST(attribute_processor, read_address_v6_last_attribute)
     "\x09\x0a\x0b\x0c"
     "\x0d\x0e\x0f\x10"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   auto [ address, port ] = msg.read(addr_attr<TypeParam>, error);
@@ -873,7 +842,7 @@ TYPED_TEST(attribute_processor, read_address_attribute_not_found)
     "\x12\x34"          // Port
     "\x01\x02\x03\x04"  // IPv4
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
@@ -895,7 +864,7 @@ TYPED_TEST(attribute_processor, read_address_v4_length_past_message_end)
     "\x12\x34"          // Port
     "\x01\x02\x03\x04"  // IPv4
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
@@ -920,7 +889,7 @@ TYPED_TEST(attribute_processor, read_address_v6_length_past_message_end)
     "\x09\x0a\x0b\x0c"
     "\x0d\x0e\x0f\x10"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
@@ -945,7 +914,7 @@ TYPED_TEST(attribute_processor, read_address_v4_unexpected_attribute_length)
     "\x09\x0a\x0b\x0c"
     "\x0d\x0e\x0f\x10"
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
@@ -967,7 +936,7 @@ TYPED_TEST(attribute_processor, read_address_v6_unexpected_attribute_length)
     "\x12\x34"          // Port
     "\x01\x02\x03\x04"  // IPv4
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
@@ -986,7 +955,7 @@ TYPED_TEST(attribute_processor, read_address_empty)
     "\x00\x01"          // Type
     "\x00\x00"          // Length (empty)
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
@@ -999,7 +968,7 @@ TYPED_TEST(attribute_processor, read_address_empty)
 }
 
 
-TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
+TYPED_TEST(attribute_processor, read_address_unexpected_attribute_value)
 {
   auto data = wire_data(TypeParam(),
     "\x00\x01"          // Type
@@ -1008,11 +977,11 @@ TYPED_TEST(attribute_processor, read_address_unexpected_address_family)
     "\x12\x34"          // Port
     "\x01\x02\x03\x04"  // IPv4
   );
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
 
   EXPECT_THROW(
     msg.read(addr_attr<TypeParam>),
@@ -1026,7 +995,7 @@ TYPED_TEST(attribute_processor, write_address_v4)
   std::array<uint8_t, TypeParam::traits_t::header_size + 12> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(12U, writer.available());
 
   writer.write(addr_attr<TypeParam>,
@@ -1036,7 +1005,7 @@ TYPED_TEST(attribute_processor, write_address_v4)
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(12U, msg.length());
   auto [ address, port ] = msg.read(addr_attr<TypeParam>);
   EXPECT_EQ(expected_address_v4, address);
@@ -1049,7 +1018,7 @@ TYPED_TEST(attribute_processor, write_address_v6)
   std::array<uint8_t, TypeParam::traits_t::header_size + 24> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(24, writer.available());
 
   writer.write(addr_attr<TypeParam>,
@@ -1059,7 +1028,7 @@ TYPED_TEST(attribute_processor, write_address_v6)
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
 
-  auto &msg = from_wire(TypeParam(), data);
+  auto &msg = parse(TypeParam(), data);
   EXPECT_EQ(24, msg.length());
   auto [ address, port ] = msg.read(addr_attr<TypeParam>);
   EXPECT_EQ(expected_address_v6, address);
@@ -1072,7 +1041,7 @@ TYPED_TEST(attribute_processor, write_address_v4_not_enough_room)
   std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(11, writer.available());
 
   writer.write(addr_attr<TypeParam>,
@@ -1083,7 +1052,7 @@ TYPED_TEST(attribute_processor, write_address_v4_not_enough_room)
   EXPECT_EQ(11, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(addr_attr<TypeParam>,
+    build(TypeParam(), data).write(addr_attr<TypeParam>,
       {expected_address_v4, expected_port}
     ),
     std::system_error
@@ -1096,7 +1065,7 @@ TYPED_TEST(attribute_processor, write_address_v6_not_enough_room)
   std::array<uint8_t, TypeParam::traits_t::header_size + 23> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(23, writer.available());
 
   writer.write(addr_attr<TypeParam>,
@@ -1107,7 +1076,7 @@ TYPED_TEST(attribute_processor, write_address_v6_not_enough_room)
   EXPECT_EQ(23, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(addr_attr<TypeParam>,
+    build(TypeParam(), data).write(addr_attr<TypeParam>,
       {expected_address_v6, expected_port}
     ),
     std::system_error
@@ -1120,7 +1089,7 @@ TYPED_TEST(attribute_processor, write_address_unexpected_family)
   std::array<uint8_t, TypeParam::traits_t::header_size + 24> data;
 
   std::error_code error;
-  auto writer = to_wire(TypeParam(), data);
+  auto writer = build(TypeParam(), data);
   EXPECT_EQ(24, writer.available());
 
   auto address = expected_address_v4;
@@ -1131,11 +1100,11 @@ TYPED_TEST(attribute_processor, write_address_unexpected_family)
     error
   );
 
-  EXPECT_EQ(turner::errc::unexpected_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
   EXPECT_EQ(24, writer.available());
 
   EXPECT_THROW(
-    to_wire(TypeParam(), data).write(addr_attr<TypeParam>,
+    build(TypeParam(), data).write(addr_attr<TypeParam>,
       {address, expected_port}
     ),
     std::system_error
