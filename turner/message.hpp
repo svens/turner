@@ -60,9 +60,7 @@ public:
    */
   uint16_t type () const noexcept
   {
-    return sal::network_to_native_byte_order(
-      reinterpret_cast<const uint16_t *>(this)[0]
-    );
+    return sal::network_to_native_byte_order(as_ptr<uint16_t>()[0]);
   }
 
 
@@ -108,9 +106,7 @@ public:
    */
   uint16_t length () const noexcept
   {
-    return sal::network_to_native_byte_order(
-      reinterpret_cast<const uint16_t *>(this)[1]
-    );
+    return sal::network_to_native_byte_order(as_ptr<uint16_t>()[1]);
   }
 
 
@@ -120,7 +116,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_cptr(this) + ProtocolTraits::cookie_offset
+      as_ptr<uint8_t>() + ProtocolTraits::cookie_offset
     );
   }
 
@@ -131,7 +127,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_cptr(this) + ProtocolTraits::transaction_id_offset
+      as_ptr<uint8_t>() + ProtocolTraits::transaction_id_offset
     );
   }
 
@@ -146,7 +142,7 @@ public:
     message_type_t<ProtocolTraits, MessageType>) const noexcept
   {
     return type() == MessageType
-      ? reinterpret_cast<const message_reader_t<ProtocolTraits, MessageType> *>(this)
+      ? as_ptr<message_reader_t<ProtocolTraits, MessageType>>()
       : nullptr;
   }
 
@@ -163,13 +159,15 @@ public:
   {
     if (type() == MessageType)
     {
-      return *reinterpret_cast<const message_reader_t<ProtocolTraits, MessageType> *>(this);
+      return *as_ptr<message_reader_t<ProtocolTraits, MessageType>>();
     }
     unexpected_message_type("any_message::as");
   }
 
 
-private:
+protected:
+
+  /// \cond internal
 
   any_message_t () = delete;
   any_message_t (const any_message_t &) = delete;
@@ -184,6 +182,14 @@ private:
       msg
     );
   }
+
+  template <typename T>
+  const T *as_ptr () const noexcept
+  {
+    return reinterpret_cast<const T *>(this);
+  }
+
+  /// \endcond
 };
 
 
@@ -223,7 +229,7 @@ public:
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto p = __bits::to_cptr(this) + ProtocolTraits::header_size;
+    auto p = this->template as_ptr<uint8_t>() + ProtocolTraits::header_size;
     if (auto attribute = __bits::find_attribute(p, p + this->length(),
         AttributeType, ProtocolTraits::padding_size, error))
     {
@@ -330,12 +336,10 @@ private:
       "expected request message type"
     );
 
-    auto begin = __bits::to_ptr(first);
-    auto end = begin + (last - first) * sizeof(*first);
-
+    auto begin = sal::to_ptr(first), end = sal::to_end_ptr(first, last);
     if (begin + ProtocolTraits::header_size <= end)
     {
-      auto src = __bits::to_cptr(this);
+      auto src = this->template as_ptr<uint8_t>();
       if (src != begin)
       {
         std::memmove(begin, src, ProtocolTraits::header_size);
@@ -425,7 +429,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_cptr(first_) + ProtocolTraits::cookie_offset
+      sal::to_ptr(first_) + ProtocolTraits::cookie_offset
     );
   }
 
@@ -436,7 +440,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_cptr(first_) + ProtocolTraits::transaction_id_offset
+      sal::to_ptr(first_) + ProtocolTraits::transaction_id_offset
     );
   }
 

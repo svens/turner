@@ -1,8 +1,8 @@
 #pragma once
 
 #include <turner/config.hpp>
-#include <memory>
 #include <type_traits>
+#include <utility>
 
 
 __turner_begin
@@ -43,34 +43,6 @@ public:
 template <typename T>
 __turner_inline_var constexpr bool has_name_getter_v =
   has_name_getter_t<T>::value;
-
-
-// cast any iterator It to const byte pointer
-template <typename It>
-inline constexpr const uint8_t *to_cptr (It it) noexcept
-{
-  return reinterpret_cast<const uint8_t *>(std::addressof(*it));
-}
-
-
-// cast any iterator It to byte pointer
-template <typename It>
-inline constexpr uint8_t *to_ptr (It it) noexcept
-{
-  return reinterpret_cast<uint8_t *>(std::addressof(*it));
-}
-
-
-// silencer for msvc silly-warning C4996 (Checked Iterators)
-template <typename It>
-inline auto make_output_iterator (It first, It) noexcept
-{
-#if defined(_MSC_VER)
-  return stdext::make_unchecked_array_iterator(first);
-#else
-  return first;
-#endif
-}
 
 
 } // namespace __bits

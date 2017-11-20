@@ -13,6 +13,22 @@ using any_message = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(any_message, protocol_types);
 
 
+TYPED_TEST(any_message, no_data)
+{
+  std::vector<uint8_t> data;
+
+  std::error_code error;
+  auto msg = TypeParam::parse(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::insufficient_header_data, error);
+  EXPECT_FALSE(msg);
+
+  EXPECT_THROW(
+    TypeParam::parse(data.begin(), data.end()),
+    std::system_error
+  );
+}
+
+
 TYPED_TEST(any_message, insufficient_header_data)
 {
   auto data = msg_data(TypeParam());
