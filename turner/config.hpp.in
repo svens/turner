@@ -23,4 +23,18 @@ __turner_begin
  */
 __turner_inline_var constexpr const char version[] = "turner/@version@";
 
+#if _MSC_VER
+  __turner_inline_var constexpr const bool is_msvc_compiler = true;
+  __turner_inline_var constexpr const bool is_gnuc_compiler = false;
+#elif __GNUC__
+  __turner_inline_var constexpr const bool is_msvc_compiler = false;
+  __turner_inline_var constexpr const bool is_gnuc_compiler = true;
+#endif
+
+#if _DEBUG
+  __turner_inline_var constexpr const bool is_debug_build = true;
+#else
+  __turner_inline_var constexpr const bool is_debug_build = false;
+#endif
+
 __turner_end
