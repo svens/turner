@@ -8,6 +8,8 @@
 
 #include <turner/config.hpp>
 #include <turner/protocol.hpp>
+#include <sal/crypto/hash.hpp>
+#include <sal/crypto/hmac.hpp>
 
 
 __turner_begin
@@ -84,6 +86,25 @@ __turner_inline_var constexpr const protocol_t protocol;
 inline constexpr void operator>> (protocol_t, const char *&name) noexcept
 {
   name = "STUN";
+}
+
+
+/**
+ * Create HMAC-SHA1 calculator for long term credentials.
+ * \see https://tools.ietf.org/html/rfc5389#section-15.4
+ *
+ * \note
+ *   - \a password is NOT prepared with SASLprep
+ *   - This library does not support short term credentials.
+ */
+inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
+  const std::string_view &realm,
+  const std::string_view &username,
+  const std::string_view &password)
+{
+  sal::char_array_t<513 + 1 + 763 + 1 + 1024> input;
+  input << username << ':' << realm << ':' << password;
+  return sal::crypto::hash_t<sal::crypto::md5>::one_shot(input);
 }
 
 
