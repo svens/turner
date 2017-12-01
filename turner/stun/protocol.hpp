@@ -96,12 +96,23 @@ inline constexpr void operator>> (protocol_t, const char *&name) noexcept
 
 
 /**
+ * Create HMAC-SHA1 calculator for short term credentials.
+ * \see https://tools.ietf.org/html/rfc5389#section-15.4
+ *
+ * \note \a password is NOT prepared with SASLprep
+ */
+inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
+  const std::string_view &password)
+{
+  return password;
+}
+
+
+/**
  * Create HMAC-SHA1 calculator for long term credentials.
  * \see https://tools.ietf.org/html/rfc5389#section-15.4
  *
- * \note
- *   - \a password is NOT prepared with SASLprep
- *   - This library does not support short term credentials.
+ * \note \a password is NOT prepared with SASLprep
  */
 inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
   const std::string_view &realm,

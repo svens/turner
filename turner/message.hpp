@@ -66,7 +66,7 @@ public:
 
 
   /**
-   * Return true if message type is request (i.e. not response or indication).
+   * Return true if message type is request (ie not response or indication).
    */
   bool is_request () const noexcept
   {
@@ -163,6 +163,38 @@ public:
       return *as_ptr<message_reader_t<ProtocolTraits, MessageType>>();
     }
     unexpected_message_type("any_message::as");
+  }
+
+
+  /**
+   * Return true if message's claimed integrity is same as calculated with \a
+   * integrity_calculator. On failure, set \a error code identifying problem
+   * and return false.
+   *
+   * Possible errors:
+   * - turner::errc::attribute_not_found: message does not have
+   *   MESSAGE-INTEGRITY attribute
+   * - turner::errc::unexpected_attribute_length: invalid integrity length
+   * - turner::errc::unexpected_attribute_value: claimed integrity is not
+   *   valid
+   */
+  template <typename Digest>
+  bool has_valid_integrity (sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error
+  ) const noexcept;
+
+
+  /**
+   * \copybrief has_valid_integrity
+   * On failure, throw std::system_error.
+   */
+  template <typename Digest>
+  bool has_valid_integrity (sal::crypto::hmac_t<Digest> &integrity_calculator)
+    const
+  {
+    return has_valid_integrity(integrity_calculator,
+      sal::throw_on_error("any_message::has_valid_integrity")
+    );
   }
 
 
@@ -544,6 +576,58 @@ private:
   friend class turner::protocol_t<ProtocolTraits>;
   friend class message_reader_t<ProtocolTraits, MessageType & ~__bits::class_mask>;
 };
+
+
+template <typename ProtocolTraits>
+template <typename Digest>
+bool any_message_t<ProtocolTraits>::has_valid_integrity (
+  sal::crypto::hmac_t<Digest> &integrity_calculator,
+  std::error_code &error) const noexcept
+{
+  auto p = as_ptr<uint8_t>() + ProtocolTraits::header_size;
+  if (auto integrity = __bits::find_attribute(p, p + length(),
+      ProtocolTraits::message_integrity,
+      ProtocolTraits::padding_size,
+      error))
+  {
+    if (integrity->length() == integrity_calculator.digest_size)
+    {
+      // type and fixed length [first attribute, MESSAGE-INTEGRITY attribute)
+      const uint16_t type_and_length[] =
+      {
+        as_ptr<uint16_t>()[0],
+        sal::native_to_network_byte_order(
+          static_cast<uint16_t>(
+            (reinterpret_cast<const uint8_t *>(integrity) - p)
+            + 2 * sizeof(uint16_t)
+            + integrity_calculator.digest_size
+          )
+        ),
+      };
+      integrity_calculator.update(type_and_length);
+
+      // rest of message (up to MESSAGE-INTEGRITY)
+      integrity_calculator.update(
+        as_ptr<uint8_t>() + sizeof(type_and_length),
+        reinterpret_cast<const uint8_t *>(integrity)
+      );
+
+      // check if valid
+      auto expected = integrity_calculator.finish();
+      if (std::equal(expected.begin(), expected.end(), integrity->data()))
+      {
+        error.clear();
+        return true;
+      }
+      error = make_error_code(errc::unexpected_attribute_value);
+    }
+    else
+    {
+      error = make_error_code(errc::unexpected_attribute_length);
+    }
+  }
+  return false;
+}
 
 
 template <typename ProtocolTraits, uint16_t MessageType>
