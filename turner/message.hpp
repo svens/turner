@@ -11,6 +11,7 @@
 #include <turner/__bits/helpers.hpp>
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
+#include <sal/crypto/hmac.hpp>
 
 
 __turner_begin
@@ -405,9 +406,18 @@ public:
    * Return true if this object is in valid state. Calling any other method is
    * undefined behavious if object is not in valid state.
    */
-  explicit operator bool () const noexcept
+  bool good () const noexcept
   {
     return first_ + ProtocolTraits::header_size <= last_;
+  }
+
+
+  /**
+   * \copydoc good()
+   */
+  explicit operator bool () const noexcept
+  {
+    return good();
   }
 
 
@@ -484,6 +494,44 @@ public:
   }
 
 
+  /**
+   * Return finalized message as range [\a first, \a second). Calling this
+   * method while object is not good() is undefined behaviour.
+   */
+  std::pair<const uint8_t *, const uint8_t *> finish () const noexcept
+  {
+    return { first_, first_ + ProtocolTraits::header_size + length() };
+  }
+
+
+  /**
+   * \copydoc finish()
+   * Also adds message integrity to the end of message. If remaining buffer is
+   * too small for integrity, set \a error to errc::not_enough_room.
+   */
+  template <typename Digest>
+  std::pair<const uint8_t *, const uint8_t *> finish (
+    sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error
+  ) noexcept;
+
+
+  /**
+   * \copydoc finish()
+   * Also adds message integrity to the end of message.
+   *
+   * \throws std::system_error If remaining buffer is too small for integrity.
+   */
+  template <typename Digest>
+  std::pair<const uint8_t *, const uint8_t *> finish (
+    sal::crypto::hmac_t<Digest> &integrity_calculator)
+  {
+    return finish(integrity_calculator,
+      sal::throw_on_error("message_writer::finish")
+    );
+  }
+
+
 private:
 
   uint8_t * const first_, * const last_;
@@ -545,6 +593,44 @@ message_writer_t<ProtocolTraits, MessageType> &
   }
 
   return *this;
+}
+
+
+template <typename ProtocolTraits, uint16_t MessageType>
+template <typename Digest>
+std::pair<const uint8_t *, const uint8_t *>
+  message_writer_t<ProtocolTraits, MessageType>::finish (
+    sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error) noexcept
+{
+  uint16_t digest_size = integrity_calculator.digest_size;
+  uint16_t original_length = length();
+  uint16_t new_length = original_length + 2 * sizeof(uint16_t) + digest_size;
+
+  if (first_ + new_length + ProtocolTraits::header_size <= last_)
+  {
+    // update message length
+    reinterpret_cast<uint16_t *>(first_)[1] =
+      sal::native_to_network_byte_order(new_length);
+
+    // add MESSAGE-INTEGRITY type & length
+    auto attribute = first_ + ProtocolTraits::header_size + original_length;
+    reinterpret_cast<uint16_t *>(attribute)[0] =
+      sal::native_to_network_byte_order(ProtocolTraits::message_integrity);
+    reinterpret_cast<uint16_t *>(attribute)[1] =
+      sal::native_to_network_byte_order(digest_size);
+
+    // add MESSAGE-INTEGRITY value
+    integrity_calculator.update(first_, attribute);
+    attribute += 2 * sizeof(uint16_t);
+    integrity_calculator.finish(attribute, attribute + digest_size);
+
+    error.clear();
+    return finish();
+  }
+
+  error = make_error_code(errc::not_enough_room);
+  return {};
 }
 
 

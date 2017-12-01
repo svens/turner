@@ -14,54 +14,74 @@ TEST_F(stun, binding_name)
 }
 
 
-TEST_F(stun, make_integrity_calculator)
+TEST_F(stun, rfc5769_sample_request_with_long_term_authentication)
 {
-  // Stripped example from https://tools.ietf.org/html/rfc5769#section-2.4
-  // (no MESSAGE-INTEGRITY appended)
-  const char msg[] =
-    "\x00\x01\x00\x60"  //     Request type and message length
-    "\x21\x12\xa4\x42"  //     Magic cookie
-    "\x78\xad\x34\x33"  //  }
-    "\xc6\xad\x72\xc0"  //  }  Transaction ID
-    "\x29\xda\x41\x2e"  //  }
-    "\x00\x06\x00\x12"  //     USERNAME attribute header
-    "\xe3\x83\x9e\xe3"  //  }
-    "\x83\x88\xe3\x83"  //  }
-    "\xaa\xe3\x83\x83"  //  }  Username value (18 bytes) and padding (2 bytes)
-    "\xe3\x82\xaf\xe3"  //  }
-    "\x82\xb9\x00\x00"  //  }
-    "\x00\x15\x00\x1c"  //     NONCE attribute header
-    "\x66\x2f\x2f\x34"  //  }
-    "\x39\x39\x6b\x39"  //  }
-    "\x35\x34\x64\x36"  //  }
-    "\x4f\x4c\x33\x34"  //  }  Nonce value
-    "\x6f\x4c\x39\x46"  //  }
-    "\x53\x54\x76\x79"  //  }
-    "\x36\x34\x73\x41"  //  }
-    "\x00\x14\x00\x0b"  //     REALM attribute header
-    "\x65\x78\x61\x6d"  //  }
-    "\x70\x6c\x65\x2e"  //  }  Realm value (11 bytes) and padding (1 byte)
-    "\x6f\x72\x67\x00"  //  }
-  ;
+  const std::array<uint8_t, 116> expected =
+  {{
+    0x00, 0x01, 0x00, 0x60,     //     Request type and message length
+    0x21, 0x12, 0xa4, 0x42,     //     Magic cookie
+    0x78, 0xad, 0x34, 0x33,     //  >
+    0xc6, 0xad, 0x72, 0xc0,     //  >  Transaction ID
+    0x29, 0xda, 0x41, 0x2e,     //  >
+    0x00, 0x06, 0x00, 0x12,     //     USERNAME attribute header
+    0xe3, 0x83, 0x9e, 0xe3,     //  >
+    0x83, 0x88, 0xe3, 0x83,     //  >
+    0xaa, 0xe3, 0x83, 0x83,     //  >  Username value (18 bytes) and padding (2 bytes)
+    0xe3, 0x82, 0xaf, 0xe3,     //  >
+    0x82, 0xb9, 0x00, 0x00,     //  >
+    0x00, 0x15, 0x00, 0x1c,     //     NONCE attribute header
+    0x66, 0x2f, 0x2f, 0x34,     //  >
+    0x39, 0x39, 0x6b, 0x39,     //  >
+    0x35, 0x34, 0x64, 0x36,     //  >
+    0x4f, 0x4c, 0x33, 0x34,     //  >  Nonce value
+    0x6f, 0x4c, 0x39, 0x46,     //  >
+    0x53, 0x54, 0x76, 0x79,     //  >
+    0x36, 0x34, 0x73, 0x41,     //  >
+    0x00, 0x14, 0x00, 0x0b,     //     REALM attribute header
+    0x65, 0x78, 0x61, 0x6d,     //  >
+    0x70, 0x6c, 0x65, 0x2e,     //  >  Realm value (11 bytes) and padding (1 byte)
+    0x6f, 0x72, 0x67, 0x00,     //  >
+    0x00, 0x08, 0x00, 0x14,     //     MESSAGE-INTEGRITY attribute header
+    0xf6, 0x70, 0x24, 0x65,     //  >
+    0x6d, 0xd6, 0x4a, 0x3e,     //  >
+    0x02, 0xb8, 0xe0, 0x71,     //  >  HMAC-SHA1 fingerprint
+    0x2e, 0x85, 0xc9, 0xa2,     //  >
+    0x8c, 0xa8, 0x96, 0x66,     //  >
+  }};
 
+  //
+  // pretend building message
+  //
+
+  // instantiate writer with data area
+  std::array<uint8_t, expected.max_size()> data;
+  std::error_code error;
+  auto writer = turner::stun::protocol.build(turner::stun::binding,
+    data.begin(), data.end()
+  );
+
+  // instead of building message, copy expected without MESSAGE-INTEGRITY
+  // and update length accordingly
+  std::uninitialized_copy_n(expected.begin(),
+    expected.size() - 24,
+    data.begin()
+  );
+  data[3] -= 24;
+  EXPECT_EQ(
+    expected.size() - turner::stun::protocol_traits_t::header_size - 24,
+    writer.length()
+  );
+
+  // actual testing part: finish with integrity
   auto integrity_calculator = turner::stun::make_integrity_calculator(
     "example.org",
     "\xe3\x83\x9e\xe3\x83\x88\xe3\x83\xaa\xe3\x83\x83\xe3\x82\xaf\xe3\x82\xb9",
     "TheMatrIX"
   );
-  integrity_calculator.update(msg, msg + sizeof(msg) - 1);
-  auto integrity = integrity_calculator.finish();
-
-  std::array<uint8_t, 20> expected_integrity =
-  {{
-    0xf6, 0x70, 0x24, 0x65,
-    0x6d, 0xd6, 0x4a, 0x3e,
-    0x02, 0xb8, 0xe0, 0x71,
-    0x2e, 0x85, 0xc9, 0xa2,
-    0x8c, 0xa8, 0x96, 0x66,
-  }};
-
-  EXPECT_EQ(expected_integrity, integrity);
+  auto [ begin, end ] = writer.finish(integrity_calculator);
+  EXPECT_EQ(data.data(), begin);
+  EXPECT_EQ(data.data() + data.size(), end);
+  EXPECT_EQ(expected, data);
 }
 
 

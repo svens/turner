@@ -122,6 +122,15 @@ inline constexpr auto msg_txn_id (STUN)
   }};
 }
 
+inline auto msg_hmac (STUN)
+{
+  return turner::stun::make_integrity_calculator(
+    "realm",
+    "user",
+    "pass"
+  );
+}
+
 inline constexpr auto msg_success_type (STUN)
 {
   return turner::stun::binding_success;
@@ -180,6 +189,15 @@ inline constexpr auto msg_txn_id (TURN)
     0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b,
   }};
+}
+
+inline auto msg_hmac (TURN)
+{
+  return turner::turn::make_integrity_calculator(
+    "realm",
+    "user",
+    "pass"
+  );
 }
 
 inline constexpr auto msg_success_type (TURN)

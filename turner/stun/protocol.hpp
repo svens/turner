@@ -65,6 +65,12 @@ struct protocol_traits_t
    * Attributes (TLV) padding boundary.
    */
   static __turner_inline_var constexpr const size_t padding_size = 4;
+
+
+  /**
+   * MESSAGE-INTEGRITY attribute id.
+   */
+  static __turner_inline_var constexpr const uint16_t message_integrity = 0x0008;
 };
 
 

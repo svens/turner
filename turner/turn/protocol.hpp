@@ -16,6 +16,10 @@ __turner_begin
 namespace turn {
 
 
+// Pull STUN long term credentials key calculator into TURN namespace.
+using stun::make_integrity_calculator;
+
+
 /**
  * TURN protocol message layout traits. As TURN is extension of STUN, it is
  * inherited from it's layout.
