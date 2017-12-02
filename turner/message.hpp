@@ -11,6 +11,7 @@
 #include <turner/__bits/helpers.hpp>
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
+#include <sal/crypto/hmac.hpp>
 
 
 __turner_begin
@@ -60,14 +61,12 @@ public:
    */
   uint16_t type () const noexcept
   {
-    return sal::network_to_native_byte_order(
-      reinterpret_cast<const uint16_t *>(this)[0]
-    );
+    return sal::network_to_native_byte_order(as_ptr<uint16_t>()[0]);
   }
 
 
   /**
-   * Return true if message type is request (i.e. not response or indication).
+   * Return true if message type is request (ie not response or indication).
    */
   bool is_request () const noexcept
   {
@@ -108,9 +107,7 @@ public:
    */
   uint16_t length () const noexcept
   {
-    return sal::network_to_native_byte_order(
-      reinterpret_cast<const uint16_t *>(this)[1]
-    );
+    return sal::network_to_native_byte_order(as_ptr<uint16_t>()[1]);
   }
 
 
@@ -120,7 +117,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_cptr(this) + ProtocolTraits::cookie_offset
+      as_ptr<uint8_t>() + ProtocolTraits::cookie_offset
     );
   }
 
@@ -131,7 +128,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_cptr(this) + ProtocolTraits::transaction_id_offset
+      as_ptr<uint8_t>() + ProtocolTraits::transaction_id_offset
     );
   }
 
@@ -146,7 +143,7 @@ public:
     message_type_t<ProtocolTraits, MessageType>) const noexcept
   {
     return type() == MessageType
-      ? reinterpret_cast<const message_reader_t<ProtocolTraits, MessageType> *>(this)
+      ? as_ptr<message_reader_t<ProtocolTraits, MessageType>>()
       : nullptr;
   }
 
@@ -163,13 +160,47 @@ public:
   {
     if (type() == MessageType)
     {
-      return *reinterpret_cast<const message_reader_t<ProtocolTraits, MessageType> *>(this);
+      return *as_ptr<message_reader_t<ProtocolTraits, MessageType>>();
     }
     unexpected_message_type("any_message::as");
   }
 
 
-private:
+  /**
+   * Return true if message's claimed integrity is same as calculated with \a
+   * integrity_calculator. On failure, set \a error code identifying problem
+   * and return false.
+   *
+   * Possible errors:
+   * - turner::errc::attribute_not_found: message does not have
+   *   MESSAGE-INTEGRITY attribute
+   * - turner::errc::unexpected_attribute_length: invalid integrity length
+   * - turner::errc::unexpected_attribute_value: claimed integrity is not
+   *   valid
+   */
+  template <typename Digest>
+  bool has_valid_integrity (sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error
+  ) const noexcept;
+
+
+  /**
+   * \copybrief has_valid_integrity
+   * On failure, throw std::system_error.
+   */
+  template <typename Digest>
+  bool has_valid_integrity (sal::crypto::hmac_t<Digest> &integrity_calculator)
+    const
+  {
+    return has_valid_integrity(integrity_calculator,
+      sal::throw_on_error("any_message::has_valid_integrity")
+    );
+  }
+
+
+protected:
+
+  /// \cond internal
 
   any_message_t () = delete;
   any_message_t (const any_message_t &) = delete;
@@ -184,6 +215,14 @@ private:
       msg
     );
   }
+
+  template <typename T>
+  const T *as_ptr () const noexcept
+  {
+    return reinterpret_cast<const T *>(this);
+  }
+
+  /// \endcond
 };
 
 
@@ -223,7 +262,7 @@ public:
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto p = __bits::to_cptr(this) + ProtocolTraits::header_size;
+    auto p = this->template as_ptr<uint8_t>() + ProtocolTraits::header_size;
     if (auto attribute = __bits::find_attribute(p, p + this->length(),
         AttributeType, ProtocolTraits::padding_size, error))
     {
@@ -253,8 +292,7 @@ public:
    * On failure, set \a error and returned object is in undefined state.
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
@@ -271,8 +309,7 @@ public:
    * On failure, throw \c std::system_error
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
@@ -285,12 +322,47 @@ public:
 
 
   /**
+   * Create success response for this message into region \a data.
+   * On failure, set \a error and returned object is in undefined state.
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+    to_success_response (Data &data, std::error_code &error) const noexcept
+  {
+    using std::begin;
+    using std::end;
+    return to_response<MessageType | __bits::success_response_class>(
+      begin(data), end(data), error
+    );
+  }
+
+
+  /**
+   * Create success response for this message into region \a data.
+   * On failure, throw \c std::system_error
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+    to_success_response (Data &data) const
+  {
+    return to_success_response(data,
+      sal::throw_on_error("message_reader::to_success_response")
+    );
+  }
+
+
+  /**
    * Create error response for this message into region [\a first, \a last).
    * On failure, set \a error and returned object is in undefined state.
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
@@ -307,14 +379,49 @@ public:
    * On failure, throw \c std::system_error
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
     to_error_response (It first, It last) const
   {
     return to_error_response(first, last,
+      sal::throw_on_error("message_reader::to_error_response")
+    );
+  }
+
+
+  /**
+   * Create error response for this message into region \a data.
+   * On failure, set \a error and returned object is in undefined state.
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+    to_error_response (Data &data, std::error_code &error) const noexcept
+  {
+    using std::begin;
+    using std::end;
+    return to_response<MessageType | __bits::error_response_class>(
+      begin(data), end(data), error
+    );
+  }
+
+
+  /**
+   * Create error response for this message into region \a data.
+   * On failure, throw \c std::system_error
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+    to_error_response (Data &data) const
+  {
+    return to_error_response(data,
       sal::throw_on_error("message_reader::to_error_response")
     );
   }
@@ -330,12 +437,10 @@ private:
       "expected request message type"
     );
 
-    auto begin = __bits::to_ptr(first);
-    auto end = begin + (last - first) * sizeof(*first);
-
+    auto begin = sal::to_ptr(first), end = sal::to_end_ptr(first, last);
     if (begin + ProtocolTraits::header_size <= end)
     {
-      auto src = __bits::to_cptr(this);
+      auto src = this->template as_ptr<uint8_t>();
       if (src != begin)
       {
         std::memmove(begin, src, ProtocolTraits::header_size);
@@ -401,9 +506,18 @@ public:
    * Return true if this object is in valid state. Calling any other method is
    * undefined behavious if object is not in valid state.
    */
-  explicit operator bool () const noexcept
+  bool good () const noexcept
   {
     return first_ + ProtocolTraits::header_size <= last_;
+  }
+
+
+  /**
+   * \copydoc good()
+   */
+  explicit operator bool () const noexcept
+  {
+    return good();
   }
 
 
@@ -425,7 +539,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      __bits::to_cptr(first_) + ProtocolTraits::cookie_offset
+      sal::to_ptr(first_) + ProtocolTraits::cookie_offset
     );
   }
 
@@ -436,7 +550,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      __bits::to_cptr(first_) + ProtocolTraits::transaction_id_offset
+      sal::to_ptr(first_) + ProtocolTraits::transaction_id_offset
     );
   }
 
@@ -480,6 +594,44 @@ public:
   }
 
 
+  /**
+   * Return finalized message as range [\a first, \a second). Calling this
+   * method while object is not good() is undefined behaviour.
+   */
+  std::pair<const uint8_t *, const uint8_t *> finish () const noexcept
+  {
+    return { first_, first_ + ProtocolTraits::header_size + length() };
+  }
+
+
+  /**
+   * \copydoc finish()
+   * Also adds message integrity to the end of message. If remaining buffer is
+   * too small for integrity, set \a error to errc::not_enough_room.
+   */
+  template <typename Digest>
+  std::pair<const uint8_t *, const uint8_t *> finish (
+    sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error
+  ) noexcept;
+
+
+  /**
+   * \copydoc finish()
+   * Also adds message integrity to the end of message.
+   *
+   * \throws std::system_error If remaining buffer is too small for integrity.
+   */
+  template <typename Digest>
+  std::pair<const uint8_t *, const uint8_t *> finish (
+    sal::crypto::hmac_t<Digest> &integrity_calculator)
+  {
+    return finish(integrity_calculator,
+      sal::throw_on_error("message_writer::finish")
+    );
+  }
+
+
 private:
 
   uint8_t * const first_, * const last_;
@@ -492,6 +644,59 @@ private:
   friend class turner::protocol_t<ProtocolTraits>;
   friend class message_reader_t<ProtocolTraits, MessageType & ~__bits::class_mask>;
 };
+
+
+template <typename ProtocolTraits>
+template <typename Digest>
+bool any_message_t<ProtocolTraits>::has_valid_integrity (
+  sal::crypto::hmac_t<Digest> &integrity_calculator,
+  std::error_code &error) const noexcept
+{
+  auto p = as_ptr<uint8_t>() + ProtocolTraits::header_size;
+  if (auto integrity = __bits::find_attribute(p, p + length(),
+      ProtocolTraits::message_integrity,
+      ProtocolTraits::padding_size,
+      error))
+  {
+    if (integrity->length() == integrity_calculator.digest_size)
+    {
+      // type and fixed length [first attribute, MESSAGE-INTEGRITY attribute)
+      const uint16_t type_and_length[] =
+      {
+        as_ptr<uint16_t>()[0],
+        sal::native_to_network_byte_order(
+          static_cast<uint16_t>(
+            (reinterpret_cast<const uint8_t *>(integrity) - p)
+            + 2 * sizeof(uint16_t)
+            + integrity_calculator.digest_size
+          )
+        ),
+      };
+      integrity_calculator.update(type_and_length);
+
+      // rest of message (up to MESSAGE-INTEGRITY)
+      integrity_calculator.update(
+        as_ptr<uint8_t>() + sizeof(type_and_length),
+        reinterpret_cast<const uint8_t *>(integrity)
+      );
+
+      // check if valid
+      auto expected = integrity_calculator.finish();
+      if (std::equal(expected.begin(), expected.end(),
+          integrity->begin(), integrity->end()))
+      {
+        error.clear();
+        return true;
+      }
+      error = make_error_code(errc::unexpected_attribute_value);
+    }
+    else
+    {
+      error = make_error_code(errc::unexpected_attribute_length);
+    }
+  }
+  return false;
+}
 
 
 template <typename ProtocolTraits, uint16_t MessageType>
@@ -541,6 +746,44 @@ message_writer_t<ProtocolTraits, MessageType> &
   }
 
   return *this;
+}
+
+
+template <typename ProtocolTraits, uint16_t MessageType>
+template <typename Digest>
+std::pair<const uint8_t *, const uint8_t *>
+  message_writer_t<ProtocolTraits, MessageType>::finish (
+    sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error) noexcept
+{
+  uint16_t digest_size = integrity_calculator.digest_size;
+  uint16_t original_length = length();
+  uint16_t new_length = original_length + 2 * sizeof(uint16_t) + digest_size;
+
+  if (first_ + new_length + ProtocolTraits::header_size <= last_)
+  {
+    // update message length
+    reinterpret_cast<uint16_t *>(first_)[1] =
+      sal::native_to_network_byte_order(new_length);
+
+    // add MESSAGE-INTEGRITY type & length
+    auto attribute = first_ + ProtocolTraits::header_size + original_length;
+    reinterpret_cast<uint16_t *>(attribute)[0] =
+      sal::native_to_network_byte_order(ProtocolTraits::message_integrity);
+    reinterpret_cast<uint16_t *>(attribute)[1] =
+      sal::native_to_network_byte_order(digest_size);
+
+    // add MESSAGE-INTEGRITY value
+    integrity_calculator.update(first_, attribute);
+    attribute += 2 * sizeof(uint16_t);
+    integrity_calculator.finish(attribute, attribute + digest_size);
+
+    error.clear();
+    return finish();
+  }
+
+  error = make_error_code(errc::not_enough_room);
+  return {};
 }
 
 

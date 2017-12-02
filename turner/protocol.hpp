@@ -120,9 +120,15 @@ public:
   static const message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
-    auto begin = __bits::to_cptr(first);
-    auto end = begin + (last - first) * sizeof(*first);
-    return parse(begin, end, error);
+    if constexpr (is_msvc_compiler && is_debug_build)
+    {
+      if (first == last)
+      {
+        error = make_error_code(errc::insufficient_header_data);
+        return {};
+      }
+    }
+    return parse_(sal::to_ptr(first), sal::to_end_ptr(first, last), error);
   }
 
 
@@ -151,8 +157,7 @@ public:
    * allowed to write attributes into memory area [\a first, \a last).
    *
    * This method builds immediately message header but it does not add any
-   * attributes nor set valid message length. Use returned object to add
-   * attributes and finalize message.
+   * attributes. Use returned object to add attributes and finalize message.
    *
    * On error, set \a error and return undefined message_writer_t object.
    */
@@ -166,9 +171,9 @@ public:
     static_assert(message_type.is_request() || message_type.is_indication(),
       "expected request or indication message type"
     );
-    auto begin = __bits::to_ptr(first);
-    auto end = begin + (last - first) * sizeof(*first);
-    if (build(MessageType, begin, end, error))
+    auto begin = sal::to_ptr(first);
+    auto end = sal::to_end_ptr(first, last);
+    if (build_(MessageType, begin, end, error))
     {
       return {begin, end};
     }
@@ -181,8 +186,7 @@ public:
    * allowed to write attributes into memory area [\a first, \a last).
    *
    * This method builds immediately message header but it does not add any
-   * attributes nor set valid message length. Use returned object to add
-   * attributes and finalize message.
+   * attributes. Use returned object to add attributes and finalize message.
    *
    * \throws std::system_error on message header building failure.
    */
@@ -195,6 +199,45 @@ public:
     return build(message_type, first, last,
       sal::throw_on_error("protocol::build")
     );
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area \a data.
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes. Use returned object to add attributes and finalize message.
+   *
+   * On error, set \a error and return undefined message_writer_t object.
+   */
+  template <uint16_t MessageType, typename Data>
+  static message_writer_t<ProtocolTraits, MessageType> build (
+    message_type_t<MessageType> message_type,
+    Data &data,
+    std::error_code &error) noexcept
+  {
+    using std::begin;
+    using std::end;
+    return build(message_type, begin(data), end(data), error);
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area \a data.
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes. Use returned object to add attributes and finalize message.
+   *
+   * \throws std::system_error on message header building failure.
+   */
+  template <uint16_t MessageType, typename Data>
+  static message_writer_t<ProtocolTraits, MessageType> build (
+    message_type_t<MessageType> message_type,
+    Data &data)
+  {
+    return build(message_type, data, sal::throw_on_error("protocol::build"));
   }
 
 
@@ -224,13 +267,13 @@ private:
     "expected value of traits_t::padding_size to be power of 2"
   );
 
-  static const message_t *parse (
+  static const message_t *parse_ (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error
   ) noexcept;
 
-  static bool build (
+  static bool build_ (
     uint16_t message_type,
     uint8_t *first,
     uint8_t *last,
@@ -241,7 +284,7 @@ private:
 
 template <typename ProtocolTraits>
 const typename protocol_t<ProtocolTraits>::message_t *
-  protocol_t<ProtocolTraits>::parse (
+  protocol_t<ProtocolTraits>::parse_ (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error) noexcept
@@ -291,7 +334,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
 
 
 template <typename ProtocolTraits>
-bool protocol_t<ProtocolTraits>::build (uint16_t message_type,
+bool protocol_t<ProtocolTraits>::build_ (uint16_t message_type,
   uint8_t *first,
   uint8_t *last,
   std::error_code &error) noexcept

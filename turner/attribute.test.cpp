@@ -29,7 +29,6 @@ inline auto as_attribute (const uint8_t *p) noexcept
 
 TEST_F(any_attribute, type)
 {
-
   for (uint8_t i = 1;  i != 5;  ++i)
   {
     data[1] = i;

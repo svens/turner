@@ -3,6 +3,7 @@
 #include <turner/attribute.hpp>
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>
+#include <sal/memory.hpp>
 
 
 __turner_begin
@@ -74,7 +75,7 @@ size_t write_string (uint8_t *first, uint8_t *last,
   if (has_enough_room(first, last, value.size(), error))
   {
     std::uninitialized_copy(value.begin(), value.end(),
-      __bits::make_output_iterator(first, last)
+      sal::__bits::make_output_iterator(first, last)
     );
   }
   return value.size();
@@ -98,7 +99,7 @@ size_t write_array (uint8_t *first, uint8_t *last,
   if (has_enough_room(first, last, (value.second - value.first), error))
   {
     std::uninitialized_copy(value.first, value.second,
-      __bits::make_output_iterator(first, last)
+      sal::__bits::make_output_iterator(first, last)
     );
   }
   return value.second - value.first;
@@ -133,7 +134,7 @@ size_t write_error (uint8_t *first, uint8_t *last, const error_t &value,
     *first++ = static_cast<uint8_t>(value.code/100);
     *first++ = static_cast<uint8_t>(value.code%100);
     std::uninitialized_copy(value.message.begin(), value.message.end(),
-      __bits::make_output_iterator(first, last)
+      sal::__bits::make_output_iterator(first, last)
     );
   }
   return sizeof(uint32_t) + value.message.size();

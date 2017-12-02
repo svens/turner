@@ -55,6 +55,24 @@ public:
   }
 
 
+  /**
+   * Return pointer to first byte of attribute's value data area.
+   */
+  const uint8_t *begin () const noexcept
+  {
+    return data();
+  }
+
+
+  /**
+   * Return pointer to one past last byte of attribute's value data area.
+   */
+  const uint8_t *end () const noexcept
+  {
+    return data() + length();
+  }
+
+
 private:
 
   any_attribute_t () = delete;
