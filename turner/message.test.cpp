@@ -524,6 +524,63 @@ TYPED_TEST(message_reader, to_success_response_overlapped_region_right)
 }
 
 
+TYPED_TEST(message_reader, to_success_response_data_new_region)
+{
+  auto data = msg_data(TypeParam());
+  auto &msg = parse(TypeParam(), data);
+
+  std::vector<uint8_t> new_data(TypeParam::traits_t::header_size + 1);
+
+  std::error_code error;
+  auto writer = msg.to_success_response(new_data, error);
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(!writer);
+  EXPECT_EQ(msg_success_type(TypeParam()), writer.type());
+  EXPECT_EQ(1, writer.available());
+  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
+  EXPECT_EQ(msg_txn_id(TypeParam()), writer.transaction_id());
+
+  EXPECT_NO_THROW(msg.to_success_response(new_data));
+}
+
+
+TYPED_TEST(message_reader, to_success_response_data_new_region_not_enough_room)
+{
+  auto data = msg_data(TypeParam());
+  auto &msg = parse(TypeParam(), data);
+
+  std::vector<uint8_t> new_data(TypeParam::traits_t::header_size - 1);
+
+  std::error_code error;
+  auto writer = msg.to_success_response(new_data, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(!writer);
+
+  EXPECT_THROW(
+    msg.to_success_response(new_data),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(message_reader, to_success_response_data_same_region)
+{
+  auto data = msg_data(TypeParam());
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  auto writer = msg.to_success_response(data, error);
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(!writer);
+  EXPECT_EQ(msg_success_type(TypeParam()), writer.type());
+  EXPECT_EQ(data.size() - TypeParam::traits_t::header_size, writer.available());
+  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
+  EXPECT_EQ(msg_txn_id(TypeParam()), writer.transaction_id());
+
+  EXPECT_NO_THROW(msg.to_success_response(data));
+}
+
+
 TYPED_TEST(message_reader, to_error_response_new_region)
 {
   auto data = msg_data(TypeParam());
@@ -636,6 +693,65 @@ TYPED_TEST(message_reader, to_error_response_overlapped_region_right)
   EXPECT_EQ(data.size() - TypeParam::traits_t::header_size - 1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(msg_txn_id(TypeParam()), writer.transaction_id());
+}
+
+
+TYPED_TEST(message_reader, to_error_response_data_new_region)
+{
+  auto data = msg_data(TypeParam());
+  auto &msg = parse(TypeParam(), data);
+
+  std::vector<uint8_t> new_data(TypeParam::traits_t::header_size + 1);
+
+  std::error_code error;
+  auto writer = msg.to_error_response(new_data, error);
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(!writer);
+  EXPECT_EQ(msg_error_type(TypeParam()), writer.type());
+  EXPECT_EQ(1, writer.available());
+  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
+  EXPECT_EQ(msg_txn_id(TypeParam()), writer.transaction_id());
+
+  EXPECT_NO_THROW(msg.to_error_response(new_data));
+}
+
+
+TYPED_TEST(message_reader, to_error_response_data_new_region_not_enough_room)
+{
+  auto data = msg_data(TypeParam());
+  auto &msg = parse(TypeParam(), data);
+
+  std::vector<uint8_t> new_data(TypeParam::traits_t::header_size - 1);
+
+  std::error_code error;
+  auto writer = msg.to_error_response(new_data, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(!writer);
+
+  EXPECT_THROW(
+    msg.to_error_response(new_data),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(message_reader, to_error_response_data_same_region)
+{
+  auto data = msg_data(TypeParam());
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  auto writer = msg.to_error_response(data, error);
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(!writer);
+  EXPECT_EQ(msg_error_type(TypeParam()), writer.type());
+  EXPECT_EQ(data.size() - TypeParam::traits_t::header_size, writer.available());
+  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
+  EXPECT_EQ(msg_txn_id(TypeParam()), writer.transaction_id());
+
+  EXPECT_NO_THROW(
+    msg.to_error_response(data)
+  );
 }
 
 

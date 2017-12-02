@@ -292,8 +292,7 @@ public:
    * On failure, set \a error and returned object is in undefined state.
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
@@ -310,8 +309,7 @@ public:
    * On failure, throw \c std::system_error
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
@@ -324,12 +322,47 @@ public:
 
 
   /**
+   * Create success response for this message into region \a data.
+   * On failure, set \a error and returned object is in undefined state.
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+    to_success_response (Data &data, std::error_code &error) const noexcept
+  {
+    using std::begin;
+    using std::end;
+    return to_response<MessageType | __bits::success_response_class>(
+      begin(data), end(data), error
+    );
+  }
+
+
+  /**
+   * Create success response for this message into region \a data.
+   * On failure, throw \c std::system_error
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+    to_success_response (Data &data) const
+  {
+    return to_success_response(data,
+      sal::throw_on_error("message_reader::to_success_response")
+    );
+  }
+
+
+  /**
    * Create error response for this message into region [\a first, \a last).
    * On failure, set \a error and returned object is in undefined state.
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
@@ -346,14 +379,49 @@ public:
    * On failure, throw \c std::system_error
    *
    * Specified region [\a first, \a last) can overlap with memory area
-   * occupied by this object. In which case, after call to this method,
-   * \a this becomes invalid.
+   * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
   message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
     to_error_response (It first, It last) const
   {
     return to_error_response(first, last,
+      sal::throw_on_error("message_reader::to_error_response")
+    );
+  }
+
+
+  /**
+   * Create error response for this message into region \a data.
+   * On failure, set \a error and returned object is in undefined state.
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+    to_error_response (Data &data, std::error_code &error) const noexcept
+  {
+    using std::begin;
+    using std::end;
+    return to_response<MessageType | __bits::error_response_class>(
+      begin(data), end(data), error
+    );
+  }
+
+
+  /**
+   * Create error response for this message into region \a data.
+   * On failure, throw \c std::system_error
+   *
+   * Specified region \a data can overlap with memory area occupied by this
+   * object in which case after call \a this becomes invalid.
+   */
+  template <typename Data>
+  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+    to_error_response (Data &data) const
+  {
+    return to_error_response(data,
       sal::throw_on_error("message_reader::to_error_response")
     );
   }
