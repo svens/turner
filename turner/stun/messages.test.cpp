@@ -106,7 +106,10 @@ TEST_F(stun, rfc5769_sample_ipv4_response)
   auto response = binding.to_success_response(data);
   response.write(turner::stun::software, "test vector");
   response.write(turner::stun::xor_mapped_address,
-    { sal::net::ip::make_address_v4("192.0.2.1"), 32853 }
+    {
+      sal::net::ip::make_address_v4("192.0.2.1"),
+      static_cast<uint16_t>(32853)
+    }
   );
 
   // finalize
@@ -163,7 +166,7 @@ TEST_F(stun, rfc5769_sample_ipv6_response)
   response.write(turner::stun::xor_mapped_address,
     {
       sal::net::ip::make_address_v6("2001:db8:1234:5678:11:2233:4455:6677"),
-      32853
+      static_cast<uint16_t>(32853)
     }
   );
 

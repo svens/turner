@@ -682,7 +682,8 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 
       // check if valid
       auto expected = integrity_calculator.finish();
-      if (std::equal(expected.begin(), expected.end(), integrity->data()))
+      if (std::equal(expected.begin(), expected.end(),
+          integrity->begin(), integrity->end()))
       {
         error.clear();
         return true;

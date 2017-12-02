@@ -32,7 +32,7 @@ TYPED_TEST(any_message, no_data)
 TYPED_TEST(any_message, insufficient_header_data)
 {
   auto data = msg_data(TypeParam());
-  data.resize(data.size() / 2);
+  data.resize(TypeParam::traits_t::header_size - 2);
 
   std::error_code error;
   auto msg = TypeParam::parse(data.begin(), data.end(), error);
@@ -400,6 +400,59 @@ TYPED_TEST(any_message, as_indication_invalid)
 }
 
 
+TYPED_TEST(any_message, has_valid_integrity)
+{
+  auto data = msg_data(TypeParam());
+  auto any_msg = TypeParam::parse(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto integrity_calculator = msg_hmac(TypeParam());
+  EXPECT_TRUE(any_msg->has_valid_integrity(integrity_calculator, error));
+  EXPECT_TRUE(!error);
+}
+
+
+TYPED_TEST(any_message, has_valid_integrity_attribute_not_found)
+{
+  auto data = wire_data(TypeParam(), "");
+  auto any_msg = TypeParam::parse(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto integrity_calculator = msg_hmac(TypeParam());
+  EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+}
+
+
+TYPED_TEST(any_message, has_valid_integrity_unexpected_attribute_length)
+{
+  auto data = msg_data(TypeParam());
+  auto any_msg = TypeParam::parse(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  sal::crypto::hmac_t<sal::crypto::md5> integrity_calculator;
+  EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+}
+
+
+TYPED_TEST(any_message, has_valid_integrity_unexpected_value)
+{
+  auto data = msg_data(TypeParam());
+  data.back() ^= 1;
+  auto any_msg = TypeParam::parse(data.begin(), data.end());
+  ASSERT_TRUE(any_msg);
+
+  std::error_code error;
+  auto integrity_calculator = msg_hmac(TypeParam());
+  EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
+}
+
+
 // message_reader {{{1
 
 
@@ -477,14 +530,17 @@ TYPED_TEST(message_reader, to_success_response_same_region_not_enough_room)
 
   std::error_code error;
   auto writer = msg.to_success_response(
-    data.begin(), data.begin() + data.size() / 2,
+    data.begin(), data.begin() + TypeParam::traits_t::header_size - 2,
     error
   );
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_TRUE(!writer);
 
   EXPECT_THROW(
-    msg.to_success_response(data.begin(), data.begin() + data.size() / 2),
+    msg.to_success_response(
+      data.begin(),
+      data.begin() + TypeParam::traits_t::header_size - 2
+    ),
     std::system_error
   );
 }
@@ -649,14 +705,17 @@ TYPED_TEST(message_reader, to_error_response_same_region_not_enough_room)
 
   std::error_code error;
   auto writer = msg.to_error_response(
-    data.begin(), data.begin() + data.size() / 2,
+    data.begin(), data.begin() + TypeParam::traits_t::header_size - 2,
     error
   );
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_TRUE(!writer);
 
   EXPECT_THROW(
-    msg.to_error_response(data.begin(), data.begin() + data.size() / 2),
+    msg.to_error_response(
+      data.begin(),
+      data.begin() + TypeParam::traits_t::header_size - 2
+    ),
     std::system_error
   );
 }
