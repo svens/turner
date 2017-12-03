@@ -1,5 +1,7 @@
-project(turner)
-cmake_minimum_required(VERSION 2.8.10)
+cmake_policy(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2)
+
+project(turner VERSION 0.1.0)
 
 
 # Settings {{{1
@@ -18,17 +20,7 @@ if(CMAKE_BUILD_TYPE MATCHES Coverage)
 endif()
 
 
-# Version {{{1
-
-# read and parse
-include(VERSION)
-set(version_regex "([0-9]*)\\.([0-9]*)\\.([0-9]*)")
-string(REGEX REPLACE ${version_regex} "\\1" version_major ${version})
-math(EXPR v ${version_major}+0)
-string(REGEX REPLACE ${version_regex} "\\2" version_minor ${version})
-math(EXPR v ${version_minor}+0)
-string(REGEX REPLACE ${version_regex} "\\3" version_patch ${version})
-math(EXPR v ${version_patch}+0)
+# Build settings {{{1
 
 # generate config header
 message(STATUS "Generate turner/config.hpp")
@@ -39,9 +31,6 @@ configure_file(
 set_source_files_properties(${CMAKE_BINARY_DIR}/turner/config.hpp
   PROPERTIES GENERATED TRUE
 )
-
-
-# Build settings {{{1
 
 # compiler
 include_directories(. ${CMAKE_BINARY_DIR})
@@ -90,13 +79,6 @@ if(UNITTESTS)
   if(NOT GTEST_FOUND)
     add_dependencies(turner_unittests gtest)
   endif()
-  target_link_libraries(turner_unittests
-    turner
-    ${SAL_LIB}
-    ${GTEST_BOTH_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${TURNER_DEPS_LIBS}
-  )
 
   # relax compiler warnings for gtest, intentionally creating unhappy paths
   if(CMAKE_COMPILER_IS_GNUCXX)
@@ -109,6 +91,13 @@ if(UNITTESTS)
     )
   endif()
 
+  target_link_libraries(turner_unittests
+    turner
+    ${SAL_LIB}
+    ${GTEST_BOTH_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${TURNER_DEPS_LIBS}
+  )
   add_test(unittests turner_unittests)
 endif()
 
@@ -123,13 +112,6 @@ if(BENCH)
   if(NOT GBENCH_FOUND)
     add_dependencies(turner_benchmark benchmark)
   endif()
-  target_link_libraries(turner_benchmark
-    turner
-    ${SAL_LIB}
-    ${GBENCH_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${TURNER_DEPS_LIBS}
-  )
 
   if(CMAKE_COMPILER_IS_GNUCXX)
     set_source_files_properties(${turner_benchmark}
@@ -140,6 +122,14 @@ if(BENCH)
       PROPERTIES COMPILE_FLAGS "/wd4141 /analyze-"
     )
   endif()
+
+  target_link_libraries(turner_benchmark
+    turner
+    ${SAL_LIB}
+    ${GBENCH_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${TURNER_DEPS_LIBS}
+  )
 endif()
 
 

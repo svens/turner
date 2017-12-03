@@ -22,12 +22,13 @@ if(NOT SAL_INCLUDE_DIR OR NOT SAL_LIB)
     LOG_BUILD ON
   )
 
+  # sal library
   ExternalProject_Get_Property(sal binary_dir)
   link_directories(${binary_dir})
   set(SAL_LIB ${CMAKE_STATIC_LIBRARY_PREFIX}sal${CMAKE_STATIC_LIBRARY_SUFFIX})
 
+  # sal headers
   ExternalProject_Get_Property(sal source_dir)
   set(SAL_INCLUDE_DIR ${source_dir} ${binary_dir})
+  include_directories(${SAL_INCLUDE_DIR})
 endif()
-
-include_directories(${SAL_INCLUDE_DIR})

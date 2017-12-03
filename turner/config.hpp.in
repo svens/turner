@@ -21,7 +21,7 @@ __turner_begin
 /**
  * Turner library version as string (turner/{VERSION}).
  */
-__turner_inline_var constexpr const char version[] = "turner/@version@";
+__turner_inline_var constexpr const char version[] = "turner/@PROJECT_VERSION@";
 
 #if _MSC_VER
   __turner_inline_var constexpr const bool is_msvc_compiler = true;
