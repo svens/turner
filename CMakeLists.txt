@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 2.8.10)
 
 # optional features
 option(UNITTESTS "Build unittests" ON)
+option(BENCH "Build benchmarking application" OFF)
 option(DOCS "Generate documentation" OFF)
 
 if(CMAKE_BUILD_TYPE MATCHES Coverage)
@@ -13,6 +14,7 @@ if(CMAKE_BUILD_TYPE MATCHES Coverage)
   set(CMAKE_BUILD_TYPE "Debug")
   set(COVERAGE ON)
   set(UNITTESTS ON)
+  set(BENCH OFF)
 endif()
 
 
@@ -96,7 +98,7 @@ if(UNITTESTS)
     ${TURNER_DEPS_LIBS}
   )
 
-  # relax compiler warnings for gtest, we don't control it
+  # relax compiler warnings for gtest, intentionally creating unhappy paths
   if(CMAKE_COMPILER_IS_GNUCXX)
     set_source_files_properties(${turner_unittests}
       PROPERTIES COMPILE_FLAGS "-Wno-effc++"
@@ -108,6 +110,36 @@ if(UNITTESTS)
   endif()
 
   add_test(unittests turner_unittests)
+endif()
+
+
+# Benchmarking {{{1
+if(BENCH)
+  message(STATUS "Building benchmarking applications")
+  include(cmake/benchmark.cmake)
+
+  include(benchmark/list.cmake)
+  add_executable(turner_benchmark ${turner_benchmark})
+  if(NOT GBENCH_FOUND)
+    add_dependencies(turner_benchmark benchmark)
+  endif()
+  target_link_libraries(turner_benchmark
+    turner
+    ${SAL_LIB}
+    ${GBENCH_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${TURNER_DEPS_LIBS}
+  )
+
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set_source_files_properties(${turner_benchmark}
+      PROPERTIES COMPILE_FLAGS "-Wno-effc++"
+    )
+  elseif(MSVC)
+    set_source_files_properties(${turner_benchmark}
+      PROPERTIES COMPILE_FLAGS "/wd4141 /analyze-"
+    )
+  endif()
 endif()
 
 
