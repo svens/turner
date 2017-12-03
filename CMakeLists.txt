@@ -1,7 +1,8 @@
-cmake_policy(VERSION 3.2)
 cmake_minimum_required(VERSION 3.2)
 
-project(turner VERSION 0.1.0)
+project(turner)
+include(cmake/version.cmake)
+message(STATUS "Version: ${PROJECT_VERSION}")
 
 
 # Settings {{{1
