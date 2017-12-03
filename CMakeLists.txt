@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 
 project(turner)
-include(cmake/version.cmake)
+include(cmake/project_version.cmake)
 message(STATUS "Version: ${PROJECT_VERSION}")
 
 
