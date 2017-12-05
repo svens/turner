@@ -6,9 +6,9 @@ if(NOT SAL_INCLUDE_DIR OR NOT SAL_LIB)
 
   include(ExternalProject)
   ExternalProject_Add(sal
-    URL https://github.com/svens/sal/archive/v0.23.0.zip
-    URL_HASH SHA256=6cf7801b59aad2e04bec0699b00ad1728a8739662248644759b66c2c3478ae85
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/sal-0.23.0
+    URL https://github.com/svens/sal/archive/v0.24.0.zip
+    URL_HASH SHA256=b69b0231b422031a91d713e8d87f8639c4decc9c2d68e2f55e2fba2a7f9d9cd6
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/sal-0.24.0
     CMAKE_ARGS
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
