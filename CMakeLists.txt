@@ -108,7 +108,6 @@ if(BENCH)
   message(STATUS "Building benchmarking applications")
   include(cmake/benchmark.cmake)
 
-  include(benchmark/list.cmake)
   add_executable(turner_benchmark ${turner_benchmark})
   if(NOT GBENCH_FOUND)
     add_dependencies(turner_benchmark benchmark)
