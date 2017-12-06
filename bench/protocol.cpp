@@ -1,6 +1,7 @@
 #include "bench.hpp"
 #include <turner/stun/stun.hpp>
 #include <turner/turn/turn.hpp>
+#include <vector>
 
 
 namespace {
@@ -15,8 +16,9 @@ constexpr const auto raw_message = false;
 using STUN = turner::stun::protocol_t;
 
 template <>
-constexpr const std::array<uint8_t, 44> raw_message<STUN> =
-{{
+const std::vector<uint8_t> raw_message<STUN> =
+{
+  // header
   0x00, 0x01, 0x00, 0x18,     // Type (Binding), Length
   0x21, 0x12, 0xa4, 0x42,     // Cookie
   0x00, 0x01, 0x02, 0x03,     // Transaction ID
@@ -30,7 +32,7 @@ constexpr const std::array<uint8_t, 44> raw_message<STUN> =
   0xa5, 0xf1, 0x52, 0x65,
   0x93, 0xfe, 0xf6, 0x59,
   0x9e, 0x9b, 0x64, 0x28,
-}};
+};
 
 
 // TURN {{{1
@@ -39,8 +41,8 @@ constexpr const std::array<uint8_t, 44> raw_message<STUN> =
 using TURN = turner::turn::protocol_t;
 
 template <>
-constexpr const std::array<uint8_t, 44> raw_message<TURN> =
-{{
+const std::vector<uint8_t> raw_message<TURN> =
+{
   // header
   0x00, 0x03, 0x00, 0x18,     // Type (Allocation), Length
   0x21, 0x12, 0xa4, 0x42,     // Cookie
@@ -55,31 +57,136 @@ constexpr const std::array<uint8_t, 44> raw_message<TURN> =
   0xe0, 0x82, 0x27, 0x29,
   0x6e, 0x3c, 0x22, 0x49,
   0x4a, 0x15, 0x2c, 0x23,
-}};
+};
 
 
 // }}}1
 
 
+// parse_valid_with_error {{{1
+
+
 template <typename Protocol>
-void parse (benchmark::State &state)
+void parse_valid_with_error (benchmark::State &state)
 {
-  // do initial parse for checking
-  auto &data = raw_message<Protocol>;
-  auto msg = Protocol::parse(data.begin(), data.end());
+  auto data = raw_message<Protocol>;
 
   std::error_code error;
+  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  if (error)
+  {
+    state.SkipWithError("unexpected error");
+  }
+
   for (auto _: state)
   {
-    msg = Protocol::parse(data.begin(), data.end(), error);
+    msg = Protocol::parse(data.cbegin(), data.cend(), error);
     benchmark::DoNotOptimize(msg);
   }
 
   state.SetItemsProcessed(state.iterations());
 }
 
-BENCHMARK_TEMPLATE(parse, STUN);
-BENCHMARK_TEMPLATE(parse, TURN);
+BENCHMARK_TEMPLATE(parse_valid_with_error, STUN);
+BENCHMARK_TEMPLATE(parse_valid_with_error, TURN);
+
+
+// parse_valid_with_exception {{{1
+
+
+template <typename Protocol>
+void parse_valid_with_exception (benchmark::State &state)
+{
+  auto data = raw_message<Protocol>;
+
+  std::error_code error;
+  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  if (error)
+  {
+    state.SkipWithError("unexpected error");
+  }
+
+  for (auto _: state)
+  {
+    msg = Protocol::parse(data.cbegin(), data.cend());
+    benchmark::DoNotOptimize(msg);
+  }
+
+  state.SetItemsProcessed(state.iterations());
+}
+
+BENCHMARK_TEMPLATE(parse_valid_with_exception, STUN);
+BENCHMARK_TEMPLATE(parse_valid_with_exception, TURN);
+
+
+// parse_invalid_with_error {{{1
+
+
+template <typename Protocol>
+void parse_invalid_with_error (benchmark::State &state)
+{
+  auto data = raw_message<Protocol>;
+  data[Protocol::traits_t::cookie_offset] ^= 1;
+
+  std::error_code error;
+  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  if (!error)
+  {
+    state.SkipWithError("expected error");
+    return;
+  }
+
+  for (auto _: state)
+  {
+    msg = Protocol::parse(data.cbegin(), data.cend(), error);
+    benchmark::DoNotOptimize(msg);
+  }
+
+  state.SetItemsProcessed(state.iterations());
+}
+
+BENCHMARK_TEMPLATE(parse_invalid_with_error, STUN);
+BENCHMARK_TEMPLATE(parse_invalid_with_error, TURN);
+
+
+// parse_invalid_with_exception {{{1
+
+
+template <typename Protocol>
+void parse_invalid_with_exception (benchmark::State &state)
+{
+  auto data = raw_message<Protocol>;
+  data[Protocol::traits_t::cookie_offset] ^= 1;
+
+  std::error_code error;
+  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  if (!error)
+  {
+    state.SkipWithError("expected error");
+    return;
+  }
+
+  for (auto _: state)
+  {
+    try
+    {
+      msg = Protocol::parse(data.cbegin(), data.cend());
+      benchmark::DoNotOptimize(msg);
+    }
+    catch (...)
+    {
+      // ignore
+    }
+  }
+
+  state.SetItemsProcessed(state.iterations());
+}
+
+BENCHMARK_TEMPLATE(parse_invalid_with_exception, STUN);
+BENCHMARK_TEMPLATE(parse_invalid_with_exception, TURN);
+
+
+// }}}1
 
 
 } // namespace
