@@ -1,4 +1,4 @@
-#include <turner/common.bench.hpp>
+#include "bench.hpp"
 #include <turner/stun/stun.hpp>
 #include <turner/turn/turn.hpp>
 
@@ -74,6 +74,8 @@ void parse (benchmark::State &state)
     msg = Protocol::parse(data.begin(), data.end(), error);
     benchmark::DoNotOptimize(msg);
   }
+
+  state.SetItemsProcessed(state.iterations());
 }
 
 BENCHMARK_TEMPLATE(parse, STUN);

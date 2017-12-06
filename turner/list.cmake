@@ -26,11 +26,5 @@ list(APPEND turner_unittests
   turner/protocol.test.cpp
 )
 
-list(APPEND turner_benchmark
-  turner/common.bench.hpp
-  turner/common.bench.cpp
-  turner/protocol.bench.cpp
-)
-
 include(turner/stun/list.cmake)
 include(turner/turn/list.cmake)
