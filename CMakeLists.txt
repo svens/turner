@@ -1,11 +1,15 @@
+cmake_minimum_required(VERSION 3.2)
+
 project(turner)
-cmake_minimum_required(VERSION 2.8.10)
+include(cmake/project_version.cmake)
+message(STATUS "Version: ${PROJECT_VERSION}")
 
 
 # Settings {{{1
 
 # optional features
 option(UNITTESTS "Build unittests" ON)
+option(BENCH "Build benchmarking application" OFF)
 option(DOCS "Generate documentation" OFF)
 
 if(CMAKE_BUILD_TYPE MATCHES Coverage)
@@ -13,20 +17,11 @@ if(CMAKE_BUILD_TYPE MATCHES Coverage)
   set(CMAKE_BUILD_TYPE "Debug")
   set(COVERAGE ON)
   set(UNITTESTS ON)
+  set(BENCH OFF)
 endif()
 
 
-# Version {{{1
-
-# read and parse
-include(VERSION)
-set(version_regex "([0-9]*)\\.([0-9]*)\\.([0-9]*)")
-string(REGEX REPLACE ${version_regex} "\\1" version_major ${version})
-math(EXPR v ${version_major}+0)
-string(REGEX REPLACE ${version_regex} "\\2" version_minor ${version})
-math(EXPR v ${version_minor}+0)
-string(REGEX REPLACE ${version_regex} "\\3" version_patch ${version})
-math(EXPR v ${version_patch}+0)
+# Build settings {{{1
 
 # generate config header
 message(STATUS "Generate turner/config.hpp")
@@ -37,9 +32,6 @@ configure_file(
 set_source_files_properties(${CMAKE_BINARY_DIR}/turner/config.hpp
   PROPERTIES GENERATED TRUE
 )
-
-
-# Build settings {{{1
 
 # compiler
 include_directories(. ${CMAKE_BINARY_DIR})
@@ -88,15 +80,8 @@ if(UNITTESTS)
   if(NOT GTEST_FOUND)
     add_dependencies(turner_unittests gtest)
   endif()
-  target_link_libraries(turner_unittests
-    turner
-    ${SAL_LIB}
-    ${GTEST_BOTH_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${TURNER_DEPS_LIBS}
-  )
 
-  # relax compiler warnings for gtest, we don't control it
+  # relax compiler warnings for gtest, intentionally creating unhappy paths
   if(CMAKE_COMPILER_IS_GNUCXX)
     set_source_files_properties(${turner_unittests}
       PROPERTIES COMPILE_FLAGS "-Wno-effc++"
@@ -107,7 +92,45 @@ if(UNITTESTS)
     )
   endif()
 
+  target_link_libraries(turner_unittests
+    turner
+    ${SAL_LIB}
+    ${GTEST_BOTH_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${TURNER_DEPS_LIBS}
+  )
   add_test(unittests turner_unittests)
+endif()
+
+
+# Benchmarking {{{1
+if(BENCH)
+  message(STATUS "Building benchmarking applications")
+  include(cmake/benchmark.cmake)
+
+  include(bench/list.cmake)
+  add_executable(turner_benchmark ${turner_benchmark})
+  if(NOT GBENCH_FOUND)
+    add_dependencies(turner_benchmark benchmark)
+  endif()
+
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set_source_files_properties(${turner_benchmark}
+      PROPERTIES COMPILE_FLAGS "-Wno-effc++"
+    )
+  elseif(MSVC)
+    set_source_files_properties(${turner_benchmark}
+      PROPERTIES COMPILE_FLAGS "/wd4141 /analyze-"
+    )
+  endif()
+
+  target_link_libraries(turner_benchmark
+    turner
+    ${SAL_LIB}
+    ${GBENCH_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${TURNER_DEPS_LIBS}
+  )
 endif()
 
 
