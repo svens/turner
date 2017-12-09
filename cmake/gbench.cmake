@@ -18,4 +18,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
   target_compile_options(benchmark
     PRIVATE -Wno-effc++
   )
+elseif(MSVC)
+  target_compile_options(benchmark
+    PUBLIC /wd4141
+  )
 endif()
