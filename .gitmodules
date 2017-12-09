@@ -1,3 +1,6 @@
 [submodule "tps/gtest"]
 	path = tps/gtest
 	url = https://github.com/google/googletest
+[submodule "tps/gbench"]
+	path = tps/gbench
+	url = https://github.com/google/benchmark

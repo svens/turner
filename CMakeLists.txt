@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 
 project(turner)
 include(cmake/project_version.cmake)
-message(STATUS "Version: ${PROJECT_VERSION}")
+message(STATUS "Turner: ${PROJECT_VERSION}")
 
 
 # Settings {{{1
@@ -91,31 +91,17 @@ endif()
 # Benchmarking {{{1
 if(turner_bench)
   message(STATUS "Building benchmarking applications")
-  include(cmake/benchmark.cmake)
+  include(cmake/gbench.cmake)
 
   include(bench/list.cmake)
-  add_executable(turner_benchmark ${turner_benchmark})
-  if(NOT GBENCH_FOUND)
-    add_dependencies(turner_benchmark benchmark)
-  endif()
-
-  if(CMAKE_COMPILER_IS_GNUCXX)
-    set_source_files_properties(${turner_benchmark}
-      PROPERTIES COMPILE_FLAGS "-Wno-effc++"
-    )
-  elseif(MSVC)
-    set_source_files_properties(${turner_benchmark}
-      PROPERTIES COMPILE_FLAGS "/wd4141 /analyze-"
-    )
-  endif()
-
-  target_link_libraries(turner_benchmark
+  add_executable(bench ${turner_bench_sources})
+  target_link_libraries(bench
     turner
     ${SAL_LIB}
-    ${GBENCH_LIBS}
-    ${CMAKE_THREAD_LIBS_INIT}
+    benchmark
     ${TURNER_DEP_LIBS}
   )
+  add_dependencies(bench benchmark)
 endif()
 
 
