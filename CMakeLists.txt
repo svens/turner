@@ -8,16 +8,16 @@ message(STATUS "Version: ${PROJECT_VERSION}")
 # Settings {{{1
 
 # optional features
-option(UNITTESTS "Build unittests" ON)
-option(BENCH "Build benchmarking application" OFF)
-option(DOCS "Generate documentation" OFF)
+option(turner_unittests "Build unittests" ON)
+option(turner_bench "Build benchmarking application" OFF)
+option(turner_docs "Generate documentation" OFF)
 
 if(CMAKE_BUILD_TYPE MATCHES Coverage)
   # special case for coverage build
   set(CMAKE_BUILD_TYPE "Debug")
   set(COVERAGE ON)
-  set(UNITTESTS ON)
-  set(BENCH OFF)
+  set(turner_unittests ON)
+  set(turner_bench OFF)
 endif()
 
 
@@ -64,47 +64,47 @@ include(cmake/sal.cmake)
 
 # turner library
 include(turner/list.cmake)
-add_library(turner ${turner})
+add_library(turner ${turner_sources})
 add_dependencies(turner sal)
 
 
 # Testing {{{1
-if(UNITTESTS)
+if(turner_unittests)
   message(STATUS "Building unittests")
   include(cmake/gtest.cmake)
 
   # build turner tests
   enable_testing()
-  add_executable(turner_unittests ${turner_unittests})
+  add_executable(unittests ${turner_unittests_sources})
   include_directories(${GTEST_INCLUDE_DIRS})
   if(NOT GTEST_FOUND)
-    add_dependencies(turner_unittests gtest)
+    add_dependencies(unittests gtest)
   endif()
 
   # relax compiler warnings for gtest, intentionally creating unhappy paths
   if(CMAKE_COMPILER_IS_GNUCXX)
-    set_source_files_properties(${turner_unittests}
+    set_source_files_properties(${turner_unittests_sources}
       PROPERTIES COMPILE_FLAGS "-Wno-effc++"
     )
   elseif(MSVC)
-    set_source_files_properties(${turner_unittests}
+    set_source_files_properties(${turner_unittests_sources}
       PROPERTIES COMPILE_FLAGS "/analyze-"
     )
   endif()
 
-  target_link_libraries(turner_unittests
+  target_link_libraries(unittests
     turner
     ${SAL_LIB}
     ${GTEST_BOTH_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${TURNER_DEPS_LIBS}
   )
-  add_test(unittests turner_unittests)
+  add_test(unittests unittests)
 endif()
 
 
 # Benchmarking {{{1
-if(BENCH)
+if(turner_bench)
   message(STATUS "Building benchmarking applications")
   include(cmake/benchmark.cmake)
 
@@ -135,7 +135,7 @@ endif()
 
 
 # Documentation {{{1
-if(DOCS)
+if(turner_docs)
   include(cmake/doxygen.cmake)
 endif()
 

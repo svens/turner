@@ -1,4 +1,4 @@
-list(APPEND turner
+list(APPEND turner_sources
   turner/turn/turn.hpp
   turner/turn/attributes.hpp
   turner/turn/errors.hpp
@@ -6,7 +6,7 @@ list(APPEND turner
   turner/turn/protocol.hpp
 )
 
-list(APPEND turner_unittests
+list(APPEND turner_unittests_sources
   turner/turn/attributes.test.cpp
   turner/turn/messages.test.cpp
 )

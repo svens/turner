@@ -1,4 +1,4 @@
-list(APPEND turner
+list(APPEND turner_sources
   turner/attribute.hpp
   turner/attribute_processor.hpp
   turner/error.hpp
@@ -16,7 +16,7 @@ list(APPEND turner
   turner/__bits/helpers.hpp
 )
 
-list(APPEND turner_unittests
+list(APPEND turner_unittests_sources
   turner/common.test.hpp
   turner/attribute.test.cpp
   turner/attribute_processor.test.cpp
