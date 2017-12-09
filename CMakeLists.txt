@@ -78,7 +78,7 @@ if(turner_unittests)
   add_executable(unittests ${turner_unittests_sources})
   target_link_libraries(unittests
     turner
-    ${SAL_LIB}
+    sal
     gtest_main
     ${TURNER_DEP_LIBS}
   )
@@ -97,7 +97,7 @@ if(turner_bench)
   add_executable(bench ${turner_bench_sources})
   target_link_libraries(bench
     turner
-    ${SAL_LIB}
+    sal
     benchmark
     ${TURNER_DEP_LIBS}
   )

@@ -4,3 +4,6 @@
 [submodule "tps/gbench"]
 	path = tps/gbench
 	url = https://github.com/google/benchmark
+[submodule "tps/sal"]
+	path = tps/sal
+	url = https://github.com/svens/sal
