@@ -73,32 +73,17 @@ if(turner_unittests)
   message(STATUS "Building unittests")
   include(cmake/gtest.cmake)
 
-  # build turner tests
   enable_testing()
+
   add_executable(unittests ${turner_unittests_sources})
-  include_directories(${GTEST_INCLUDE_DIRS})
-  if(NOT GTEST_FOUND)
-    add_dependencies(unittests gtest)
-  endif()
-
-  # relax compiler warnings for gtest, intentionally creating unhappy paths
-  if(CMAKE_COMPILER_IS_GNUCXX)
-    set_source_files_properties(${turner_unittests_sources}
-      PROPERTIES COMPILE_FLAGS "-Wno-effc++"
-    )
-  elseif(MSVC)
-    set_source_files_properties(${turner_unittests_sources}
-      PROPERTIES COMPILE_FLAGS "/analyze-"
-    )
-  endif()
-
   target_link_libraries(unittests
     turner
     ${SAL_LIB}
-    ${GTEST_BOTH_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${TURNER_DEPS_LIBS}
+    gtest_main
+    ${TURNER_DEP_LIBS}
   )
+  add_dependencies(unittests gtest)
+
   add_test(unittests unittests)
 endif()
 
@@ -129,7 +114,7 @@ if(turner_bench)
     ${SAL_LIB}
     ${GBENCH_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${TURNER_DEPS_LIBS}
+    ${TURNER_DEP_LIBS}
   )
 endif()
 
