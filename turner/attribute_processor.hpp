@@ -201,4 +201,58 @@ struct address_attribute_processor_t
 };
 
 
+/**
+ * Address family identifier.
+ */
+enum class address_family_t: uint8_t
+{
+  v4 = 0x01,
+  v6 = 0x02,
+};
+
+
+/**
+ * Generic address family attribute reader/writer.
+ */
+template <typename ProtocolTraits>
+struct address_family_attribute_processor_t
+{
+  /**
+   * Attribute value type.
+   */
+  using value_t = address_family_t;
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    auto value = __bits::read_uint32(attribute, error);
+    if (!error)
+    {
+      value = (value & 0xff00'0000) >> 24;
+    }
+    return static_cast<value_t>(value);
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      (static_cast<uint32_t>(value) << 24) & 0xff00'0000,
+      error
+    );
+  }
+};
+
+
 __turner_end

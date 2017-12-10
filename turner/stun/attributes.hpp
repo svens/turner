@@ -68,6 +68,9 @@ private:
  */
 
 
+// 0x0001 MAPPED-ADDRESS {{{1
+
+
 /**
  * STUN MAPPED-ADDRESS attribute type
  * (https://tools.ietf.org/html/rfc5389#section-15.1)
@@ -82,6 +85,9 @@ using mapped_address_t = protocol_t::attribute_type_t<0x0001,
  * (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
 __turner_inline_var constexpr const mapped_address_t mapped_address;
+
+
+// 0x0006 USERNAME {{{1
 
 
 /**
@@ -100,6 +106,9 @@ using username_t = protocol_t::attribute_type_t<0x0006,
 __turner_inline_var constexpr const username_t username;
 
 
+// 0x0009 ERROR-CODE {{{1
+
+
 /**
  * STUN ERROR-CODE attribute type
  * (https://tools.ietf.org/html/rfc5389#section-15.6)
@@ -114,6 +123,9 @@ using error_code_t = protocol_t::attribute_type_t<0x0009,
  * (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
 __turner_inline_var constexpr const error_code_t error_code;
+
+
+// 0x0014 REALM {{{1
 
 
 /**
@@ -132,6 +144,9 @@ using realm_t = protocol_t::attribute_type_t<0x0014,
 __turner_inline_var constexpr const realm_t realm;
 
 
+// 0x0015 NONCE {{{1
+
+
 /**
  * STUN NONCE attribute type
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
@@ -146,6 +161,9 @@ using nonce_t = protocol_t::attribute_type_t<0x0015,
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
 __turner_inline_var constexpr const nonce_t nonce;
+
+
+// 0x0020 XOR-MAPPED-ADDRESS {{{1
 
 
 /**
@@ -164,6 +182,9 @@ using xor_mapped_address_t = protocol_t::attribute_type_t<0x0020,
 __turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
 
 
+// 0x8022 SOFTWARE {{{1
+
+
 /**
  * STUN SOFTWARE attribute type
  * (https://tools.ietf.org/html/rfc5389#section-15.10)
@@ -180,6 +201,9 @@ using software_t = protocol_t::attribute_type_t<0x8022,
 __turner_inline_var constexpr const software_t software;
 
 
+// 0x8023 ALTERNATE-SERVER {{{1
+
+
 /**
  * STUN ALTERNATE-SERVER attribute type
  * (https://tools.ietf.org/html/rfc5389#section-15.11)
@@ -194,6 +218,9 @@ using alternate_server_t = protocol_t::attribute_type_t<0x8023,
  * (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
 __turner_inline_var constexpr const alternate_server_t alternate_server;
+
+
+// }}}1
 
 
 /// \}
@@ -275,7 +302,6 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
 }
 
 
-__turner_end
-
-
 } // namespace stun
+
+__turner_end

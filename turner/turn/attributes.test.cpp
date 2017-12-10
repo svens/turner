@@ -230,7 +230,7 @@ TEST_F(turn, read_requested_transport)
   std::error_code error;
   auto value = msg.read(turner::turn::requested_transport, error);
   ASSERT_TRUE(!error);
-  EXPECT_EQ(IPPROTO_UDP, value);
+  EXPECT_EQ(turner::turn::transport_protocol_t::udp, value);
 
   EXPECT_NO_THROW(
     msg.read(turner::turn::requested_transport)
@@ -254,7 +254,7 @@ TEST_F(turn, read_requested_transport_last_attribute)
   std::error_code error;
   auto value = msg.read(turner::turn::requested_transport, error);
   ASSERT_TRUE(!error);
-  EXPECT_EQ(IPPROTO_UDP, value);
+  EXPECT_EQ(turner::turn::transport_protocol_t::udp, value);
 
   EXPECT_NO_THROW(
     msg.read(turner::turn::requested_transport)
@@ -312,13 +312,19 @@ TEST_F(turn, write_requested_transport)
   auto writer = build(TURN(), data);
   EXPECT_EQ(8, writer.available());
 
-  writer.write(turner::turn::requested_transport, IPPROTO_UDP, error);
+  writer.write(turner::turn::requested_transport,
+    turner::turn::transport_protocol_t::udp,
+    error
+  );
   EXPECT_TRUE(!error);
   EXPECT_EQ(0, writer.available());
 
   auto &msg = parse(TURN(), data);
   EXPECT_EQ(8, msg.length());
-  EXPECT_EQ(IPPROTO_UDP, msg.read(turner::turn::requested_transport));
+  EXPECT_EQ(
+    turner::turn::transport_protocol_t::udp,
+    msg.read(turner::turn::requested_transport)
+  );
 }
 
 
@@ -330,12 +336,18 @@ TEST_F(turn, write_requested_transport_not_enough_room)
   auto writer = build(TURN(), data);
   EXPECT_EQ(7, writer.available());
 
-  writer.write(turner::turn::requested_transport, IPPROTO_UDP, error);
+  writer.write(turner::turn::requested_transport,
+    turner::turn::transport_protocol_t::udp,
+    error
+  );
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_EQ(7, writer.available());
 
   EXPECT_THROW(
-    build(TURN(), data).write(turner::turn::requested_transport, IPPROTO_UDP),
+    build(TURN(), data).write(
+      turner::turn::requested_transport,
+      turner::turn::transport_protocol_t::udp
+    ),
     std::system_error
   );
 }
