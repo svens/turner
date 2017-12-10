@@ -19,6 +19,22 @@ namespace turn {
 
 
 /**
+ * \defgroup TURN_attributes TURN attributes
+ * \{
+ *
+ * \see https://tools.ietf.org/html/rfc5766#section-14
+ *
+ * \note This library does not implement following attributes:
+ *   - EVEN-PORT (https://tools.ietf.org/html/rfc5766#section-14.6)
+ *   - DONT-FRAGMENT (https://tools.ietf.org/html/rfc5766#section-14.8)
+ *   - RESERVATION-TOKEN (https://tools.ietf.org/html/rfc5766#section-14.9)
+ */
+
+
+// 0x000c CHANNEL-NUMBER {{{1
+
+
+/**
  * TURN attribute CHANNEL-NUMBER reader/writer.
  */
 template <typename ProtocolTraits>
@@ -56,75 +72,6 @@ struct channel_number_attribute_processor_t
     std::error_code &error
   ) noexcept;
 };
-
-
-/**
- * Transport protocol numbers for REQUESTED-TRANSPORT
- * \see https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
- */
-enum class transport_protocol_t: uint8_t
-{
-  tcp = 6,
-  udp = 17,
-};
-
-
-/**
- * TURN attribute REQUESTED-TRANSPORT reader/writer.
- */
-template <typename ProtocolTraits>
-struct requested_transport_attribute_processor_t
-{
-  /**
-   * \copydoc uint32_attribute_processor_t::value_t
-   */
-  using value_t = transport_protocol_t;
-
-  /**
-   * \copydoc uint32_attribute_processor_t::read()
-   */
-  static value_t read (const any_message_t<ProtocolTraits> &,
-    const any_attribute_t &attribute,
-    std::error_code &error) noexcept
-  {
-    auto value = __bits::read_uint32(attribute, error);
-    if (!error)
-    {
-      value = (value & 0xff00'0000) >> 24;
-    }
-    return static_cast<value_t>(value);
-  }
-
-  /**
-   * \copydoc uint32_attribute_processor_t::write()
-   */
-  static size_t write (const any_message_t<ProtocolTraits> &,
-    uint8_t *first, uint8_t *last,
-    const value_t &value,
-    std::error_code &error) noexcept
-  {
-    return __bits::write_uint32(first, last,
-      (static_cast<uint32_t>(value) << 24) & 0xff00'0000,
-      error
-    );
-  }
-};
-
-
-/**
- * \defgroup TURN_attributes TURN attributes
- * \{
- *
- * \see https://tools.ietf.org/html/rfc5766#section-14
- *
- * \note This library does not implement following attributes:
- *   - EVEN-PORT (https://tools.ietf.org/html/rfc5766#section-14.6)
- *   - DONT-FRAGMENT (https://tools.ietf.org/html/rfc5766#section-14.8)
- *   - RESERVATION-TOKEN (https://tools.ietf.org/html/rfc5766#section-14.9)
- */
-
-
-// 0x000c CHANNEL-NUMBER {{{1
 
 
 /**
@@ -220,6 +167,59 @@ __turner_inline_var constexpr const xor_relayed_address_t xor_relayed_address;
 
 
 // 0x0019 REQUESTED-TRANSPORT {{{1
+
+
+/**
+ * Transport protocol numbers for REQUESTED-TRANSPORT
+ * \see https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
+ */
+enum class transport_protocol_t: uint8_t
+{
+  tcp = 6,
+  udp = 17,
+};
+
+
+/**
+ * TURN attribute REQUESTED-TRANSPORT reader/writer.
+ */
+template <typename ProtocolTraits>
+struct requested_transport_attribute_processor_t
+{
+  /**
+   * \copydoc uint32_attribute_processor_t::value_t
+   */
+  using value_t = transport_protocol_t;
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    auto value = __bits::read_uint32(attribute, error);
+    if (!error)
+    {
+      value = (value & 0xff00'0000) >> 24;
+    }
+    return static_cast<value_t>(value);
+  }
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      (static_cast<uint32_t>(value) << 24) & 0xff00'0000,
+      error
+    );
+  }
+};
 
 
 /**
