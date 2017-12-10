@@ -7,10 +7,15 @@ namespace turner_test { namespace {
 using stun = turner_test::fixture;
 
 
-TEST_F(stun, binding_name)
+TEST_F(stun, binding)
 {
   EXPECT_STREQ("binding", turner::stun::binding.name());
+  EXPECT_EQ(0x0001, turner::stun::binding.type());
+  EXPECT_TRUE(turner::stun::binding.is_request());
+
   EXPECT_STREQ("binding_success", turner::stun::binding_success.name());
+  EXPECT_EQ(0x0101, turner::stun::binding_success.type());
+  EXPECT_TRUE(turner::stun::binding_success.is_success_response());
 }
 
 
