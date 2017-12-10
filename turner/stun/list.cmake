@@ -1,4 +1,4 @@
-list(APPEND turner
+list(APPEND turner_sources
   turner/stun/stun.hpp
   turner/stun/attributes.hpp
   turner/stun/errors.hpp
@@ -6,7 +6,7 @@ list(APPEND turner
   turner/stun/protocol.hpp
 )
 
-list(APPEND turner_unittests
+list(APPEND turner_unittests_sources
   turner/stun/attributes.test.cpp
   turner/stun/messages.test.cpp
 )

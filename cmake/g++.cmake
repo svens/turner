@@ -43,8 +43,8 @@ if(COVERAGE)
     message(FATAL_ERROR "Executable genhtml not found")
   endif()
 
-  add_custom_target(gen-cov
-    DEPENDS turner_unittests
+  add_custom_target(${PROJECT_NAME}-cov
+    DEPENDS unittests
     COMMENT "Generate coverage information"
 
     # Initialize coverage generation
@@ -60,7 +60,7 @@ if(COVERAGE)
     COMMAND ${LCOV} ${LCOV_ARGS} --summary turner.info
   )
 
-  add_custom_command(TARGET gen-cov POST_BUILD
+  add_custom_command(TARGET ${PROJECT_NAME}-cov POST_BUILD
     COMMENT "Open ${CMAKE_BINARY_DIR}/cov/index.html in your browser"
     COMMAND ${GENHTML} --rc lcov_branch_coverage=1 -q --demangle-cpp --legend --output-directory cov turner.info
   )

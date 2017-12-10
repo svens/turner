@@ -21,7 +21,7 @@
 ## Compiling and installing
 
     $ mkdir build && cd build
-    $ cmake .. [-DUNITTESTS=yes|no] [-DDOCS=yes|no]
+    $ cmake .. [-Dturner_unittests=yes|no] [-Dturner_bench=yes|no] [-Dturner_docs=yes|no]
 
 
 ## Source tree
