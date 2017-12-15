@@ -300,7 +300,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
   auto message = reinterpret_cast<const message_t *>(first);
 
   // message type
-  if ((message->type() & __bits::method_mask) != 0)
+  if (!ProtocolTraits::is_valid_message_type(message->type()))
   {
     error = make_error_code(errc::invalid_message_type);
     return {};

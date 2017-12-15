@@ -8,7 +8,6 @@
 #include <turner/config.hpp>
 #include <turner/error.hpp>
 #include <turner/fwd.hpp>
-#include <turner/__bits/helpers.hpp>
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/hmac.hpp>
@@ -70,7 +69,7 @@ public:
    */
   bool is_request () const noexcept
   {
-    return (type() & __bits::class_mask) == 0;
+    return ProtocolTraits::is_request(type());
   }
 
 
@@ -79,7 +78,7 @@ public:
    */
   bool is_success_response () const noexcept
   {
-    return (type() & __bits::class_mask) == __bits::success_response_class;
+    return ProtocolTraits::is_success_response(type());
   }
 
 
@@ -88,7 +87,7 @@ public:
    */
   bool is_error_response () const noexcept
   {
-    return (type() & __bits::class_mask) == __bits::error_response_class;
+    return ProtocolTraits::is_error_response(type());
   }
 
 
@@ -97,7 +96,7 @@ public:
    */
   bool is_indication () const noexcept
   {
-    return (type() & __bits::class_mask) == __bits::indication_class;
+    return ProtocolTraits::is_indication(type());
   }
 
 
@@ -295,10 +294,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<MessageType | __bits::success_response_class>(
+    return to_response<ProtocolTraits::to_success_response(MessageType)>(
       first, last, error
     );
   }
@@ -312,7 +311,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (It first, It last) const
   {
     return to_success_response(first, last,
@@ -329,12 +328,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<MessageType | __bits::success_response_class>(
+    return to_response<ProtocolTraits::to_success_response(MessageType)>(
       begin(data), end(data), error
     );
   }
@@ -348,7 +347,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (Data &data) const
   {
     return to_success_response(data,
@@ -365,10 +364,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<MessageType | __bits::error_response_class>(
+    return to_response<ProtocolTraits::to_error_response(MessageType)>(
       first, last, error
     );
   }
@@ -382,7 +381,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (It first, It last) const
   {
     return to_error_response(first, last,
@@ -399,12 +398,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<MessageType | __bits::error_response_class>(
+    return to_response<ProtocolTraits::to_error_response(MessageType)>(
       begin(data), end(data), error
     );
   }
@@ -418,7 +417,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (Data &data) const
   {
     return to_error_response(data,
@@ -433,7 +432,7 @@ private:
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
     It first, It last, std::error_code &error) const noexcept
   {
-    static_assert((MessageType & __bits::class_mask) == 0,
+    static_assert(ProtocolTraits::is_request(MessageType),
       "expected request message type"
     );
 
@@ -642,7 +641,7 @@ private:
   {}
 
   friend class turner::protocol_t<ProtocolTraits>;
-  friend class message_reader_t<ProtocolTraits, MessageType & ~__bits::class_mask>;
+  friend class message_reader_t<ProtocolTraits, ProtocolTraits::to_request(MessageType)>;
 };
 
 
