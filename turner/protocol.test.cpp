@@ -40,14 +40,14 @@ TEST(protocol, ostream_unnamed)
 
 TYPED_TEST(protocol, parse)
 {
-  auto data = msg_data(TypeParam());
+  auto data = TypeParam::msg_data();
 
   std::error_code error;
   auto msg = TypeParam::parse(data.begin(), data.end(), error);
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
-  EXPECT_EQ(msg_type(TypeParam()), msg->type());
+  EXPECT_EQ(TypeParam::msg_type(), msg->type());
 }
 
 
@@ -57,13 +57,13 @@ TYPED_TEST(protocol, build_range)
   data.fill(0);
 
   std::error_code error;
-  auto writer = TypeParam::build(msg_type(TypeParam()),
+  auto writer = TypeParam::build(TypeParam::msg_type(),
     data.begin(), data.end(),
     error
   );
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(msg_type(TypeParam()), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type());
   EXPECT_EQ(4U, writer.available());
 
   auto [ begin, end ] = writer.finish();
@@ -74,7 +74,7 @@ TYPED_TEST(protocol, build_range)
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
-  EXPECT_EQ(msg_type(TypeParam()), msg->type());
+  EXPECT_EQ(TypeParam::msg_type(), msg->type());
   EXPECT_EQ(0U, msg->length());
   EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
 
@@ -92,7 +92,7 @@ TYPED_TEST(protocol, build_range_not_enough_room_header)
   auto original = data;
 
   std::error_code error;
-  auto writer = TypeParam::build(msg_type(TypeParam()),
+  auto writer = TypeParam::build(TypeParam::msg_type(),
     data.begin(), data.end(),
     error
   );
@@ -108,16 +108,16 @@ TYPED_TEST(protocol, build_range_not_enough_room_for_finish)
   data.fill(0);
 
   std::error_code error;
-  auto writer = TypeParam::build(msg_type(TypeParam()),
+  auto writer = TypeParam::build(TypeParam::msg_type(),
     data.begin(), data.end(),
     error
   );
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(msg_type(TypeParam()), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type());
   EXPECT_EQ(1U, writer.available());
 
-  auto integrity_calculator = msg_hmac(TypeParam());
+  auto integrity_calculator = TypeParam::msg_hmac();
   (void)writer.finish(integrity_calculator, error);
   EXPECT_EQ(turner::errc::not_enough_room, error);
 }
@@ -129,10 +129,10 @@ TYPED_TEST(protocol, build_data)
   data.fill(0);
 
   std::error_code error;
-  auto writer = TypeParam::build(msg_type(TypeParam()), data, error);
+  auto writer = TypeParam::build(TypeParam::msg_type(), data, error);
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(msg_type(TypeParam()), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type());
   EXPECT_EQ(4U, writer.available());
 
   auto [ begin, end ] = writer.finish();
@@ -143,7 +143,7 @@ TYPED_TEST(protocol, build_data)
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
-  EXPECT_EQ(msg_type(TypeParam()), msg->type());
+  EXPECT_EQ(TypeParam::msg_type(), msg->type());
   EXPECT_EQ(0U, msg->length());
   EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
 
@@ -161,7 +161,7 @@ TYPED_TEST(protocol, build_data_not_enough_room_header)
   auto original = data;
 
   std::error_code error;
-  auto writer = TypeParam::build(msg_type(TypeParam()), data, error);
+  auto writer = TypeParam::build(TypeParam::msg_type(), data, error);
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_TRUE(!writer);
   EXPECT_EQ(original, data);
@@ -174,13 +174,13 @@ TYPED_TEST(protocol, build_data_not_enough_room_for_finish)
   data.fill(0);
 
   std::error_code error;
-  auto writer = TypeParam::build(msg_type(TypeParam()), data, error);
+  auto writer = TypeParam::build(TypeParam::msg_type(), data, error);
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(msg_type(TypeParam()), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type());
   EXPECT_EQ(1U, writer.available());
 
-  auto integrity_calculator = msg_hmac(TypeParam());
+  auto integrity_calculator = TypeParam::msg_hmac();
   (void)writer.finish(integrity_calculator, error);
   EXPECT_EQ(turner::errc::not_enough_room, error);
 }

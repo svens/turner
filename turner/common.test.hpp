@@ -3,8 +3,6 @@
 #include <turner/config.hpp>
 #include <turner/stun/stun.hpp>
 #include <turner/turn/turn.hpp>
-
-#define GTEST_HAS_TR1_TUPLE 0
 #include <gtest/gtest.h>
 
 
@@ -12,15 +10,152 @@
 // protocol types are intentionally out of namespace for gtest TypeParam tests
 //
 
-struct STUN: public turner::stun::protocol_t
+
+struct STUN: public turner::stun::protocol_t //{{{1
 {
   static constexpr const char expected_name[] = "STUN";
+
+  static auto msg_data ()
+  {
+    return std::vector<uint8_t>
+    {{
+      // header
+      0x00, 0x01, 0x00, 0x18,     // Type (Binding), Length
+      0x21, 0x12, 0xa4, 0x42,     // Cookie
+      0x00, 0x01, 0x02, 0x03,     // Transaction ID
+      0x04, 0x05, 0x06, 0x07,
+      0x08, 0x09, 0x0a, 0x0b,
+
+      // MESSAGE-INTEGRITY
+      0x00, 0x08, 0x00, 0x14,     // Type, Length
+      0xfb, 0xb7, 0x7f, 0xe5,     // 20B HMAC-SHA1
+      0x34, 0xa2, 0x4b, 0xfa,
+      0xa5, 0xf1, 0x52, 0x65,
+      0x93, 0xfe, 0xf6, 0x59,
+      0x9e, 0x9b, 0x64, 0x28,
+    }};
+  }
+
+  static constexpr auto msg_type ()
+  {
+    return turner::stun::binding;
+  }
+
+  static constexpr auto msg_type_v ()
+  {
+    return turner::stun::binding.type();
+  }
+
+  static constexpr auto msg_len ()
+  {
+    return 0x18;
+  }
+
+  static constexpr auto msg_txn_id ()
+  {
+    return turner::stun::protocol_t::transaction_id_t
+    {{
+       0x00, 0x01, 0x02, 0x03,
+       0x04, 0x05, 0x06, 0x07,
+       0x08, 0x09, 0x0a, 0x0b,
+    }};
+  }
+
+  static auto msg_hmac ()
+  {
+    return turner::stun::make_integrity_calculator(
+      "realm",
+      "user",
+      "pass"
+    );
+  }
+
+  static constexpr auto msg_success_type ()
+  {
+    return turner::stun::binding_success;
+  }
+
+  static constexpr auto msg_error_type ()
+  {
+    // there is no error response for STUN Binding
+    // let's invent it for testing
+    return turner::stun::binding_t::error_response_t{};
+  }
 };
 
-struct TURN: public turner::turn::protocol_t
+
+struct TURN: public turner::turn::protocol_t //{{{1
 {
   static constexpr const char expected_name[] = "TURN";
+
+  static auto msg_data ()
+  {
+    return std::vector<uint8_t>
+    {{
+      // header
+      0x00, 0x03, 0x00, 0x18,     // Type (Allocation), Length
+      0x21, 0x12, 0xa4, 0x42,     // Cookie
+      0x00, 0x01, 0x02, 0x03,     // Transaction ID
+      0x04, 0x05, 0x06, 0x07,
+      0x08, 0x09, 0x0a, 0x0b,
+
+      // MESSAGE-INTEGRITY
+      0x00, 0x08, 0x00, 0x14,     // Type, Length
+      0x3f, 0x74, 0xd2, 0x2f,     // Type, Length
+      0x2a, 0xed, 0xfe, 0xc3,     // 20B HMAC-SHA1
+      0xe0, 0x82, 0x27, 0x29,
+      0x6e, 0x3c, 0x22, 0x49,
+      0x4a, 0x15, 0x2c, 0x23,
+    }};
+  }
+
+  static constexpr auto msg_type ()
+  {
+    return turner::turn::allocation;
+  }
+
+  static constexpr auto msg_type_v ()
+  {
+    return turner::turn::allocation.type();
+  }
+
+  static constexpr auto msg_len ()
+  {
+    return 0x18;
+  }
+
+  static constexpr auto msg_txn_id ()
+  {
+    return turner::turn::protocol_t::transaction_id_t
+    {{
+      0x00, 0x01, 0x02, 0x03,
+      0x04, 0x05, 0x06, 0x07,
+      0x08, 0x09, 0x0a, 0x0b,
+    }};
+  }
+
+  static auto msg_hmac ()
+  {
+    return turner::turn::make_integrity_calculator(
+      "realm",
+      "user",
+      "pass"
+    );
+  }
+
+  static constexpr auto msg_success_type ()
+  {
+    return turner::turn::allocation_success;
+  }
+
+  static constexpr auto msg_error_type ()
+  {
+    return turner::turn::allocation_error;
+  }
 };
+
+
+//}}}1
 
 
 namespace turner_test {
@@ -75,144 +210,6 @@ class with_protocol
 {};
 
 
-// STUN {{{1
-
-inline auto msg_data (STUN)
-{
-  return std::vector<uint8_t>
-  {{
-    // header
-    0x00, 0x01, 0x00, 0x18,     // Type (Binding), Length
-    0x21, 0x12, 0xa4, 0x42,     // Cookie
-    0x00, 0x01, 0x02, 0x03,     // Transaction ID
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-
-    // MESSAGE-INTEGRITY
-    0x00, 0x08, 0x00, 0x14,     // Type, Length
-    0xfb, 0xb7, 0x7f, 0xe5,     // 20B HMAC-SHA1
-    0x34, 0xa2, 0x4b, 0xfa,
-    0xa5, 0xf1, 0x52, 0x65,
-    0x93, 0xfe, 0xf6, 0x59,
-    0x9e, 0x9b, 0x64, 0x28,
-  }};
-}
-
-inline constexpr auto msg_type (STUN)
-{
-  return turner::stun::binding;
-}
-
-inline constexpr auto msg_type_v (STUN)
-{
-  return turner::stun::binding.type();
-}
-
-inline constexpr auto msg_len (STUN)
-{
-  return 0x18;
-}
-
-inline constexpr auto msg_txn_id (STUN)
-{
-  return turner::stun::protocol_t::transaction_id_t
-  {{
-    0x00, 0x01, 0x02, 0x03,
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-  }};
-}
-
-inline auto msg_hmac (STUN)
-{
-  return turner::stun::make_integrity_calculator(
-    "realm",
-    "user",
-    "pass"
-  );
-}
-
-inline constexpr auto msg_success_type (STUN)
-{
-  return turner::stun::binding_success;
-}
-
-inline constexpr auto msg_error_type (STUN)
-{
-  // there is no error response for STUN Binding
-  // let's invent it for testing
-  return turner::stun::binding_t::error_response_t{};
-}
-
-
-// TURN {{{1
-
-inline auto msg_data (TURN)
-{
-  return std::vector<uint8_t>
-  {{
-    // header
-    0x00, 0x03, 0x00, 0x18,     // Type (Allocation), Length
-    0x21, 0x12, 0xa4, 0x42,     // Cookie
-    0x00, 0x01, 0x02, 0x03,     // Transaction ID
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-
-    // MESSAGE-INTEGRITY
-    0x00, 0x08, 0x00, 0x14,     // Type, Length
-    0x3f, 0x74, 0xd2, 0x2f,     // Type, Length
-    0x2a, 0xed, 0xfe, 0xc3,     // 20B HMAC-SHA1
-    0xe0, 0x82, 0x27, 0x29,
-    0x6e, 0x3c, 0x22, 0x49,
-    0x4a, 0x15, 0x2c, 0x23,
-  }};
-}
-
-inline constexpr auto msg_type (TURN)
-{
-  return turner::turn::allocation;
-}
-
-inline constexpr auto msg_type_v (TURN)
-{
-  return turner::turn::allocation.type();
-}
-
-inline constexpr auto msg_len (TURN)
-{
-  return 0x18;
-}
-
-inline constexpr auto msg_txn_id (TURN)
-{
-  return turner::turn::protocol_t::transaction_id_t
-  {{
-    0x00, 0x01, 0x02, 0x03,
-    0x04, 0x05, 0x06, 0x07,
-    0x08, 0x09, 0x0a, 0x0b,
-  }};
-}
-
-inline auto msg_hmac (TURN)
-{
-  return turner::turn::make_integrity_calculator(
-    "realm",
-    "user",
-    "pass"
-  );
-}
-
-inline constexpr auto msg_success_type (TURN)
-{
-  return turner::turn::allocation_success;
-}
-
-inline constexpr auto msg_error_type (TURN)
-{
-  return turner::turn::allocation_error;
-}
-
-
 // Unnamed protocol for testing {{{1
 
 // unused message type (0 is unused for STUN/TURN/MSTURN)
@@ -239,15 +236,14 @@ inline constexpr void operator>> (unnamed_protocol_message_type_t,
   name = "unnamed_protocol_message";
 }
 
-
 //}}}1
 
 
 template <typename Protocol, size_t N>
-auto wire_data (Protocol protocol, const char (&data)[N])
+auto wire_data (Protocol, const char (&data)[N])
 {
   // get message and remove existing body
-  auto raw = msg_data(protocol);
+  auto raw = Protocol::msg_data();
   raw.resize(Protocol::traits_t::header_size);
 
   // append new body and update message length
@@ -260,16 +256,16 @@ auto wire_data (Protocol protocol, const char (&data)[N])
 
 
 template <typename Protocol, typename Data>
-inline auto &parse (Protocol protocol, const Data &d)
+inline auto &parse (Protocol, const Data &d)
 {
-  return Protocol::parse(d.begin(), d.end())->as(msg_type(protocol));
+  return Protocol::parse(d.begin(), d.end())->as(Protocol::msg_type());
 }
 
 
 template <typename Protocol, typename Data>
-inline auto build (Protocol protocol, Data &d)
+inline auto build (Protocol, Data &d)
 {
-  return Protocol::build(msg_type(protocol), d.begin(), d.end());
+  return Protocol::build(Protocol::msg_type(), d.begin(), d.end());
 }
 
 
