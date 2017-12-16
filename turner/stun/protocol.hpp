@@ -68,6 +68,12 @@ struct protocol_traits_t
 
 
   /**
+   * Padding size for calculating message integrity (0 or 1 for no padding)
+   */
+  static __turner_inline_var constexpr const size_t message_integrity_padding = 1;
+
+
+  /**
    * Return true for valid message \a type.
    */
   static constexpr bool is_valid_message_type (uint16_t type) noexcept

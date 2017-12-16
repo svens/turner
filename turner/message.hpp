@@ -663,8 +663,8 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
   sal::crypto::hmac_t<Digest> &integrity_calculator,
   std::error_code &error) const noexcept
 {
-  auto p = as_ptr<uint8_t>() + ProtocolTraits::header_size;
-  if (auto integrity = __bits::find_attribute(p, p + length(),
+  auto payload = as_ptr<uint8_t>() + ProtocolTraits::header_size;
+  if (auto integrity = __bits::find_attribute(payload, payload + length(),
       ProtocolTraits::message_integrity,
       ProtocolTraits::padding_size,
       error))
@@ -677,7 +677,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
         as_ptr<uint16_t>()[0],
         sal::native_to_network_byte_order(
           static_cast<uint16_t>(
-            (reinterpret_cast<const uint8_t *>(integrity) - p)
+            (reinterpret_cast<const uint8_t *>(integrity) - payload)
             + 2 * sizeof(uint16_t)
             + integrity_calculator.digest_size
           )
@@ -690,6 +690,19 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
         as_ptr<uint8_t>() + sizeof(type_and_length),
         reinterpret_cast<const uint8_t *>(integrity)
       );
+
+      // padding if necessary
+      if constexpr (ProtocolTraits::message_integrity_padding > 1)
+      {
+        static constexpr const
+          std::array<uint8_t, ProtocolTraits::message_integrity_padding> pad{};
+        auto size = reinterpret_cast<const uint8_t *>(integrity) - as_ptr<uint8_t>();
+        if (size % pad.size() != 0)
+        {
+          auto pad_size = pad.size() - size % pad.size();
+          integrity_calculator.update(pad.cbegin(), pad.cbegin() + pad_size);
+        }
+      }
 
       // check if valid
       auto expected = integrity_calculator.finish();
@@ -786,6 +799,17 @@ std::pair<const uint8_t *, const uint8_t *>
 
     // add MESSAGE-INTEGRITY value
     integrity_calculator.update(first_, attribute);
+    if constexpr (ProtocolTraits::message_integrity_padding > 1)
+    {
+      static constexpr const
+        std::array<uint8_t, ProtocolTraits::message_integrity_padding> pad{};
+      auto size = attribute - first_;
+      if (size % pad.size() != 0)
+      {
+        auto pad_size = pad.size() - size % pad.size();
+        integrity_calculator.update(pad.cbegin(), pad.cbegin() + pad_size);
+      }
+    }
     attribute += 2 * sizeof(uint16_t);
     integrity_calculator.finish(attribute, attribute + digest_size);
 
