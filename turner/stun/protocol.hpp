@@ -35,15 +35,9 @@ struct protocol_traits_t
 
 
   /**
-   * Cookie size in bytes.
-   */
-  static __turner_inline_var constexpr const size_t cookie_size = 4;
-
-
-  /**
    * Required cookie content.
    */
-  static __turner_inline_var constexpr const std::array<uint8_t, cookie_size> cookie =
+  static __turner_inline_var constexpr const std::array<uint8_t, 4> cookie =
   {
     { 0x21, 0x12, 0xa4, 0x42 }
   };
