@@ -101,8 +101,8 @@ struct TURN: public turner::turn::protocol_t //{{{1
 
       // MESSAGE-INTEGRITY
       0x00, 0x08, 0x00, 0x14,     // Type, Length
-      0x3f, 0x74, 0xd2, 0x2f,     // Type, Length
-      0x2a, 0xed, 0xfe, 0xc3,     // 20B HMAC-SHA1
+      0x3f, 0x74, 0xd2, 0x2f,     // 20B HMAC-SHA1
+      0x2a, 0xed, 0xfe, 0xc3,
       0xe0, 0x82, 0x27, 0x29,
       0x6e, 0x3c, 0x22, 0x49,
       0x4a, 0x15, 0x2c, 0x23,
@@ -242,15 +242,18 @@ inline constexpr void operator>> (unnamed_protocol_message_type_t,
 template <typename Protocol, size_t N>
 auto wire_data (Protocol, const char (&data)[N])
 {
-  // get message and remove existing body
+  // get message and remove existing payload
   auto raw = Protocol::msg_data();
-  raw.resize(Protocol::traits_t::header_size);
+  raw.resize(Protocol::header_and_cookie_size());
 
-  // append new body and update message length
-  raw.insert(raw.end(), data, data + N - 1);
+  // update length
   reinterpret_cast<uint16_t *>(&raw[0])[1] =
-    sal::native_to_network_byte_order((uint16_t)(N - 1));
+    sal::native_to_network_byte_order(
+      static_cast<uint16_t>(N - 1 + Protocol::min_payload_length())
+    );
 
+  // append new payload
+  raw.insert(raw.end(), data, data + N - 1);
   return raw;
 }
 

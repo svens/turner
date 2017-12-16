@@ -53,7 +53,7 @@ TYPED_TEST(protocol, parse)
 
 TYPED_TEST(protocol, build_range)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 4> data;
   data.fill(0);
 
   std::error_code error;
@@ -68,14 +68,14 @@ TYPED_TEST(protocol, build_range)
 
   auto [ begin, end ] = writer.finish();
   EXPECT_EQ(&data[0], begin);
-  EXPECT_EQ(&data[TypeParam::traits_t::header_size], end);
+  EXPECT_EQ(&data[TypeParam::header_and_cookie_size()], end);
 
   auto msg = TypeParam::parse(data.begin(), data.end(), error);
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
   EXPECT_EQ(TypeParam::msg_type(), msg->type());
-  EXPECT_EQ(0U, msg->length());
+  EXPECT_EQ(0U + TypeParam::min_payload_length(), msg->length());
   EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
 
   std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
@@ -86,7 +86,7 @@ TYPED_TEST(protocol, build_range)
 
 TYPED_TEST(protocol, build_range_not_enough_room_header)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size - 1> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() - 1> data;
   data.fill(0);
 
   auto original = data;
@@ -104,7 +104,7 @@ TYPED_TEST(protocol, build_range_not_enough_room_header)
 
 TYPED_TEST(protocol, build_range_not_enough_room_for_finish)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 1> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 1> data;
   data.fill(0);
 
   std::error_code error;
@@ -125,7 +125,7 @@ TYPED_TEST(protocol, build_range_not_enough_room_for_finish)
 
 TYPED_TEST(protocol, build_data)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 4> data;
   data.fill(0);
 
   std::error_code error;
@@ -137,14 +137,14 @@ TYPED_TEST(protocol, build_data)
 
   auto [ begin, end ] = writer.finish();
   EXPECT_EQ(&data[0], begin);
-  EXPECT_EQ(&data[TypeParam::traits_t::header_size], end);
+  EXPECT_EQ(&data[TypeParam::header_and_cookie_size()], end);
 
   auto msg = TypeParam::parse(data.begin(), data.end(), error);
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
   EXPECT_EQ(TypeParam::msg_type(), msg->type());
-  EXPECT_EQ(0U, msg->length());
+  EXPECT_EQ(0U + TypeParam::min_payload_length(), msg->length());
   EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
 
   std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
@@ -155,7 +155,7 @@ TYPED_TEST(protocol, build_data)
 
 TYPED_TEST(protocol, build_data_not_enough_room_header)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size - 1> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() - 1> data;
   data.fill(0);
 
   auto original = data;
@@ -170,7 +170,7 @@ TYPED_TEST(protocol, build_data_not_enough_room_header)
 
 TYPED_TEST(protocol, build_data_not_enough_room_for_finish)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 1> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 1> data;
   data.fill(0);
 
   std::error_code error;

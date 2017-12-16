@@ -120,7 +120,7 @@ TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
 
 TYPED_TEST(attribute_processor, write_uint32)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 8> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -131,14 +131,14 @@ TYPED_TEST(attribute_processor, write_uint32)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(8U, msg.length());
+  EXPECT_EQ(8U + TypeParam::min_payload_length(), msg.length());
   EXPECT_EQ(0x12345678U, msg.read(uint32_attr<TypeParam>));
 }
 
 
 TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 7> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -262,7 +262,7 @@ TYPED_TEST(attribute_processor, read_string_empty)
 
 TYPED_TEST(attribute_processor, write_string)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 8> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -273,14 +273,14 @@ TYPED_TEST(attribute_processor, write_string)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(8U, msg.length());
+  EXPECT_EQ(8U + TypeParam::min_payload_length(), msg.length());
   EXPECT_EQ("1234", msg.read(string_attr<TypeParam>));
 }
 
 
 TYPED_TEST(attribute_processor, write_string_empty)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 4> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -291,14 +291,14 @@ TYPED_TEST(attribute_processor, write_string_empty)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(4U, msg.length());
+  EXPECT_EQ(4U + TypeParam::min_payload_length(), msg.length());
   EXPECT_EQ("", msg.read(string_attr<TypeParam>));
 }
 
 
 TYPED_TEST(attribute_processor, write_string_not_enough_room)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 7> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -317,7 +317,13 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room)
 
 TYPED_TEST(attribute_processor, write_string_not_enough_room_for_padding)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+  if constexpr (TypeParam::traits_t::padding_size < 2)
+  {
+    // no padding
+    return;
+  }
+
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 7> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -441,7 +447,7 @@ TYPED_TEST(attribute_processor, read_array_empty)
 
 TYPED_TEST(attribute_processor, write_array)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 8> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -454,7 +460,7 @@ TYPED_TEST(attribute_processor, write_array)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(8U, msg.length());
+  EXPECT_EQ(8U + TypeParam::min_payload_length(), msg.length());
   auto [ begin, end ] = msg.read(array_attr<TypeParam>);
   EXPECT_TRUE(std::equal(begin, end, array.begin()));
 }
@@ -462,7 +468,7 @@ TYPED_TEST(attribute_processor, write_array)
 
 TYPED_TEST(attribute_processor, write_array_empty)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 4> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 4> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -475,7 +481,7 @@ TYPED_TEST(attribute_processor, write_array_empty)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(4U, msg.length());
+  EXPECT_EQ(4U + TypeParam::min_payload_length(), msg.length());
   auto [ begin, end ] = msg.read(array_attr<TypeParam>);
   EXPECT_EQ(begin, end);
 }
@@ -483,7 +489,7 @@ TYPED_TEST(attribute_processor, write_array_empty)
 
 TYPED_TEST(attribute_processor, write_array_not_enough_room)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 7> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -504,7 +510,13 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room)
 
 TYPED_TEST(attribute_processor, write_array_not_enough_room_for_padding)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 7> data;
+  if constexpr (TypeParam::traits_t::padding_size < 2)
+  {
+    // no padding
+    return;
+  }
+
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 7> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -641,7 +653,7 @@ TYPED_TEST(attribute_processor, read_error_unexpected_attribute_length)
 
 TYPED_TEST(attribute_processor, write_error)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 12> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 12> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -652,7 +664,7 @@ TYPED_TEST(attribute_processor, write_error)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(12, msg.length());
+  EXPECT_EQ(12 + TypeParam::min_payload_length(), msg.length());
   auto error_code = msg.read(error_attr<TypeParam>);
   EXPECT_EQ(expected_error, error_code);
   EXPECT_EQ(expected_error.message, error_code.message);
@@ -661,7 +673,7 @@ TYPED_TEST(attribute_processor, write_error)
 
 TYPED_TEST(attribute_processor, write_error_empty)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 8> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 8> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -673,7 +685,7 @@ TYPED_TEST(attribute_processor, write_error_empty)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(8U, msg.length());
+  EXPECT_EQ(8U + TypeParam::min_payload_length(), msg.length());
   auto error_code = msg.read(error_attr<TypeParam>);
   EXPECT_EQ(empty_error, error_code);
   EXPECT_EQ(empty_error.message, error_code.message);
@@ -682,7 +694,7 @@ TYPED_TEST(attribute_processor, write_error_empty)
 
 TYPED_TEST(attribute_processor, write_error_not_enough_room)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 11> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -701,7 +713,13 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room)
 
 TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
+  if constexpr (TypeParam::traits_t::padding_size < 2)
+  {
+    // no padding
+    return;
+  }
+
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 11> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -992,7 +1010,7 @@ TYPED_TEST(attribute_processor, read_address_unexpected_attribute_value)
 
 TYPED_TEST(attribute_processor, write_address_v4)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 12> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 12> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -1006,7 +1024,7 @@ TYPED_TEST(attribute_processor, write_address_v4)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(12U, msg.length());
+  EXPECT_EQ(12U + TypeParam::min_payload_length(), msg.length());
   auto [ address, port ] = msg.read(addr_attr<TypeParam>);
   EXPECT_EQ(expected_address_v4, address);
   EXPECT_EQ(expected_port, port);
@@ -1015,7 +1033,7 @@ TYPED_TEST(attribute_processor, write_address_v4)
 
 TYPED_TEST(attribute_processor, write_address_v6)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 24> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 24> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -1029,7 +1047,7 @@ TYPED_TEST(attribute_processor, write_address_v6)
   EXPECT_EQ(0U, writer.available());
 
   auto &msg = parse(TypeParam(), data);
-  EXPECT_EQ(24, msg.length());
+  EXPECT_EQ(24 + TypeParam::min_payload_length(), msg.length());
   auto [ address, port ] = msg.read(addr_attr<TypeParam>);
   EXPECT_EQ(expected_address_v6, address);
   EXPECT_EQ(expected_port, port);
@@ -1038,7 +1056,7 @@ TYPED_TEST(attribute_processor, write_address_v6)
 
 TYPED_TEST(attribute_processor, write_address_v4_not_enough_room)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 11> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 11> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -1062,7 +1080,7 @@ TYPED_TEST(attribute_processor, write_address_v4_not_enough_room)
 
 TYPED_TEST(attribute_processor, write_address_v6_not_enough_room)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 23> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 23> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);
@@ -1086,7 +1104,7 @@ TYPED_TEST(attribute_processor, write_address_v6_not_enough_room)
 
 TYPED_TEST(attribute_processor, write_address_unexpected_family)
 {
-  std::array<uint8_t, TypeParam::traits_t::header_size + 24> data;
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 24> data;
 
   std::error_code error;
   auto writer = build(TypeParam(), data);

@@ -106,6 +106,34 @@ public:
 
 
   /**
+   * Returns minimum message length (in bytes) for payload. Returned value is
+   * size of cookie if it is part of payload. Otherwise, if cookie is part of
+   * header, returns zero.
+   */
+  static constexpr uint16_t min_payload_length () noexcept
+  {
+    if constexpr (traits_t::header_size > traits_t::cookie_offset)
+    {
+      return 0;
+    }
+    else
+    {
+      return static_cast<uint16_t>(traits_t::cookie.size());
+    }
+  }
+
+
+  /**
+   * Return minimum required size (in bytes) for message that includes header
+   * and cookie (either part of header or payload).
+   */
+  static constexpr size_t header_and_cookie_size () noexcept
+  {
+    return traits_t::header_size + min_payload_length();
+  }
+
+
+  /**
    * Return pointer to message instance wrapping raw network format in range
    * [\a first, \a last).
    *
@@ -290,7 +318,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
     std::error_code &error) noexcept
 {
   // validate arguments
-  if (first + traits_t::header_size > last)
+  if (first + header_and_cookie_size() > last)
   {
     error = make_error_code(errc::insufficient_header_data);
     return {};
@@ -300,16 +328,16 @@ const typename protocol_t<ProtocolTraits>::message_t *
   auto message = reinterpret_cast<const message_t *>(first);
 
   // message type
-  if (!ProtocolTraits::is_valid_message_type(message->type()))
+  if (!traits_t::is_valid_message_type(message->type()))
   {
     error = make_error_code(errc::invalid_message_type);
     return {};
   }
 
   // message length
-  if constexpr (ProtocolTraits::padding_size > 1)
+  if constexpr (traits_t::padding_size > 1)
   {
-    if (message->length() % ProtocolTraits::padding_size != 0)
+    if (message->length() % traits_t::padding_size != 0)
     {
       error = make_error_code(errc::invalid_message_length);
       return {};
@@ -339,22 +367,23 @@ bool protocol_t<ProtocolTraits>::build_ (uint16_t message_type,
   uint8_t *last,
   std::error_code &error) noexcept
 {
-  if (first + traits_t::header_size <= last)
+  if (first + header_and_cookie_size() <= last)
   {
     // message type
     reinterpret_cast<uint16_t *>(first)[0] =
       sal::native_to_network_byte_order(message_type);
 
     // message length
-    reinterpret_cast<uint16_t *>(first)[1] = 0;
+    reinterpret_cast<uint16_t *>(first)[1] =
+      sal::native_to_network_byte_order(min_payload_length());
 
     // cookie
-    *reinterpret_cast<cookie_t *>(first + ProtocolTraits::cookie_offset) =
-      ProtocolTraits::cookie;
+    *reinterpret_cast<cookie_t *>(first + traits_t::cookie_offset) =
+      traits_t::cookie;
 
     // transaction id
-    auto p = first + ProtocolTraits::transaction_id_offset;
-    sal::crypto::random(p, p + ProtocolTraits::transaction_id_size);
+    auto p = first + traits_t::transaction_id_offset;
+    sal::crypto::random(p, p + traits_t::transaction_id_size);
 
     error.clear();
     return true;

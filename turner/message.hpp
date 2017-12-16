@@ -261,9 +261,12 @@ public:
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto p = this->template as_ptr<uint8_t>() + ProtocolTraits::header_size;
-    if (auto attribute = __bits::find_attribute(p, p + this->length(),
-        AttributeType, ProtocolTraits::padding_size, error))
+    auto payload = this->template as_ptr<uint8_t>() + header_size;
+    if (auto attribute = __bits::find_attribute(payload,
+        payload + this->length() - min_length,
+        AttributeType,
+        ProtocolTraits::padding_size,
+        error))
     {
       return AttributeProcessor<ProtocolTraits>::read(*this, *attribute, error);
     }
@@ -428,6 +431,13 @@ public:
 
 private:
 
+  static __turner_inline_var constexpr size_t header_size =
+    turner::protocol_t<ProtocolTraits>::header_and_cookie_size();
+
+  static __turner_inline_var constexpr uint16_t min_length =
+    turner::protocol_t<ProtocolTraits>::min_payload_length();
+
+
   template <uint16_t ResponseMessageType, typename It>
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
     It first, It last, std::error_code &error) const noexcept
@@ -437,17 +447,19 @@ private:
     );
 
     auto begin = sal::to_ptr(first), end = sal::to_end_ptr(first, last);
-    if (begin + ProtocolTraits::header_size <= end)
+    if (begin + header_size <= end)
     {
       auto src = this->template as_ptr<uint8_t>();
       if (src != begin)
       {
-        std::memmove(begin, src, ProtocolTraits::header_size);
+        std::memmove(begin, src, header_size);
       }
 
       reinterpret_cast<uint16_t *>(begin)[0] =
         sal::native_to_network_byte_order(ResponseMessageType);
-      reinterpret_cast<uint16_t *>(begin)[1] = 0;
+
+      reinterpret_cast<uint16_t *>(begin)[1] =
+        sal::native_to_network_byte_order(min_length);
 
       error.clear();
       return { begin, end };
@@ -719,16 +731,16 @@ message_writer_t<ProtocolTraits, MessageType> &
 
   if (!error)
   {
+    message_size += static_cast<uint16_t>(2 * sizeof(uint16_t) + attribute_size);
     if constexpr (ProtocolTraits::padding_size > 1)
     {
-      // AttributeProcessor does not check for padding, do it here
       constexpr const auto r = ProtocolTraits::padding_size - 1;
-      message_size += 2 * sizeof(uint16_t) + ((attribute_size + r) & ~r);
-      if (first_ + ProtocolTraits::header_size + message_size > last_)
-      {
-        error = make_error_code(errc::not_enough_room);
-        return *this;
-      }
+      message_size = (message_size + r) & ~r;
+    }
+    if (first_ + ProtocolTraits::header_size + message_size > last_)
+    {
+      error = make_error_code(errc::not_enough_room);
+      return *this;
     }
 
     // attribute type
