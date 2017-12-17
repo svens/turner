@@ -1,6 +1,7 @@
 #pragma once
 
 #include <turner/config.hpp>
+#include <turner/msturn/msturn.hpp>
 #include <turner/stun/stun.hpp>
 #include <turner/turn/turn.hpp>
 #include <gtest/gtest.h>
@@ -9,6 +10,81 @@
 //
 // protocol types are intentionally out of namespace for gtest TypeParam tests
 //
+
+struct MSTURN: public turner::msturn::protocol_t //{{{1
+{
+  static constexpr const char expected_name[] = "MS-TURN";
+
+  static auto msg_data ()
+  {
+    return std::vector<uint8_t>
+    {{
+      // header
+      0x00, 0x03, 0x00, 0x20,     // Type (Allocation), Length
+      0x00, 0x01, 0x02, 0x03,     // Transaction ID
+      0x04, 0x05, 0x06, 0x07,
+      0x08, 0x09, 0x0a, 0x0b,
+      0x0c, 0x0d, 0x0e, 0x0f,
+
+      // Magic Cookie
+      0x00, 0x0f, 0x00, 0x04,
+      0x72, 0xc6, 0x4b, 0xc6,
+
+      // Message Integrity
+      0x00, 0x08, 0x00, 0x14,     // Type, Length
+      0xf4, 0xaf, 0x03, 0xc6,     // 20B HMAC-SHA1
+      0x21, 0x6f, 0x19, 0x76,
+      0x65, 0x9f, 0x87, 0x21,
+      0x18, 0x7c, 0xff, 0xc5,
+      0x9e, 0xb7, 0x32, 0x2a,
+    }};
+  }
+
+  static constexpr auto msg_type ()
+  {
+    return turner::msturn::allocate;
+  }
+
+  static constexpr auto msg_type_v ()
+  {
+    return turner::msturn::allocate.type();
+  }
+
+  static constexpr auto msg_len ()
+  {
+    return 0x20;
+  }
+
+  static constexpr auto msg_txn_id ()
+  {
+    return turner::msturn::protocol_t::transaction_id_t
+    {{
+      0x00, 0x01, 0x02, 0x03,
+      0x04, 0x05, 0x06, 0x07,
+      0x08, 0x09, 0x0a, 0x0b,
+      0x0c, 0x0d, 0x0e, 0x0f,
+    }};
+  }
+
+  static auto msg_hmac ()
+  {
+    return turner::msturn::make_integrity_calculator(
+      "realm",
+      "user",
+      "pass"
+    );
+  }
+
+  static constexpr auto msg_success_type ()
+  {
+    return turner::msturn::allocate_success;
+  }
+
+  static constexpr auto msg_error_type ()
+  {
+    return turner::msturn::allocate_error;
+  }
+};
 
 
 struct STUN: public turner::stun::protocol_t //{{{1
@@ -199,6 +275,7 @@ class with_value
 
 
 using protocol_types = ::testing::Types<
+  MSTURN,
   STUN,
   TURN
 >;

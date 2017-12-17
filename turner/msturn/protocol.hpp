@@ -1,0 +1,233 @@
+#pragma once
+
+/**
+ * \file turner/msturn/protocol.hpp
+ * MS-TURN protocol https://msdn.microsoft.com/en-us/library/cc431507(v=office.12).aspx
+ */
+
+
+#include <turner/config.hpp>
+#include <turner/protocol.hpp>
+#include <sal/crypto/hash.hpp>
+#include <sal/crypto/hmac.hpp>
+
+
+__turner_begin
+
+namespace msturn {
+
+
+/**
+ * MS-TURN protocol message layout traits.
+ *
+ * \note For historical reasons (MS-TURN forked from unfinalized TURN draft),
+ * Data Indication (0x115) doesn't follow usual message type classification
+ * Methods below consider it internally and appear externally as it follows.
+ */
+struct protocol_traits_t
+{
+  /**
+   * Header size in bytes.
+   */
+  static __turner_inline_var constexpr const size_t header_size = 20;
+
+
+  /**
+   * Offset from beginning of message to cookie field.
+   */
+  static __turner_inline_var constexpr const size_t cookie_offset = 20;
+
+
+  /**
+   * Required cookie content.
+   */
+  static __turner_inline_var constexpr const std::array<uint8_t, 8> cookie =
+  {{
+     0x00, 0x0f,                // Type
+     0x00, 0x04,                // Length
+     0x72, 0xc6, 0x4b, 0xc6     // Cookie
+  }};
+
+
+  /**
+   * Offset from beginning of message to transaction ID field.
+   */
+  static __turner_inline_var constexpr const size_t transaction_id_offset = 4;
+
+
+  /**
+   * Transaction ID size in bytes.
+   */
+  static __turner_inline_var constexpr const size_t transaction_id_size = 16;
+
+
+  /**
+   * Attributes (TLV) padding boundary.
+   */
+  static __turner_inline_var constexpr const size_t padding_size = 1;
+
+
+  /**
+   * Message Integrity attribute id.
+   */
+  static __turner_inline_var constexpr const uint16_t message_integrity = 0x0008;
+
+
+  /**
+   * Padding size for calculating message integrity (0 or 1 for no padding)
+   */
+  static inline constexpr const size_t message_integrity_padding = 64;
+
+
+  /**
+   * Return true for valid message \a type.
+   */
+  static constexpr bool is_valid_message_type (uint16_t type) noexcept
+  {
+    return (type & 0b1100'0000'0000'0000) == 0;
+  }
+
+
+  /**
+   * Return true if message \a type is request.
+   */
+  static constexpr bool is_request (uint16_t type) noexcept
+  {
+    return (type & 0b0000'0001'0001'0000) == 0;
+  }
+
+
+  /**
+   * Return true if message \a type is success response.
+   */
+  static constexpr bool is_success_response (uint16_t type) noexcept
+  {
+    return (type & 0b0000'0001'0001'0000) == 0b000'0001'0000'0000;
+  }
+
+
+  /**
+   * Return true if message \a type is error response.
+   */
+  static constexpr bool is_error_response (uint16_t type) noexcept
+  {
+    if (type == 0x115)
+    {
+      return false;
+    }
+    return (type & 0b0000'0001'0001'0000) == 0b000'0001'0001'0000;
+  }
+
+
+  /**
+   * Return true if message \a type is indication.
+   */
+  static constexpr bool is_indication (uint16_t type) noexcept
+  {
+    if (type == 0x115)
+    {
+      return true;
+    }
+    return (type & 0b0000'0001'0001'0000) == 0b000'0000'0001'0000;
+  }
+
+
+  /**
+   * Return \a type as request.
+   */
+  static constexpr uint16_t to_request (uint16_t type) noexcept
+  {
+    return type & ~0b0000'0001'0001'0000;
+  }
+
+
+  /**
+   * Return \a type as success response.
+   */
+  static constexpr uint16_t to_success_response (uint16_t type) noexcept
+  {
+    return type | 0b0000'0001'0000'0000;
+  }
+
+
+  /**
+   * Return \a type as error response.
+   */
+  static constexpr uint16_t to_error_response (uint16_t type) noexcept
+  {
+    // nothing sensible to do here for 0x115, just ignore the issue
+    return type | 0b0000'0001'0001'0000;
+  }
+
+
+  /**
+   * Return \a type as indication.
+   */
+  static constexpr uint16_t to_indication (uint16_t type) noexcept
+  {
+    if (type == 0x005)
+    {
+      return 0x115;
+    }
+    return type | 0b0000'0000'0001'0000;
+  }
+};
+
+
+/**
+ * Structure type describing MSTURN protocol message layout.
+ */
+using protocol_t = turner::protocol_t<protocol_traits_t>;
+
+
+/**
+ * MSTURN protocol instance.
+ */
+__turner_inline_var constexpr const protocol_t protocol;
+
+
+/**
+ * Return MSTURN protocol \a name in output argument.
+ */
+inline constexpr void operator>> (protocol_t, const char *&name) noexcept
+{
+  name = "MS-TURN";
+}
+
+
+/**
+ * Create HMAC-SHA1 calculator for MS-TURN message where MS-Version is absent
+ * or less than 3 (for either side).
+ *
+ * \see https://msdn.microsoft.com/en-us/library/dd949398(v=office.12).aspx
+ */
+inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
+  const std::string_view &realm,
+  const std::string_view &username,
+  const std::string_view &password)
+{
+  sal::char_array_t<4096> input;
+  input << username << ':' << realm << ':' << password;
+  return sal::crypto::hash_t<sal::crypto::md5>::one_shot(input);
+}
+
+
+#if TURNER_TODO
+/**
+ * Create HMAC-SHA256 calculator for MS-TURN message where MS-Version is
+ * equal to or greater than 3 (for both sides)
+ *
+ * \see https://msdn.microsoft.com/en-us/library/dd949398(v=office.12).aspx
+ */
+inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator_v3 (
+  const std::string_view &realm,
+  const std::string_view &username,
+  const std::string_view &password)
+{
+}
+#endif
+
+
+} // namespace msturn
+
+__turner_end
