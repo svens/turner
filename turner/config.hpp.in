@@ -11,7 +11,7 @@
 
 // TODO: drop once MSVC supports inline variables
 #if _MSC_VER
-  #define __turner_inline_var
+  #define __turner_inline_var inline
 #else
   #define __turner_inline_var inline
 #endif
