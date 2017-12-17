@@ -89,7 +89,7 @@ TYPED_TEST(attribute_processor, read_uint32_length_past_message_end)
 
   std::error_code error;
   msg.read(uint32_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(uint32_attr<TypeParam>),
@@ -234,7 +234,7 @@ TYPED_TEST(attribute_processor, read_string_length_past_message_end)
 
   std::error_code error;
   msg.read(string_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(string_attr<TypeParam>),
@@ -419,7 +419,7 @@ TYPED_TEST(attribute_processor, read_array_length_past_message_end)
 
   std::error_code error;
   msg.read(array_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(array_attr<TypeParam>),
@@ -623,7 +623,7 @@ TYPED_TEST(attribute_processor, read_error_length_past_message_end)
 
   std::error_code error;
   msg.read(error_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(error_attr<TypeParam>),
@@ -886,7 +886,7 @@ TYPED_TEST(attribute_processor, read_address_v4_length_past_message_end)
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(addr_attr<TypeParam>),
@@ -911,7 +911,7 @@ TYPED_TEST(attribute_processor, read_address_v6_length_past_message_end)
 
   std::error_code error;
   msg.read(addr_attr<TypeParam>, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(addr_attr<TypeParam>),

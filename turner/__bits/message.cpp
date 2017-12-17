@@ -38,7 +38,7 @@ const any_attribute_t *find_attribute (
       }
       else
       {
-        error = make_error_code(errc::unexpected_attribute_length);
+        error = make_error_code(errc::insufficient_payload_data);
         return {};
       }
     }

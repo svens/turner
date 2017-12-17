@@ -147,7 +147,7 @@ TEST_F(stun, read_xor_address_v4_length_past_message_end)
 
   std::error_code error;
   msg.read(turner::stun::xor_mapped_address, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(turner::stun::xor_mapped_address),
@@ -172,7 +172,7 @@ TEST_F(stun, read_xor_address_v6_length_past_message_end)
 
   std::error_code error;
   msg.read(turner::stun::xor_mapped_address, error);
-  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 
   EXPECT_THROW(
     msg.read(turner::stun::xor_mapped_address),
