@@ -25,15 +25,13 @@ class has_name_getter_t
 
 public:
 
-  static __turner_inline_var constexpr const bool value =
-    decltype(test<T>(0))::value;
+  static inline constexpr const bool value = decltype(test<T>(0))::value;
 };
 
 
 // instantiantion for has_name_getter_t
 template <typename T>
-__turner_inline_var constexpr bool has_name_getter_v =
-  has_name_getter_t<T>::value;
+inline constexpr bool has_name_getter_v = has_name_getter_t<T>::value;
 
 
 } // namespace __bits

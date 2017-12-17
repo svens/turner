@@ -24,7 +24,7 @@ namespace msturn {
 /**
  * Client should contact an alternate server for this request.
  */
-__turner_inline_var constexpr const error_t try_alternate{
+inline constexpr const error_t try_alternate{
   300, "Try Alternate"
 };
 
@@ -32,7 +32,7 @@ __turner_inline_var constexpr const error_t try_alternate{
 /**
  * Request does not include MESSAGE-INTEGRITY attribute.
  */
-__turner_inline_var constexpr const error_t unauthorized{
+inline constexpr const error_t unauthorized{
   401, "Unauthorized"
 };
 
@@ -40,7 +40,7 @@ __turner_inline_var constexpr const error_t unauthorized{
 /**
  * Request contained unknown attributes.
  */
-__turner_inline_var constexpr const error_t unknown_attributes{
+inline constexpr const error_t unknown_attributes{
   420, "Unknown Attributes"
 };
 
@@ -48,7 +48,7 @@ __turner_inline_var constexpr const error_t unknown_attributes{
 /**
  * Authentication failed.
  */
-__turner_inline_var constexpr const error_t integrity_check_failure{
+inline constexpr const error_t integrity_check_failure{
   431, "Integrity Check Failure"
 };
 
@@ -56,7 +56,7 @@ __turner_inline_var constexpr const error_t integrity_check_failure{
 /**
  * Request does not contain USERNAME attribute.
  */
-__turner_inline_var constexpr const error_t missing_username{
+inline constexpr const error_t missing_username{
   432, "Missing Username"
 };
 
@@ -64,7 +64,7 @@ __turner_inline_var constexpr const error_t missing_username{
 /**
  * Request does not contain REALM attribute.
  */
-__turner_inline_var constexpr const error_t missing_realm{
+inline constexpr const error_t missing_realm{
   434, "Missing Realm"
 };
 
@@ -72,7 +72,7 @@ __turner_inline_var constexpr const error_t missing_realm{
 /**
  * Request does not contain NONCE attribute.
  */
-__turner_inline_var constexpr const error_t missing_nonce{
+inline constexpr const error_t missing_nonce{
   435, "Missing Nonce"
 };
 
@@ -81,7 +81,7 @@ __turner_inline_var constexpr const error_t missing_nonce{
  * Request contained USERNAME attribute but it's value was not understood by
  * server.
  */
-__turner_inline_var constexpr const error_t unknown_user{
+inline constexpr const error_t unknown_user{
   436, "Unknown User"
 };
 
@@ -89,7 +89,7 @@ __turner_inline_var constexpr const error_t unknown_user{
 /**
  * Request contains NONCE attribute but the value was not valid.
  */
-__turner_inline_var constexpr const error_t stale_nonce{
+inline constexpr const error_t stale_nonce{
   438, "Stale Nonce"
 };
 
@@ -97,7 +97,7 @@ __turner_inline_var constexpr const error_t stale_nonce{
 /**
  * Allocation of transport addres failed for internal reasons.
  */
-__turner_inline_var constexpr const error_t server_error{
+inline constexpr const error_t server_error{
   500, "Server Error"
 };
 

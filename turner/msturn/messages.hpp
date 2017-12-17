@@ -34,7 +34,7 @@ using allocate_t = protocol_t::message_type_t<0x003>;
 /**
  * Instance of MS-TURN Allocate message type.
  */
-__turner_inline_var constexpr const allocate_t allocate;
+inline constexpr const allocate_t allocate;
 
 
 /**
@@ -55,7 +55,7 @@ using allocate_success_t = allocate_t::success_response_t;
 /**
  * Instance of MS-TURN Allocate success resposen message type.
  */
-__turner_inline_var constexpr const allocate_success_t allocate_success;
+inline constexpr const allocate_success_t allocate_success;
 
 
 /**
@@ -76,7 +76,7 @@ using allocate_error_t = allocate_t::error_response_t;
 /**
  * Instance of MS-TURN Allocate error resposen message type.
  */
-__turner_inline_var constexpr const allocate_error_t allocate_error;
+inline constexpr const allocate_error_t allocate_error;
 
 
 /**
@@ -97,7 +97,7 @@ using set_active_destination_t = protocol_t::message_type_t<0x006>;
 /**
  * Instance of MS-TURN Set Active Destination message type.
  */
-__turner_inline_var constexpr const set_active_destination_t set_active_destination;
+inline constexpr const set_active_destination_t set_active_destination;
 
 
 /**
@@ -118,7 +118,7 @@ using set_active_destination_success_t = set_active_destination_t::success_respo
 /**
  * Instance of MS-TURN Set Active Destination success resposen message type.
  */
-__turner_inline_var constexpr const set_active_destination_success_t set_active_destination_success;
+inline constexpr const set_active_destination_success_t set_active_destination_success;
 
 
 /**
@@ -139,7 +139,7 @@ using set_active_destination_error_t = set_active_destination_t::error_response_
 /**
  * Instance of MS-TURN Set Active Destination error resposen message type.
  */
-__turner_inline_var constexpr const set_active_destination_error_t set_active_destination_error;
+inline constexpr const set_active_destination_error_t set_active_destination_error;
 
 
 /**
@@ -160,7 +160,7 @@ using send_t = protocol_t::message_type_t<0x004>;
 /**
  * Instance of MS-TURN Send message type.
  */
-__turner_inline_var constexpr const send_t send;
+inline constexpr const send_t send;
 
 
 /**
@@ -184,7 +184,7 @@ using data_indication_t = protocol_t::message_type_t<0x005>::indication_t;
 /**
  * Instance of MS-TURN Data Indication message type.
  */
-__turner_inline_var constexpr const data_indication_t data_indication;
+inline constexpr const data_indication_t data_indication;
 
 
 /**

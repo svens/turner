@@ -84,7 +84,7 @@ using mapped_address_t = protocol_t::attribute_type_t<0x0001,
  * STUN MAPPED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
-__turner_inline_var constexpr const mapped_address_t mapped_address;
+inline constexpr const mapped_address_t mapped_address;
 
 
 // 0x0006 USERNAME {{{1
@@ -103,7 +103,7 @@ using username_t = protocol_t::attribute_type_t<0x0006,
  * STUN USERNAME attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.3)
  */
-__turner_inline_var constexpr const username_t username;
+inline constexpr const username_t username;
 
 
 // 0x0009 ERROR-CODE {{{1
@@ -122,7 +122,7 @@ using error_code_t = protocol_t::attribute_type_t<0x0009,
  * STUN ERROR-CODE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
-__turner_inline_var constexpr const error_code_t error_code;
+inline constexpr const error_code_t error_code;
 
 
 // 0x0014 REALM {{{1
@@ -141,7 +141,7 @@ using realm_t = protocol_t::attribute_type_t<0x0014,
  * STUN REALM attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.7)
  */
-__turner_inline_var constexpr const realm_t realm;
+inline constexpr const realm_t realm;
 
 
 // 0x0015 NONCE {{{1
@@ -160,7 +160,7 @@ using nonce_t = protocol_t::attribute_type_t<0x0015,
  * STUN NONCE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
-__turner_inline_var constexpr const nonce_t nonce;
+inline constexpr const nonce_t nonce;
 
 
 // 0x0020 XOR-MAPPED-ADDRESS {{{1
@@ -179,7 +179,7 @@ using xor_mapped_address_t = protocol_t::attribute_type_t<0x0020,
  * STUN XOR-MAPPED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.2)
  */
-__turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
+inline constexpr const xor_mapped_address_t xor_mapped_address;
 
 
 // 0x8022 SOFTWARE {{{1
@@ -198,7 +198,7 @@ using software_t = protocol_t::attribute_type_t<0x8022,
  * STUN SOFTWARE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
-__turner_inline_var constexpr const software_t software;
+inline constexpr const software_t software;
 
 
 // 0x8023 ALTERNATE-SERVER {{{1
@@ -217,7 +217,7 @@ using alternate_server_t = protocol_t::attribute_type_t<0x8023,
  * STUN ALTERNATE-SERVER attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
-__turner_inline_var constexpr const alternate_server_t alternate_server;
+inline constexpr const alternate_server_t alternate_server;
 
 
 // }}}1

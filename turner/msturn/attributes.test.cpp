@@ -149,7 +149,7 @@ TEST_F(msturn, write_ms_version_not_enough_room)
 // MS-Sequence Number {{{1
 
 
-__turner_inline_var constexpr const auto sequence_number = std::make_pair(
+inline constexpr const auto sequence_number = std::make_pair(
   std::array<uint8_t, 20>
   {{
     0x00, 0x01, 0x02, 0x03,
@@ -330,13 +330,12 @@ TEST_F(msturn, write_ms_sequence_number_not_enough_room)
 // XOR Mapped Address {{{1
 
 
-__turner_inline_var const auto expected_address_v4 =
-  sal::net::ip::make_address("1.2.3.4");
+inline const auto expected_address_v4 = sal::net::ip::make_address("1.2.3.4");
 
-__turner_inline_var const auto expected_address_v6 =
+inline const auto expected_address_v6 =
   sal::net::ip::make_address("102:304:506:708:90a:b0c:d0e:f10");
 
-__turner_inline_var constexpr const uint16_t expected_port = 0x1234;
+inline constexpr const uint16_t expected_port = 0x1234;
 
 
 TEST_F(msturn, read_xor_address_v4)
@@ -698,7 +697,7 @@ TEST_F(msturn, write_xor_address_unexpected_attribute_value)
 // MS-Service Quality {{{1
 
 
-__turner_inline_var constexpr const auto service_quality =
+inline constexpr const auto service_quality =
   std::make_pair(
     turner::msturn::stream_type_t::data,
     turner::msturn::service_quality_t::reliable_delivery
@@ -875,7 +874,7 @@ TEST_F(msturn, write_ms_service_quality_not_enough_room)
 // Multiplexed TURN Session ID {{{1
 
 
-__turner_inline_var constexpr const uint64_t session_id = 0x0123456789abcdef;
+inline constexpr const uint64_t session_id = 0x0123456789abcdef;
 
 
 TEST_F(msturn, read_mturn_session_id)

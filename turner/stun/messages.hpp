@@ -33,7 +33,7 @@ using binding_t = protocol_t::message_type_t<0x001>;
 /**
  * Instance of STUN Binding message type.
  */
-__turner_inline_var constexpr const binding_t binding{};
+inline constexpr const binding_t binding{};
 
 
 /**
@@ -54,7 +54,7 @@ using binding_success_t = binding_t::success_response_t;
 /**
  * Instance of STUN Binding success resposen message type.
  */
-__turner_inline_var constexpr const binding_success_t binding_success;
+inline constexpr const binding_success_t binding_success;
 
 
 /**

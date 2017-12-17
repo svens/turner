@@ -544,7 +544,7 @@ constexpr const typename Protocol::template attribute_type_t<0x01,
 > error_attr{};
 
 
-__turner_inline_var constexpr const turner::error_t expected_error{300, "Text"};
+inline constexpr const turner::error_t expected_error{300, "Text"};
 
 
 TYPED_TEST(attribute_processor, read_error)
@@ -746,13 +746,12 @@ constexpr const typename Protocol::template attribute_type_t<0x01,
 > addr_attr{};
 
 
-__turner_inline_var const auto expected_address_v4 =
-  sal::net::ip::make_address("1.2.3.4");
+inline const auto expected_address_v4 = sal::net::ip::make_address("1.2.3.4");
 
-__turner_inline_var const auto expected_address_v6 =
+inline const auto expected_address_v6 =
   sal::net::ip::make_address("102:304:506:708:90a:b0c:d0e:f10");
 
-__turner_inline_var constexpr const uint16_t expected_port = 0x1234;
+inline constexpr const uint16_t expected_port = 0x1234;
 
 
 TYPED_TEST(attribute_processor, read_address_v4)

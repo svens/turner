@@ -294,17 +294,17 @@ template <typename Protocol>
 using unused_message_type_t = typename Protocol::template message_type_t<0>;
 
 template <typename Protocol>
-static __turner_inline_var constexpr const unused_message_type_t<Protocol>
+static inline constexpr const unused_message_type_t<Protocol>
   unused_message_type{};
 
 // protocol
 struct unnamed_protocol_traits_t : public turner::stun::protocol_traits_t {};
 using unnamed_protocol_t = turner::protocol_t<unnamed_protocol_traits_t>;
-static __turner_inline_var constexpr const unnamed_protocol_t unnamed_protocol;
+static inline constexpr const unnamed_protocol_t unnamed_protocol;
 
 // message type
 using unnamed_protocol_message_type_t = unnamed_protocol_t::message_type_t<1>;
-static __turner_inline_var constexpr const unnamed_protocol_message_type_t
+static inline constexpr const unnamed_protocol_message_type_t
   unnamed_protocol_message_type;
 
 inline constexpr void operator>> (unnamed_protocol_message_type_t,

@@ -87,7 +87,7 @@ using channel_number_t = protocol_t::attribute_type_t<0x000c,
  * TURN CHANNEL-NUMBER attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.1)
  */
-__turner_inline_var constexpr const channel_number_t channel_number;
+inline constexpr const channel_number_t channel_number;
 
 
 // 0x000d LIFETIME {{{1
@@ -106,7 +106,7 @@ using lifetime_t = protocol_t::attribute_type_t<0x000d,
  * TURN LIFETIME attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.2)
  */
-__turner_inline_var constexpr const lifetime_t lifetime;
+inline constexpr const lifetime_t lifetime;
 
 
 // 0x0012 XOR-PEER-ADDRESS {{{1
@@ -125,7 +125,7 @@ using xor_peer_address_t = protocol_t::attribute_type_t<0x0012,
  * TURN XOR-PEER-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.3)
  */
-__turner_inline_var constexpr const xor_peer_address_t xor_peer_address;
+inline constexpr const xor_peer_address_t xor_peer_address;
 
 
 // 0x0013 DATA {{{1
@@ -144,7 +144,7 @@ using data_t = protocol_t::attribute_type_t<0x0013,
  * TURN DATA attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.4)
  */
-__turner_inline_var constexpr const data_t data;
+inline constexpr const data_t data;
 
 
 // 0x0016 XOR-RELAYED-ADDRESS {{{1
@@ -163,7 +163,7 @@ using xor_relayed_address_t = protocol_t::attribute_type_t<0x0016,
  * TURN XOR-RELAYED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.5)
  */
-__turner_inline_var constexpr const xor_relayed_address_t xor_relayed_address;
+inline constexpr const xor_relayed_address_t xor_relayed_address;
 
 
 // 0x0019 REQUESTED-TRANSPORT {{{1
@@ -235,7 +235,7 @@ using requested_transport_t = protocol_t::attribute_type_t<0x0019,
  * TURN REQUESTED-TRANSPORT attribute
  * (https://tools.ietf.org/html/rfc5766#section-14.7)
  */
-__turner_inline_var constexpr const requested_transport_t requested_transport;
+inline constexpr const requested_transport_t requested_transport;
 
 
 // STUN MAPPED-ADDRESS {{{1
@@ -252,7 +252,7 @@ using mapped_address_t = protocol_t::reuse_attribute_t<stun::mapped_address_t>;
  * STUN MAPPED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
-__turner_inline_var constexpr const mapped_address_t mapped_address;
+inline constexpr const mapped_address_t mapped_address;
 
 
 // STUN USERNAME {{{1
@@ -269,7 +269,7 @@ using username_t = protocol_t::reuse_attribute_t<stun::username_t>;
  * STUN USERNAME attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.3)
  */
-__turner_inline_var constexpr const username_t username;
+inline constexpr const username_t username;
 
 
 // STUN ERROR-CODE {{{1
@@ -286,7 +286,7 @@ using error_code_t = protocol_t::reuse_attribute_t<stun::error_code_t>;
  * STUN ERROR-CODE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
-__turner_inline_var constexpr const error_code_t error_code;
+inline constexpr const error_code_t error_code;
 
 
 // STUN REALM {{{1
@@ -303,7 +303,7 @@ using realm_t = protocol_t::reuse_attribute_t<stun::realm_t>;
  * STUN REALM attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.7)
  */
-__turner_inline_var constexpr const realm_t realm;
+inline constexpr const realm_t realm;
 
 
 // STUN NONCE {{{1
@@ -320,7 +320,7 @@ using nonce_t = protocol_t::reuse_attribute_t<stun::nonce_t>;
  * STUN NONCE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
-__turner_inline_var constexpr const nonce_t nonce;
+inline constexpr const nonce_t nonce;
 
 
 // STUN XOR-MAPPED-ADDRESS {{{1
@@ -337,7 +337,7 @@ using xor_mapped_address_t = protocol_t::reuse_attribute_t<stun::xor_mapped_addr
  * STUN XOR-MAPPED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.2)
  */
-__turner_inline_var constexpr const xor_mapped_address_t xor_mapped_address;
+inline constexpr const xor_mapped_address_t xor_mapped_address;
 
 
 // STUN SOFTWARE {{{1
@@ -354,7 +354,7 @@ using software_t = protocol_t::reuse_attribute_t<stun::software_t>;
  * STUN SOFTWARE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
-__turner_inline_var constexpr const software_t software;
+inline constexpr const software_t software;
 
 
 // STUN ALTERNATE-SERVER {{{1
@@ -371,7 +371,7 @@ using alternate_server_t = protocol_t::reuse_attribute_t<stun::alternate_server_
  * STUN ALTERNATE-SERVER attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
-__turner_inline_var constexpr const alternate_server_t alternate_server;
+inline constexpr const alternate_server_t alternate_server;
 
 
 // }}}1

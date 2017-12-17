@@ -9,32 +9,25 @@
 #define __turner_begin  namespace turner { inline namespace v0 {
 #define __turner_end    }} // namespace turner::v0
 
-// TODO: drop once MSVC supports inline variables
-#if _MSC_VER
-  #define __turner_inline_var inline
-#else
-  #define __turner_inline_var inline
-#endif
-
 __turner_begin
 
 /**
  * Turner library version as string (turner/{VERSION}).
  */
-__turner_inline_var constexpr const char version[] = "turner/@PROJECT_VERSION@";
+inline constexpr const char version[] = "turner/@PROJECT_VERSION@";
 
 #if _MSC_VER
-  __turner_inline_var constexpr const bool is_msvc_compiler = true;
-  __turner_inline_var constexpr const bool is_gnuc_compiler = false;
+  inline constexpr const bool is_msvc_compiler = true;
+  inline constexpr const bool is_gnuc_compiler = false;
 #elif __GNUC__
-  __turner_inline_var constexpr const bool is_msvc_compiler = false;
-  __turner_inline_var constexpr const bool is_gnuc_compiler = true;
+  inline constexpr const bool is_msvc_compiler = false;
+  inline constexpr const bool is_gnuc_compiler = true;
 #endif
 
 #if _DEBUG
-  __turner_inline_var constexpr const bool is_debug_build = true;
+  inline constexpr const bool is_debug_build = true;
 #else
-  __turner_inline_var constexpr const bool is_debug_build = false;
+  inline constexpr const bool is_debug_build = false;
 #endif
 
 __turner_end

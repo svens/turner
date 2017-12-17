@@ -431,10 +431,10 @@ public:
 
 private:
 
-  static __turner_inline_var constexpr size_t header_size =
+  static inline constexpr size_t header_size =
     turner::protocol_t<ProtocolTraits>::header_and_cookie_size();
 
-  static __turner_inline_var constexpr uint16_t min_length =
+  static inline constexpr uint16_t min_length =
     turner::protocol_t<ProtocolTraits>::min_payload_length();
 
 
