@@ -11,15 +11,6 @@ __turner_begin
 namespace __bits {
 
 
-// see https://tools.ietf.org/html/rfc5389#section-6
-__turner_inline_var constexpr uint16_t
-  method_mask =            0b110'0000'0000'0000,
-  class_mask =             0b000'0001'0001'0000,
-  indication_class =       0b000'0000'0001'0000,
-  success_response_class = 0b000'0001'0000'0000,
-  error_response_class =   0b000'0001'0001'0000;
-
-
 // helper to detect if for type T, there is "operator>> (T, const char *&)"
 template <typename T>
 class has_name_getter_t
@@ -34,15 +25,13 @@ class has_name_getter_t
 
 public:
 
-  static __turner_inline_var constexpr const bool value =
-    decltype(test<T>(0))::value;
+  static inline constexpr const bool value = decltype(test<T>(0))::value;
 };
 
 
 // instantiantion for has_name_getter_t
 template <typename T>
-__turner_inline_var constexpr bool has_name_getter_v =
-  has_name_getter_t<T>::value;
+inline constexpr bool has_name_getter_v = has_name_getter_t<T>::value;
 
 
 } // namespace __bits

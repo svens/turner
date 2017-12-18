@@ -41,7 +41,7 @@ class message_type_t
 {
 public:
 
-  static_assert((MessageType & __bits::method_mask) == 0,
+  static_assert(ProtocolTraits::is_valid_message_type(MessageType),
     "invalid message type"
   );
 
@@ -66,7 +66,7 @@ public:
    */
   static constexpr bool is_request () noexcept
   {
-    return (MessageType & __bits::class_mask) == 0;
+    return ProtocolTraits::is_request(MessageType);
   }
 
 
@@ -75,7 +75,7 @@ public:
    */
   static constexpr bool is_success_response () noexcept
   {
-    return (MessageType & __bits::class_mask) == __bits::success_response_class;
+    return ProtocolTraits::is_success_response(MessageType);
   }
 
 
@@ -84,7 +84,7 @@ public:
    */
   static constexpr bool is_error_response () noexcept
   {
-    return (MessageType & __bits::class_mask) == __bits::error_response_class;
+    return ProtocolTraits::is_error_response(MessageType);
   }
 
 
@@ -93,7 +93,7 @@ public:
    */
   static constexpr bool is_indication () noexcept
   {
-    return (MessageType & __bits::class_mask) == __bits::indication_class;
+    return ProtocolTraits::is_indication(MessageType);
   }
 
 
@@ -152,7 +152,7 @@ public:
    * Success response for \a MessageType.
    */
   using success_response_t = message_type_t<ProtocolTraits,
-    MessageType | __bits::success_response_class
+    ProtocolTraits::to_success_response(MessageType)
   >;
 
 
@@ -170,7 +170,7 @@ public:
    * Error response for \a MessageType.
    */
   using error_response_t = message_type_t<ProtocolTraits,
-    MessageType | __bits::error_response_class
+    ProtocolTraits::to_error_response(MessageType)
   >;
 
 
@@ -188,7 +188,7 @@ public:
    * Indication for \a MessageType.
    */
   using indication_t = message_type_t<ProtocolTraits,
-    MessageType | __bits::indication_class
+    ProtocolTraits::to_indication(MessageType)
   >;
 
 
@@ -228,9 +228,7 @@ private:
 
   static constexpr void expect_request_class () noexcept
   {
-    static_assert((MessageType & __bits::class_mask) == 0,
-      "expected request class"
-    );
+    static_assert(is_request(), "expected request class");
   }
 };
 

@@ -34,7 +34,7 @@ using allocation_t = protocol_t::message_type_t<0x003>;
 /**
  * Instance of TURN Allocation message type.
  */
-__turner_inline_var constexpr const allocation_t allocation;
+inline constexpr const allocation_t allocation;
 
 
 /**
@@ -55,7 +55,7 @@ using allocation_success_t = allocation_t::success_response_t;
 /**
  * Instance of TURN Allocation success resposen message type.
  */
-__turner_inline_var constexpr const allocation_success_t allocation_success;
+inline constexpr const allocation_success_t allocation_success;
 
 
 /**
@@ -76,7 +76,7 @@ using allocation_error_t = allocation_t::error_response_t;
 /**
  * Instance of TURN Allocation error resposen message type.
  */
-__turner_inline_var constexpr const allocation_error_t allocation_error;
+inline constexpr const allocation_error_t allocation_error;
 
 
 /**
@@ -97,7 +97,7 @@ using refresh_t = protocol_t::message_type_t<0x004>;
 /**
  * Instance of TURN Refresh message type.
  */
-__turner_inline_var constexpr const refresh_t refresh;
+inline constexpr const refresh_t refresh;
 
 
 /**
@@ -118,7 +118,7 @@ using refresh_success_t = refresh_t::success_response_t;
 /**
  * Instance of TURN Refresh success resposen message type.
  */
-__turner_inline_var constexpr const refresh_success_t refresh_success;
+inline constexpr const refresh_success_t refresh_success;
 
 
 /**
@@ -139,7 +139,7 @@ using refresh_error_t = refresh_t::error_response_t;
 /**
  * Instance of TURN Refresh error resposen message type.
  */
-__turner_inline_var constexpr const refresh_error_t refresh_error;
+inline constexpr const refresh_error_t refresh_error;
 
 
 /**
@@ -160,7 +160,7 @@ using send_indication_t = protocol_t::message_type_t<0x006>::indication_t;
 /**
  * Instance of TURN Send indication message type.
  */
-__turner_inline_var constexpr const send_indication_t send_indication;
+inline constexpr const send_indication_t send_indication;
 
 
 /**
@@ -181,7 +181,7 @@ using data_indication_t = protocol_t::message_type_t<0x007>::indication_t;
 /**
  * Instance of TURN Data indication message type.
  */
-__turner_inline_var constexpr const data_indication_t data_indication;
+inline constexpr const data_indication_t data_indication;
 
 
 /**
@@ -202,7 +202,7 @@ using create_permission_t = protocol_t::message_type_t<0x008>;
 /**
  * Instance of TURN CreatePermission message type.
  */
-__turner_inline_var constexpr const create_permission_t create_permission;
+inline constexpr const create_permission_t create_permission;
 
 
 /**
@@ -223,7 +223,7 @@ using create_permission_success_t = create_permission_t::success_response_t;
 /**
  * Instance of TURN CreatePermission success resposen message type.
  */
-__turner_inline_var constexpr const create_permission_success_t create_permission_success;
+inline constexpr const create_permission_success_t create_permission_success;
 
 
 /**
@@ -244,7 +244,7 @@ using create_permission_error_t = create_permission_t::error_response_t;
 /**
  * Instance of TURN CreatePermission error resposen message type.
  */
-__turner_inline_var constexpr const create_permission_error_t create_permission_error;
+inline constexpr const create_permission_error_t create_permission_error;
 
 
 /**
@@ -265,7 +265,7 @@ using channel_bind_t = protocol_t::message_type_t<0x009>;
 /**
  * Instance of TURN ChannelBind message type.
  */
-__turner_inline_var constexpr const channel_bind_t channel_bind;
+inline constexpr const channel_bind_t channel_bind;
 
 
 /**
@@ -286,7 +286,7 @@ using channel_bind_success_t = channel_bind_t::success_response_t;
 /**
  * Instance of TURN ChannelBind success resposen message type.
  */
-__turner_inline_var constexpr const channel_bind_success_t channel_bind_success;
+inline constexpr const channel_bind_success_t channel_bind_success;
 
 
 /**
@@ -307,7 +307,7 @@ using channel_bind_error_t = channel_bind_t::error_response_t;
 /**
  * Instance of TURN ChannelBind error resposen message type.
  */
-__turner_inline_var constexpr const channel_bind_error_t channel_bind_error;
+inline constexpr const channel_bind_error_t channel_bind_error;
 
 
 /**

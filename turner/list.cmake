@@ -26,5 +26,6 @@ list(APPEND turner_unittests_sources
   turner/protocol.test.cpp
 )
 
+include(turner/msturn/list.cmake)
 include(turner/stun/list.cmake)
 include(turner/turn/list.cmake)

@@ -8,7 +8,6 @@
 #include <turner/config.hpp>
 #include <turner/error.hpp>
 #include <turner/fwd.hpp>
-#include <turner/__bits/helpers.hpp>
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/hmac.hpp>
@@ -70,7 +69,7 @@ public:
    */
   bool is_request () const noexcept
   {
-    return (type() & __bits::class_mask) == 0;
+    return ProtocolTraits::is_request(type());
   }
 
 
@@ -79,7 +78,7 @@ public:
    */
   bool is_success_response () const noexcept
   {
-    return (type() & __bits::class_mask) == __bits::success_response_class;
+    return ProtocolTraits::is_success_response(type());
   }
 
 
@@ -88,7 +87,7 @@ public:
    */
   bool is_error_response () const noexcept
   {
-    return (type() & __bits::class_mask) == __bits::error_response_class;
+    return ProtocolTraits::is_error_response(type());
   }
 
 
@@ -97,7 +96,7 @@ public:
    */
   bool is_indication () const noexcept
   {
-    return (type() & __bits::class_mask) == __bits::indication_class;
+    return ProtocolTraits::is_indication(type());
   }
 
 
@@ -262,9 +261,12 @@ public:
     attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto p = this->template as_ptr<uint8_t>() + ProtocolTraits::header_size;
-    if (auto attribute = __bits::find_attribute(p, p + this->length(),
-        AttributeType, ProtocolTraits::padding_size, error))
+    auto payload = this->template as_ptr<uint8_t>() + header_size;
+    if (auto attribute = __bits::find_attribute(payload,
+        payload + this->length() - min_length,
+        AttributeType,
+        ProtocolTraits::padding_size,
+        error))
     {
       return AttributeProcessor<ProtocolTraits>::read(*this, *attribute, error);
     }
@@ -295,10 +297,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<MessageType | __bits::success_response_class>(
+    return to_response<ProtocolTraits::to_success_response(MessageType)>(
       first, last, error
     );
   }
@@ -312,7 +314,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (It first, It last) const
   {
     return to_success_response(first, last,
@@ -329,12 +331,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<MessageType | __bits::success_response_class>(
+    return to_response<ProtocolTraits::to_success_response(MessageType)>(
       begin(data), end(data), error
     );
   }
@@ -348,7 +350,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::success_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
     to_success_response (Data &data) const
   {
     return to_success_response(data,
@@ -365,10 +367,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<MessageType | __bits::error_response_class>(
+    return to_response<ProtocolTraits::to_error_response(MessageType)>(
       first, last, error
     );
   }
@@ -382,7 +384,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (It first, It last) const
   {
     return to_error_response(first, last,
@@ -399,12 +401,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<MessageType | __bits::error_response_class>(
+    return to_response<ProtocolTraits::to_error_response(MessageType)>(
       begin(data), end(data), error
     );
   }
@@ -418,7 +420,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, MessageType | __bits::error_response_class>
+  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
     to_error_response (Data &data) const
   {
     return to_error_response(data,
@@ -429,26 +431,35 @@ public:
 
 private:
 
+  static inline constexpr size_t header_size =
+    turner::protocol_t<ProtocolTraits>::header_and_cookie_size();
+
+  static inline constexpr uint16_t min_length =
+    turner::protocol_t<ProtocolTraits>::min_payload_length();
+
+
   template <uint16_t ResponseMessageType, typename It>
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
     It first, It last, std::error_code &error) const noexcept
   {
-    static_assert((MessageType & __bits::class_mask) == 0,
+    static_assert(ProtocolTraits::is_request(MessageType),
       "expected request message type"
     );
 
     auto begin = sal::to_ptr(first), end = sal::to_end_ptr(first, last);
-    if (begin + ProtocolTraits::header_size <= end)
+    if (begin + header_size <= end)
     {
       auto src = this->template as_ptr<uint8_t>();
       if (src != begin)
       {
-        std::memmove(begin, src, ProtocolTraits::header_size);
+        std::memmove(begin, src, header_size);
       }
 
       reinterpret_cast<uint16_t *>(begin)[0] =
         sal::native_to_network_byte_order(ResponseMessageType);
-      reinterpret_cast<uint16_t *>(begin)[1] = 0;
+
+      reinterpret_cast<uint16_t *>(begin)[1] =
+        sal::native_to_network_byte_order(min_length);
 
       error.clear();
       return { begin, end };
@@ -642,7 +653,7 @@ private:
   {}
 
   friend class turner::protocol_t<ProtocolTraits>;
-  friend class message_reader_t<ProtocolTraits, MessageType & ~__bits::class_mask>;
+  friend class message_reader_t<ProtocolTraits, ProtocolTraits::to_request(MessageType)>;
 };
 
 
@@ -652,8 +663,8 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
   sal::crypto::hmac_t<Digest> &integrity_calculator,
   std::error_code &error) const noexcept
 {
-  auto p = as_ptr<uint8_t>() + ProtocolTraits::header_size;
-  if (auto integrity = __bits::find_attribute(p, p + length(),
+  auto payload = as_ptr<uint8_t>() + ProtocolTraits::header_size;
+  if (auto integrity = __bits::find_attribute(payload, payload + length(),
       ProtocolTraits::message_integrity,
       ProtocolTraits::padding_size,
       error))
@@ -666,7 +677,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
         as_ptr<uint16_t>()[0],
         sal::native_to_network_byte_order(
           static_cast<uint16_t>(
-            (reinterpret_cast<const uint8_t *>(integrity) - p)
+            (reinterpret_cast<const uint8_t *>(integrity) - payload)
             + 2 * sizeof(uint16_t)
             + integrity_calculator.digest_size
           )
@@ -679,6 +690,19 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
         as_ptr<uint8_t>() + sizeof(type_and_length),
         reinterpret_cast<const uint8_t *>(integrity)
       );
+
+      // padding if necessary
+      if constexpr (ProtocolTraits::message_integrity_padding > 1)
+      {
+        static constexpr const
+          std::array<uint8_t, ProtocolTraits::message_integrity_padding> pad{};
+        auto size = reinterpret_cast<const uint8_t *>(integrity) - as_ptr<uint8_t>();
+        if (size % pad.size() != 0)
+        {
+          auto pad_size = pad.size() - size % pad.size();
+          integrity_calculator.update(pad.cbegin(), pad.cbegin() + pad_size);
+        }
+      }
 
       // check if valid
       auto expected = integrity_calculator.finish();
@@ -720,16 +744,16 @@ message_writer_t<ProtocolTraits, MessageType> &
 
   if (!error)
   {
+    message_size += static_cast<uint16_t>(2 * sizeof(uint16_t) + attribute_size);
     if constexpr (ProtocolTraits::padding_size > 1)
     {
-      // AttributeProcessor does not check for padding, do it here
       constexpr const auto r = ProtocolTraits::padding_size - 1;
-      message_size += 2 * sizeof(uint16_t) + ((attribute_size + r) & ~r);
-      if (first_ + ProtocolTraits::header_size + message_size > last_)
-      {
-        error = make_error_code(errc::not_enough_room);
-        return *this;
-      }
+      message_size = (message_size + r) & ~r;
+    }
+    if (first_ + ProtocolTraits::header_size + message_size > last_)
+    {
+      error = make_error_code(errc::not_enough_room);
+      return *this;
     }
 
     // attribute type
@@ -775,6 +799,17 @@ std::pair<const uint8_t *, const uint8_t *>
 
     // add MESSAGE-INTEGRITY value
     integrity_calculator.update(first_, attribute);
+    if constexpr (ProtocolTraits::message_integrity_padding > 1)
+    {
+      static constexpr const
+        std::array<uint8_t, ProtocolTraits::message_integrity_padding> pad{};
+      auto size = attribute - first_;
+      if (size % pad.size() != 0)
+      {
+        auto pad_size = pad.size() - size % pad.size();
+        integrity_calculator.update(pad.cbegin(), pad.cbegin() + pad_size);
+      }
+    }
     attribute += 2 * sizeof(uint16_t);
     integrity_calculator.finish(attribute, attribute + digest_size);
 

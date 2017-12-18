@@ -1,8 +1,8 @@
 #pragma once
 
 /**
- * \file turner/stun/protocol.hpp
- * STUN protocol (https://tools.ietf.org/html/rfc5389)
+ * \file turner/msturn/protocol.hpp
+ * MS-TURN protocol https://msdn.microsoft.com/en-us/library/cc431507(v=office.12).aspx
  */
 
 
@@ -14,11 +14,15 @@
 
 __turner_begin
 
-namespace stun {
+namespace msturn {
 
 
 /**
- * STUN protocol message layout traits.
+ * MS-TURN protocol message layout traits.
+ *
+ * \note For historical reasons (MS-TURN forked from unfinalized TURN draft),
+ * Data Indication (0x115) doesn't follow usual message type classification
+ * Methods below consider it internally and appear externally as it follows.
  */
 struct protocol_traits_t
 {
@@ -31,38 +35,40 @@ struct protocol_traits_t
   /**
    * Offset from beginning of message to cookie field.
    */
-  static inline constexpr const size_t cookie_offset = 4;
+  static inline constexpr const size_t cookie_offset = 20;
 
 
   /**
    * Required cookie content.
    */
-  static inline constexpr const std::array<uint8_t, 4> cookie =
-  {
-    { 0x21, 0x12, 0xa4, 0x42 }
-  };
+  static inline constexpr const std::array<uint8_t, 8> cookie =
+  {{
+     0x00, 0x0f,                // Type
+     0x00, 0x04,                // Length
+     0x72, 0xc6, 0x4b, 0xc6     // Cookie
+  }};
 
 
   /**
    * Offset from beginning of message to transaction ID field.
    */
-  static inline constexpr const size_t transaction_id_offset = 8;
+  static inline constexpr const size_t transaction_id_offset = 4;
 
 
   /**
    * Transaction ID size in bytes.
    */
-  static inline constexpr const size_t transaction_id_size = 12;
+  static inline constexpr const size_t transaction_id_size = 16;
 
 
   /**
    * Attributes (TLV) padding boundary.
    */
-  static inline constexpr const size_t padding_size = 4;
+  static inline constexpr const size_t padding_size = 1;
 
 
   /**
-   * MESSAGE-INTEGRITY attribute id.
+   * Message Integrity attribute id.
    */
   static inline constexpr const uint16_t message_integrity = 0x0008;
 
@@ -70,7 +76,7 @@ struct protocol_traits_t
   /**
    * Padding size for calculating message integrity (0 or 1 for no padding)
    */
-  static inline constexpr const size_t message_integrity_padding = 1;
+  static inline constexpr const size_t message_integrity_padding = 64;
 
 
   /**
@@ -105,6 +111,10 @@ struct protocol_traits_t
    */
   static constexpr bool is_error_response (uint16_t type) noexcept
   {
+    if (type == 0x115)
+    {
+      return false;
+    }
     return (type & 0b0000'0001'0001'0000) == 0b000'0001'0001'0000;
   }
 
@@ -114,6 +124,10 @@ struct protocol_traits_t
    */
   static constexpr bool is_indication (uint16_t type) noexcept
   {
+    if (type == 0x115)
+    {
+      return true;
+    }
     return (type & 0b0000'0001'0001'0000) == 0b000'0000'0001'0000;
   }
 
@@ -141,6 +155,7 @@ struct protocol_traits_t
    */
   static constexpr uint16_t to_error_response (uint16_t type) noexcept
   {
+    // nothing sensible to do here for 0x115, just ignore the issue
     return type | 0b0000'0001'0001'0000;
   }
 
@@ -150,62 +165,76 @@ struct protocol_traits_t
    */
   static constexpr uint16_t to_indication (uint16_t type) noexcept
   {
+    if (type == 0x005)
+    {
+      return 0x115;
+    }
     return type | 0b0000'0000'0001'0000;
   }
 };
 
 
 /**
- * Structure type describing STUN protocol message layout.
+ * Structure type describing MSTURN protocol message layout.
  */
 using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
- * STUN protocol instance.
+ * MSTURN protocol instance.
  */
 inline constexpr const protocol_t protocol;
 
 
 /**
- * Return STUN protocol \a name in output argument.
+ * Return MSTURN protocol \a name in output argument.
  */
 inline constexpr void operator>> (protocol_t, const char *&name) noexcept
 {
-  name = "STUN";
+  name = "MS-TURN";
 }
 
 
 /**
- * Create HMAC-SHA1 calculator for short term credentials.
- * \see https://tools.ietf.org/html/rfc5389#section-15.4
+ * Create HMAC-SHA1 calculator for MS-TURN message where MS-Version is absent
+ * or less than 3 (for either side).
  *
- * \note \a password is NOT prepared with SASLprep
- */
-inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
-  const std::string_view &password)
-{
-  return password;
-}
-
-
-/**
- * Create HMAC-SHA1 calculator for long term credentials.
- * \see https://tools.ietf.org/html/rfc5389#section-15.4
- *
- * \note \a password is NOT prepared with SASLprep
+ * \see https://msdn.microsoft.com/en-us/library/dd949398(v=office.12).aspx
  */
 inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
   const std::string_view &realm,
   const std::string_view &username,
   const std::string_view &password)
 {
-  sal::char_array_t<513 + 1 + 763 + 1 + 1024> input;
-  input << username << ':' << realm << ':' << password;
-  return sal::crypto::hash_t<sal::crypto::md5>::one_shot(input);
+  sal::char_array_t<4096> key;
+  return sal::crypto::hash_t<sal::crypto::md5>::one_shot(
+    key.print(username, ':', realm, ':', password).to_view()
+  );
 }
 
 
-} // namespace stun
+/**
+ * Create HMAC-SHA256 calculator for MS-TURN message where MS-Version is
+ * equal to or greater than 3 (for both sides)
+ *
+ * \see https://msdn.microsoft.com/en-us/library/dd949398(v=office.12).aspx
+ */
+inline sal::crypto::hmac_t<sal::crypto::sha256> make_integrity_calculator_v3 (
+  const std::string_view &realm,
+  const std::string_view &nonce,
+  const std::string_view &username,
+  const std::string_view &password)
+{
+  sal::char_array_t<4096> key;
+  return sal::crypto::hmac_t<sal::crypto::sha256>::one_shot(
+    // K
+    sal::crypto::hmac_t<sal::crypto::sha256>::one_shot(nonce, password),
+    // Key
+    key.print('\1', "TURN", '\0', username, realm, '\0', '\0', '\1', '\0').to_view()
+  );
+}
+
+
+} // namespace msturn
 
 __turner_end

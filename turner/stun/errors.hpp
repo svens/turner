@@ -26,7 +26,7 @@ namespace stun {
 /**
  * Client should contact an alternate server for this request.
  */
-__turner_inline_var constexpr const error_t try_alternate{
+inline constexpr const error_t try_alternate{
   300, "Try Alternate"
 };
 
@@ -34,7 +34,7 @@ __turner_inline_var constexpr const error_t try_alternate{
 /**
  * The request was malformed.
  */
-__turner_inline_var constexpr const error_t bad_request{
+inline constexpr const error_t bad_request{
   400, "Bad Request"
 };
 
@@ -42,7 +42,7 @@ __turner_inline_var constexpr const error_t bad_request{
 /**
  * The request did not contain the correct credentials to proceed.
  */
-__turner_inline_var constexpr const error_t unauthorized{
+inline constexpr const error_t unauthorized{
   401, "Unauthorized"
 };
 
@@ -51,7 +51,7 @@ __turner_inline_var constexpr const error_t unauthorized{
  * The server received a STUN packet containing comprehension-required
  * attribute that it did not understand.
  */
-__turner_inline_var constexpr const error_t unknown_attribute{
+inline constexpr const error_t unknown_attribute{
   420, "Unknown Attribute"
 };
 
@@ -59,7 +59,7 @@ __turner_inline_var constexpr const error_t unknown_attribute{
 /**
  * The NONCE used by the client was no longer valid.
  */
-__turner_inline_var constexpr const error_t stale_nonce{
+inline constexpr const error_t stale_nonce{
   438, "Stale Nonce"
 };
 
@@ -67,7 +67,7 @@ __turner_inline_var constexpr const error_t stale_nonce{
 /**
  * The server has suffered a temporary error. The client should try again.
  */
-__turner_inline_var constexpr const error_t server_error{
+inline constexpr const error_t server_error{
   500, "Server Error"
 };
 

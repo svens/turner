@@ -38,7 +38,7 @@ using stun::server_error;
  * The request was valid but cannot be performed due to administrative or
  * similar restriction.
  */
-__turner_inline_var constexpr const error_t forbidden{
+inline constexpr const error_t forbidden{
   403, "Forbidden"
 };
 
@@ -47,7 +47,7 @@ __turner_inline_var constexpr const error_t forbidden{
  * Request requires an allocation but no allocation exists, or a request
  * requires no allocation but an allocation exists.
  */
-__turner_inline_var constexpr const error_t allocation_mismatch{
+inline constexpr const error_t allocation_mismatch{
   437, "Allocation Mismatch"
 };
 
@@ -56,7 +56,7 @@ __turner_inline_var constexpr const error_t allocation_mismatch{
  * The credentials in request do not match those used to create the
  * allocation.
  */
-__turner_inline_var constexpr const error_t wrong_credentials{
+inline constexpr const error_t wrong_credentials{
   441, "Wrong Credentials"
 };
 
@@ -65,7 +65,7 @@ __turner_inline_var constexpr const error_t wrong_credentials{
  * The Allocate request asked for transport protocol between server and the
  * peer that the server does not support.
  */
-__turner_inline_var constexpr const error_t unsupported_transport_protocol{
+inline constexpr const error_t unsupported_transport_protocol{
   442, "Unsupported Transport Protocol"
 };
 
@@ -73,7 +73,7 @@ __turner_inline_var constexpr const error_t unsupported_transport_protocol{
 /**
  * No more allocations using this username can be created at the present time.
  */
-__turner_inline_var constexpr const error_t allocation_quota_reached{
+inline constexpr const error_t allocation_quota_reached{
   486, "Allocation Quota Reached"
 };
 
@@ -82,7 +82,7 @@ __turner_inline_var constexpr const error_t allocation_quota_reached{
  * The server is unable to carry out the request dues to some capacity limit
  * being reached.
  */
-__turner_inline_var constexpr const error_t insufficient_capacity{
+inline constexpr const error_t insufficient_capacity{
   508, "Insufficient Capacity"
 };
 

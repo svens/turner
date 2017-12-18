@@ -38,7 +38,7 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 /**
  * TURN protocol instance.
  */
-__turner_inline_var constexpr const protocol_t protocol{};
+inline constexpr const protocol_t protocol{};
 
 
 /**

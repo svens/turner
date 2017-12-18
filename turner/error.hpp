@@ -119,7 +119,7 @@ struct error_t
  * Success code
  * \note This is not part of STUN/TURN/MSTURN protocols. Used only internally
  */
-__turner_inline_var constexpr const error_t success{0, "Success"};
+inline constexpr const error_t success{0, "Success"};
 
 
 /**
