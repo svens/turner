@@ -206,26 +206,33 @@ inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator (
   const std::string_view &username,
   const std::string_view &password)
 {
-  sal::char_array_t<4096> input;
-  input << username << ':' << realm << ':' << password;
-  return sal::crypto::hash_t<sal::crypto::md5>::one_shot(input);
+  sal::char_array_t<4096> key;
+  return sal::crypto::hash_t<sal::crypto::md5>::one_shot(
+    key.print(username, ':', realm, ':', password).to_view()
+  );
 }
 
 
-#if TURNER_TODO
 /**
  * Create HMAC-SHA256 calculator for MS-TURN message where MS-Version is
  * equal to or greater than 3 (for both sides)
  *
  * \see https://msdn.microsoft.com/en-us/library/dd949398(v=office.12).aspx
  */
-inline sal::crypto::hmac_t<sal::crypto::sha1> make_integrity_calculator_v3 (
+inline sal::crypto::hmac_t<sal::crypto::sha256> make_integrity_calculator_v3 (
   const std::string_view &realm,
+  const std::string_view &nonce,
   const std::string_view &username,
   const std::string_view &password)
 {
+  sal::char_array_t<4096> key;
+  return sal::crypto::hmac_t<sal::crypto::sha256>::one_shot(
+    // K
+    sal::crypto::hmac_t<sal::crypto::sha256>::one_shot(nonce, password),
+    // Key
+    key.print('\1', "TURN", '\0', username, realm, '\0', '\0', '\1', '\0').to_view()
+  );
 }
-#endif
 
 
 } // namespace msturn
