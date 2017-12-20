@@ -45,7 +45,7 @@ struct MSTURN: public turner::msturn::protocol_t //{{{1
 
   static constexpr auto msg_type_v ()
   {
-    return turner::msturn::allocate.type();
+    return turner::msturn::allocate.type;
   }
 
   static constexpr auto msg_len ()
@@ -115,7 +115,7 @@ struct STUN: public turner::stun::protocol_t //{{{1
 
   static constexpr auto msg_type_v ()
   {
-    return turner::stun::binding.type();
+    return turner::stun::binding.type;
   }
 
   static constexpr auto msg_len ()
@@ -151,7 +151,7 @@ struct STUN: public turner::stun::protocol_t //{{{1
   {
     // there is no error response for STUN Binding
     // let's invent it for testing
-    return turner::stun::binding_t::error_response_t{};
+    return turner::stun::protocol_t::message_type_t<0x0111>{};
   }
 };
 
@@ -186,7 +186,7 @@ struct TURN: public turner::turn::protocol_t //{{{1
 
   static constexpr auto msg_type_v ()
   {
-    return turner::turn::allocation.type();
+    return turner::turn::allocation.type;
   }
 
   static constexpr auto msg_len ()

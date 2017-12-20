@@ -297,12 +297,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b0000'0001'0000'0000>
     to_success_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<ProtocolTraits::to_success_response(MessageType)>(
-      first, last, error
-    );
+    return to_response<MessageType | 0b0000'0001'0000'0000>(first, last, error);
   }
 
 
@@ -314,7 +312,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b0000'0001'0000'0000>
     to_success_response (It first, It last) const
   {
     return to_success_response(first, last,
@@ -331,12 +329,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b0000'0001'0000'0000>
     to_success_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<ProtocolTraits::to_success_response(MessageType)>(
+    return to_response<MessageType | 0b0000'0001'0000'0000>(
       begin(data), end(data), error
     );
   }
@@ -350,7 +348,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b0000'0001'0000'0000>
     to_success_response (Data &data) const
   {
     return to_success_response(data,
@@ -367,12 +365,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b000'0001'0001'0000>
     to_error_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<ProtocolTraits::to_error_response(MessageType)>(
-      first, last, error
-    );
+    return to_response<MessageType | 0b000'0001'0001'0000>(first, last, error);
   }
 
 
@@ -384,7 +380,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b000'0001'0001'0000>
     to_error_response (It first, It last) const
   {
     return to_error_response(first, last,
@@ -401,12 +397,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b000'0001'0001'0000>
     to_error_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<ProtocolTraits::to_error_response(MessageType)>(
+    return to_response<MessageType | 0b000'0001'0001'0000>(
       begin(data), end(data), error
     );
   }
@@ -420,7 +416,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<ProtocolTraits, MessageType | 0b000'0001'0001'0000>
     to_error_response (Data &data) const
   {
     return to_error_response(data,
@@ -653,7 +649,7 @@ private:
   {}
 
   friend class turner::protocol_t<ProtocolTraits>;
-  friend class message_reader_t<ProtocolTraits, ProtocolTraits::to_request(MessageType)>;
+  friend class message_reader_t<ProtocolTraits, MessageType & ~0b0000'0001'0001'0000>;
 };
 
 

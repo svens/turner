@@ -26,102 +26,51 @@ namespace msturn {
 
 
 /**
- * MS-TURN Allocate message type.
+ * Allocate message type.
  */
-using allocate_t = protocol_t::message_type_t<0x003>;
+inline constexpr const protocol_t::message_type_t<0x0003> allocate;
 
 
 /**
- * Instance of MS-TURN Allocate message type.
+ * Allocate success message type.
  */
-inline constexpr const allocate_t allocate;
+inline constexpr const protocol_t::message_type_t<0x0103> allocate_success;
 
 
 /**
- * MS-TURN Allocate success response message type
+ * Allocate error message type.
  */
-using allocate_success_t = allocate_t::success_response_t;
+inline constexpr const protocol_t::message_type_t<0x0113> allocate_error;
 
 
 /**
- * Instance of MS-TURN Allocate success resposen message type.
+ * Send message type.
  */
-inline constexpr const allocate_success_t allocate_success;
+inline constexpr const protocol_t::message_type_t<0x0004> send;
 
 
 /**
- * MS-TURN Allocate error response message type
+ * Data Indication message type.
  */
-using allocate_error_t = allocate_t::error_response_t;
+inline constexpr const protocol_t::message_type_t<0x0115> data_indication;
 
 
 /**
- * Instance of MS-TURN Allocate error resposen message type.
+ * Set Active Destination message type.
  */
-inline constexpr const allocate_error_t allocate_error;
+inline constexpr const protocol_t::message_type_t<0x0006> set_active_destination;
 
 
 /**
- * MS-TURN Set Active Destination message type.
+ * Set Active Destination success message type.
  */
-using set_active_destination_t = protocol_t::message_type_t<0x006>;
+inline constexpr const protocol_t::message_type_t<0x0106> set_active_destination_success;
 
 
 /**
- * Instance of MS-TURN Set Active Destination message type.
+ * Set Active Destination error message type.
  */
-inline constexpr const set_active_destination_t set_active_destination;
-
-
-/**
- * MS-TURN Set Active Destination success response message type
- */
-using set_active_destination_success_t = set_active_destination_t::success_response_t;
-
-
-/**
- * Instance of MS-TURN Set Active Destination success resposen message type.
- */
-inline constexpr const set_active_destination_success_t set_active_destination_success;
-
-
-/**
- * MS-TURN Set Active Destination error response message type
- */
-using set_active_destination_error_t = set_active_destination_t::error_response_t;
-
-
-/**
- * Instance of MS-TURN Set Active Destination error resposen message type.
- */
-inline constexpr const set_active_destination_error_t set_active_destination_error;
-
-
-/**
- * MS-TURN Send message type.
- */
-using send_t = protocol_t::message_type_t<0x004>;
-
-
-/**
- * Instance of MS-TURN Send message type.
- */
-inline constexpr const send_t send;
-
-
-/**
- * MS-TURN Data Indication message type.
- *
- * \note For some reason, Data Indicaton encoding is not usual STUN bit-coded
- * message type: here indication is encoded as error response.
- */
-using data_indication_t = protocol_t::message_type_t<0x005>::indication_t;
-
-
-/**
- * Instance of MS-TURN Data Indication message type.
- */
-inline constexpr const data_indication_t data_indication;
+inline constexpr const protocol_t::message_type_t<0x0116> set_active_destination_error;
 
 
 // \}

@@ -74,15 +74,6 @@ struct protocol_traits_t
 
 
   /**
-   * Return true for valid message \a type.
-   */
-  static constexpr bool is_valid_message_type (uint16_t type) noexcept
-  {
-    return (type & 0b1100'0000'0000'0000) == 0;
-  }
-
-
-  /**
    * Return true if message \a type is request.
    */
   static constexpr bool is_request (uint16_t type) noexcept
@@ -115,42 +106,6 @@ struct protocol_traits_t
   static constexpr bool is_indication (uint16_t type) noexcept
   {
     return (type & 0b0000'0001'0001'0000) == 0b000'0000'0001'0000;
-  }
-
-
-  /**
-   * Return \a type as request.
-   */
-  static constexpr uint16_t to_request (uint16_t type) noexcept
-  {
-    return type & ~0b0000'0001'0001'0000;
-  }
-
-
-  /**
-   * Return \a type as success response.
-   */
-  static constexpr uint16_t to_success_response (uint16_t type) noexcept
-  {
-    return type | 0b0000'0001'0000'0000;
-  }
-
-
-  /**
-   * Return \a type as error response.
-   */
-  static constexpr uint16_t to_error_response (uint16_t type) noexcept
-  {
-    return type | 0b0000'0001'0001'0000;
-  }
-
-
-  /**
-   * Return \a type as indication.
-   */
-  static constexpr uint16_t to_indication (uint16_t type) noexcept
-  {
-    return type | 0b0000'0000'0001'0000;
   }
 };
 

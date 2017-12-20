@@ -6,9 +6,9 @@
  */
 
 #include <turner/config.hpp>
-#include <turner/fwd.hpp>
 #include <turner/error.hpp>
 #include <turner/message.hpp>
+#include <turner/message_type.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/random.hpp>
 #include <array>
@@ -165,12 +165,14 @@ public:
    */
   template <uint16_t MessageType, typename It>
   static message_writer_t<ProtocolTraits, MessageType> build (
-    message_type_t<MessageType> message_type,
+    message_type_t<MessageType>,
     It first,
     It last,
     std::error_code &error) noexcept
   {
-    static_assert(message_type.is_request() || message_type.is_indication(),
+    static_assert(
+      ProtocolTraits::is_request(MessageType)
+      || ProtocolTraits::is_indication(MessageType),
       "expected request or indication message type"
     );
     auto begin = sal::to_ptr(first);
@@ -285,7 +287,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
   auto message = reinterpret_cast<const message_t *>(first);
 
   // message type
-  if (!traits_t::is_valid_message_type(message->type()))
+  if (!is_valid_message_type(message->type()))
   {
     error = make_error_code(errc::invalid_message_type);
     return {};

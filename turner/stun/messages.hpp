@@ -24,28 +24,17 @@ namespace stun {
  * \see https://tools.ietf.org/html/rfc5389#section-18.1
  */
 
-/**
- * STUN Binding message type.
- */
-using binding_t = protocol_t::message_type_t<0x001>;
-
 
 /**
- * Instance of STUN Binding message type.
+ * Binding message type.
  */
-inline constexpr const binding_t binding{};
+inline constexpr const protocol_t::message_type_t<0x0001> binding;
 
 
 /**
- * STUN Binding success response message type
+ * Binding success message type.
  */
-using binding_success_t = binding_t::success_response_t;
-
-
-/**
- * Instance of STUN Binding success resposen message type.
- */
-inline constexpr const binding_success_t binding_success;
+inline constexpr const protocol_t::message_type_t<0x0101> binding_success;
 
 
 // \}

@@ -9,11 +9,17 @@ using stun = turner_test::fixture;
 
 TEST_F(stun, binding)
 {
-  EXPECT_EQ(0x0001, turner::stun::binding.type());
-  EXPECT_TRUE(turner::stun::binding.is_request());
+  EXPECT_EQ((uint16_t)0x0001, turner::stun::binding);
+  EXPECT_TRUE(
+    turner::stun::protocol_traits_t::is_request(turner::stun::binding.type)
+  );
 
-  EXPECT_EQ(0x0101, turner::stun::binding_success.type());
-  EXPECT_TRUE(turner::stun::binding_success.is_success_response());
+  EXPECT_EQ((uint16_t)0x0101, turner::stun::binding_success);
+  EXPECT_TRUE(
+    turner::stun::protocol_traits_t::is_success_response(
+      turner::stun::binding_success.type
+    )
+  );
 }
 
 
