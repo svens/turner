@@ -35,7 +35,7 @@ TYPED_TEST(protocol, build_range)
   );
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
   EXPECT_EQ(4U, writer.available());
 
   auto [ begin, end ] = writer.finish();
@@ -86,7 +86,7 @@ TYPED_TEST(protocol, build_range_not_enough_room_for_finish)
   );
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
   EXPECT_EQ(1U, writer.available());
 
   auto integrity_calculator = TypeParam::msg_hmac();
@@ -104,7 +104,7 @@ TYPED_TEST(protocol, build_data)
   auto writer = TypeParam::build(TypeParam::msg_type(), data, error);
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
   EXPECT_EQ(4U, writer.available());
 
   auto [ begin, end ] = writer.finish();
@@ -149,7 +149,7 @@ TYPED_TEST(protocol, build_data_not_enough_room_for_finish)
   auto writer = TypeParam::build(TypeParam::msg_type(), data, error);
   ASSERT_TRUE(!error);
   EXPECT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
   EXPECT_EQ(1U, writer.available());
 
   auto integrity_calculator = TypeParam::msg_hmac();

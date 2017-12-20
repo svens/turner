@@ -48,12 +48,12 @@ public:
    * Message type as defined by protocol
    */
   template <uint16_t MessageType>
-  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
+  using message_type_t = turner::message_type_t<traits_t, MessageType>;
 
   /**
    * Untyped message as defined by protocol.
    */
-  using message_t = any_message_t<traits_t>;
+  using any_message_t = turner::any_message_t<traits_t>;
 
   /**
    * Attribute type as defined by protocol.
@@ -63,7 +63,7 @@ public:
     template <typename> typename AttributeProcessor
   >
   using attribute_type_t = turner::attribute_type_t<
-    ProtocolTraits,
+    traits_t,
     AttributeType,
     AttributeProcessor
   >;
@@ -74,7 +74,7 @@ public:
    */
   template <typename Attribute>
   using reuse_attribute_t = attribute_type_t<
-    Attribute::type(),
+    Attribute::type,
     Attribute::template rebind_processor_t
   >;
 
@@ -119,7 +119,7 @@ public:
    * returned and error is set to code describing failure.
    */
   template <typename It>
-  static const message_t *parse (It first, It last,
+  static const any_message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
     if constexpr (is_msvc_compiler && is_debug_build)
@@ -146,7 +146,7 @@ public:
    * validation fails.
    */
   template <typename It>
-  static const message_t *parse (It first, It last)
+  static const any_message_t *parse (It first, It last)
   {
     return parse(first, last,
       sal::throw_on_error("protocol::parse")
@@ -164,15 +164,13 @@ public:
    * On error, set \a error and return undefined message_writer_t object.
    */
   template <uint16_t MessageType, typename It>
-  static message_writer_t<ProtocolTraits, MessageType> build (
+  static message_writer_t<traits_t, MessageType> build (
     message_type_t<MessageType>,
     It first,
     It last,
     std::error_code &error) noexcept
   {
-    static_assert(
-      ProtocolTraits::is_request(MessageType)
-      || ProtocolTraits::is_indication(MessageType),
+    static_assert(traits_t::is_request(MessageType) || traits_t::is_indication(MessageType),
       "expected request or indication message type"
     );
     auto begin = sal::to_ptr(first);
@@ -195,7 +193,7 @@ public:
    * \throws std::system_error on message header building failure.
    */
   template <uint16_t MessageType, typename It>
-  static message_writer_t<ProtocolTraits, MessageType> build (
+  static message_writer_t<traits_t, MessageType> build (
     message_type_t<MessageType> message_type,
     It first,
     It last)
@@ -216,7 +214,7 @@ public:
    * On error, set \a error and return undefined message_writer_t object.
    */
   template <uint16_t MessageType, typename Data>
-  static message_writer_t<ProtocolTraits, MessageType> build (
+  static message_writer_t<traits_t, MessageType> build (
     message_type_t<MessageType> message_type,
     Data &data,
     std::error_code &error) noexcept
@@ -237,7 +235,7 @@ public:
    * \throws std::system_error on message header building failure.
    */
   template <uint16_t MessageType, typename Data>
-  static message_writer_t<ProtocolTraits, MessageType> build (
+  static message_writer_t<traits_t, MessageType> build (
     message_type_t<MessageType> message_type,
     Data &data)
   {
@@ -247,14 +245,14 @@ public:
 
 private:
 
-  static_assert(std::is_trivially_destructible_v<message_t>);
+  static_assert(std::is_trivially_destructible_v<any_message_t>);
 
   static_assert(
     (traits_t::padding_size & (traits_t::padding_size - 1)) == 0,
     "expected value of traits_t::padding_size to be power of 2"
   );
 
-  static const message_t *parse_ (
+  static const any_message_t *parse_ (
     const uint8_t *first,
     const uint8_t *last,
     std::error_code &error
@@ -270,11 +268,10 @@ private:
 
 
 template <typename ProtocolTraits>
-const typename protocol_t<ProtocolTraits>::message_t *
-  protocol_t<ProtocolTraits>::parse_ (
-    const uint8_t *first,
-    const uint8_t *last,
-    std::error_code &error) noexcept
+auto protocol_t<ProtocolTraits>::parse_ (
+  const uint8_t *first,
+  const uint8_t *last,
+  std::error_code &error) noexcept -> const any_message_t *
 {
   // validate arguments
   if (first + header_and_cookie_size() > last)
@@ -284,7 +281,7 @@ const typename protocol_t<ProtocolTraits>::message_t *
   }
 
   // passed initial checks, overlay any_message_t on top of specified area
-  auto message = reinterpret_cast<const message_t *>(first);
+  auto message = reinterpret_cast<const any_message_t *>(first);
 
   // message type
   if (!is_valid_message_type(message->type()))

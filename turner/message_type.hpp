@@ -31,24 +31,29 @@ public:
 
   static_assert(is_valid_message_type(MessageType), "invalid message type");
 
+  /**
+   * Protocol traits.
+   */
+  using traits_t = ProtocolTraits;
+
 
   /**
    * Protocol that defines this message type.
    */
-  using protocol_t = turner::protocol_t<ProtocolTraits>;
+  using protocol_t = turner::protocol_t<traits_t>;
 
 
   /**
    * Message type numeric value (in host byte order)
    */
-  static inline constexpr uint16_t type = MessageType;
+  static inline constexpr const uint16_t type = MessageType;
 
 
   /**
    * Return true if this \a MessageType is same as \a OtherMessageType
    */
   template <uint16_t OtherMessageType>
-  constexpr bool operator== (message_type_t<ProtocolTraits, OtherMessageType>)
+  constexpr bool operator== (message_type_t<traits_t, OtherMessageType>)
     const noexcept
   {
     return MessageType == OtherMessageType;
@@ -59,7 +64,7 @@ public:
    * Return true if this \a MessageType is not same as \a OtherMessageType
    */
   template <uint16_t OtherMessageType>
-  constexpr bool operator!= (message_type_t<ProtocolTraits, OtherMessageType>)
+  constexpr bool operator!= (message_type_t<traits_t, OtherMessageType>)
     const noexcept
   {
     return MessageType != OtherMessageType;
