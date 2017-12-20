@@ -6,8 +6,6 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
-#include <turner/__bits/helpers.hpp>
-#include <ostream>
 
 
 __turner_begin
@@ -94,57 +92,6 @@ public:
   static constexpr bool is_indication () noexcept
   {
     return ProtocolTraits::is_indication(MessageType);
-  }
-
-
-  /**
-   * Return \a MessageType name (if defined).
-   *
-   * \a MessageType name is defined, if
-   * \c "void operator>> (message_type<ProtocolTraits, MessageType>, const char *&name)"
-   * is provided. On operator invocation, name should be assigned to
-   * \a MessageType name.
-   *
-   * If this operator is not provided, nullptr is returned.
-   */
-  static constexpr const char *name () noexcept
-  {
-    if constexpr (__bits::has_name_getter_v<message_type_t>)
-    {
-      const char *result{};
-      message_type_t{} >> result;
-      return result;
-    }
-    else
-    {
-      return nullptr;
-    }
-  }
-
-
-  /**
-   * Write to \a stream \a MessageType name.
-   *
-   * Depending on which name getter operators are provided, name is formatted
-   * as follows:
-   *  - name(): write returned string
-   *  - if no name() but have protocol_t::name(): write as "ProtocolTraits:type"
-   *  - if no name() and no protocol_t::name(): write as "type"
-   */
-  friend std::ostream &operator<< (std::ostream &stream, message_type_t)
-  {
-    if constexpr (name() != nullptr)
-    {
-      return (stream << name());
-    }
-    else if constexpr (protocol_t::name() != nullptr)
-    {
-      return (stream << protocol_t::name() << ':' << MessageType);
-    }
-    else
-    {
-      return (stream << MessageType);
-    }
   }
 
 

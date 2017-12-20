@@ -187,15 +187,6 @@ inline constexpr const protocol_t protocol;
 
 
 /**
- * Return MSTURN protocol \a name in output argument.
- */
-inline constexpr void operator>> (protocol_t, const char *&name) noexcept
-{
-  name = "MS-TURN";
-}
-
-
-/**
  * Create HMAC-SHA1 calculator for MS-TURN message where MS-Version is absent
  * or less than 3 (for either side).
  *

@@ -37,15 +37,6 @@ inline constexpr const binding_t binding{};
 
 
 /**
- * Return STUN Binding message \a name in output argument.
- */
-inline constexpr void operator>> (binding_t, const char *&name) noexcept
-{
-  name = "binding";
-}
-
-
-/**
  * STUN Binding success response message type
  */
 using binding_success_t = binding_t::success_response_t;
@@ -55,15 +46,6 @@ using binding_success_t = binding_t::success_response_t;
  * Instance of STUN Binding success resposen message type.
  */
 inline constexpr const binding_success_t binding_success;
-
-
-/**
- * Return STUN Binding success response message \a name in output argument.
- */
-inline constexpr void operator>> (binding_success_t, const char *&name) noexcept
-{
-  name = "binding_success";
-}
 
 
 // \}

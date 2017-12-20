@@ -23,61 +23,6 @@ TYPED_TEST(message_type, type)
 }
 
 
-TYPED_TEST(message_type, name)
-{
-  auto t = TypeParam::msg_type();
-
-  const char *expected;
-  t >> expected;
-  EXPECT_STREQ(expected, t.name());
-}
-
-
-TYPED_TEST(message_type, name_unnamed)
-{
-  EXPECT_EQ(nullptr, unused_message_type<TypeParam>.name());
-}
-
-
-TYPED_TEST(message_type, ostream)
-{
-  auto t = TypeParam::msg_type();
-
-  const char *expected;
-  t >> expected;
-
-  std::ostringstream oss;
-  oss << t;
-  EXPECT_EQ(expected, oss.str());
-}
-
-
-TYPED_TEST(message_type, ostream_unnamed_with_named_protocol)
-{
-  std::ostringstream oss, expected;
-
-  expected
-    << TypeParam::name()
-    << ':'
-    << unused_message_type<TypeParam>.type();
-
-  oss << unused_message_type<TypeParam>;
-  EXPECT_EQ(expected.str(), oss.str());
-}
-
-
-TEST(message_type, ostream_unnamed_with_unnamed_protocol)
-{
-  std::ostringstream oss;
-  oss << unused_message_type<unnamed_protocol_t>;
-
-  EXPECT_EQ(
-    std::to_string(unused_message_type<unnamed_protocol_t>.type()),
-    oss.str()
-  );
-}
-
-
 TYPED_TEST(message_type, compare)
 {
   auto t = TypeParam::msg_type();

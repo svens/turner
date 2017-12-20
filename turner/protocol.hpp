@@ -9,11 +9,9 @@
 #include <turner/fwd.hpp>
 #include <turner/error.hpp>
 #include <turner/message.hpp>
-#include <turner/__bits/helpers.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/random.hpp>
 #include <array>
-#include <ostream>
 #include <type_traits>
 
 
@@ -79,30 +77,6 @@ public:
     Attribute::type(),
     Attribute::template rebind_processor_t
   >;
-
-
-  /**
-   * Return protocol name (if defined).
-   *
-   * Protocol name is defined, if \c "void operator>> (ProtocolTraits, const
-   * char *&name)" is provided. On operator invocation, name should be
-   * assigned to protocol name.
-   *
-   * If this operator is not provided, nullptr is returned.
-   */
-  static constexpr const char *name () noexcept
-  {
-    if constexpr (__bits::has_name_getter_v<protocol_t>)
-    {
-      const char *result{};
-      protocol_t{} >> result;
-      return result;
-    }
-    else
-    {
-      return nullptr;
-    }
-  }
 
 
   /**
@@ -266,23 +240,6 @@ public:
     Data &data)
   {
     return build(message_type, data, sal::throw_on_error("protocol::build"));
-  }
-
-
-  /**
-   * Write to \a stream protocol name. If name is not defined, nothing is
-   * written.
-   */
-  friend std::ostream &operator<< (std::ostream &stream, protocol_t)
-  {
-    if constexpr (name() != nullptr)
-    {
-      return (stream << name());
-    }
-    else
-    {
-      return stream;
-    }
   }
 
 

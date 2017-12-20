@@ -168,15 +168,6 @@ inline constexpr const protocol_t protocol;
 
 
 /**
- * Return STUN protocol \a name in output argument.
- */
-inline constexpr void operator>> (protocol_t, const char *&name) noexcept
-{
-  name = "STUN";
-}
-
-
-/**
  * Create HMAC-SHA1 calculator for short term credentials.
  * \see https://tools.ietf.org/html/rfc5389#section-15.4
  *

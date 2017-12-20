@@ -41,15 +41,6 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 inline constexpr const protocol_t protocol{};
 
 
-/**
- * Return TURN protocol \a name in output argument.
- */
-inline constexpr void operator>> (protocol_t, const char *&name) noexcept
-{
-  name = "TURN";
-}
-
-
 } // namespace turn
 
 

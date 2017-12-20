@@ -10,34 +10,6 @@ using protocol = turner_test::with_protocol<Protocol>;
 TYPED_TEST_CASE(protocol, protocol_types);
 
 
-TYPED_TEST(protocol, name)
-{
-  EXPECT_STREQ(TypeParam::expected_name, TypeParam::name());
-}
-
-
-TEST(protocol, name_unnamed)
-{
-  EXPECT_EQ(nullptr, unnamed_protocol.name());
-}
-
-
-TYPED_TEST(protocol, ostream)
-{
-  std::ostringstream oss;
-  oss << TypeParam();
-  EXPECT_EQ(TypeParam::expected_name, oss.str());
-}
-
-
-TEST(protocol, ostream_unnamed)
-{
-  std::ostringstream oss;
-  oss << unnamed_protocol;
-  EXPECT_EQ("", oss.str());
-}
-
-
 TYPED_TEST(protocol, parse)
 {
   auto data = TypeParam::msg_data();
