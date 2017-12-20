@@ -91,7 +91,7 @@ TEST_F(msturn, finish_with_integrity)
   // instantiate writer with data area
   std::vector<uint8_t> data(expected.size(), 0);
   std::error_code error;
-  auto writer = turner::msturn::protocol.build(turner::msturn::allocate,
+  auto writer = turner::msturn::protocol_t::build(turner::msturn::allocate,
     data.begin(), data.end()
   );
 
@@ -138,7 +138,7 @@ TEST_F(msturn, finish_with_integrity_v3)
   // instantiate writer with data area
   std::vector<uint8_t> data(expected.size(), 0);
   std::error_code error;
-  auto writer = turner::msturn::protocol.build(turner::msturn::allocate,
+  auto writer = turner::msturn::protocol_t::build(turner::msturn::allocate,
     data.begin(), data.end()
   );
 

@@ -117,9 +117,24 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
- * STUN protocol instance.
+ * \copydoc turner::protocol_t::parse(It,It,std::error_code&);
  */
-inline constexpr const protocol_t protocol;
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(first, last, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(It,It);
+ */
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last)
+{
+  return protocol_t::parse(first, last);
+}
 
 
 /**

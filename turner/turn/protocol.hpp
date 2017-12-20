@@ -16,8 +16,9 @@ __turner_begin
 namespace turn {
 
 
-// Pull STUN long term credentials key calculator into TURN namespace.
+// Pull STUN functions into turn namespace
 using stun::make_integrity_calculator;
+using stun::parse;
 
 
 /**
@@ -33,12 +34,6 @@ struct protocol_traits_t
  * Structure type describing TURN protocol message layout.
  */
 using protocol_t = turner::protocol_t<protocol_traits_t>;
-
-
-/**
- * TURN protocol instance.
- */
-inline constexpr const protocol_t protocol{};
 
 
 } // namespace turn

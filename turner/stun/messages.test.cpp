@@ -62,7 +62,7 @@ const std::array<uint8_t, 108> sample_request =
 
 TEST_F(stun, rfc5769_sample_request)
 {
-  auto msg = turner::stun::protocol.parse(
+  auto msg = turner::stun::parse(
     sample_request.begin(), sample_request.end()
   );
 
@@ -103,7 +103,7 @@ TEST_F(stun, rfc5769_sample_ipv4_response)
   }};
 
   // sample_request
-  auto &binding = turner::stun::protocol.parse(
+  auto &binding = turner::stun::parse(
     sample_request.begin(), sample_request.end()
   )->as(turner::stun::binding);
 
@@ -161,7 +161,7 @@ TEST_F(stun, rfc5769_sample_ipv6_response)
   }};
 
   // sample_request
-  auto &binding = turner::stun::protocol.parse(
+  auto &binding = turner::stun::parse(
     sample_request.begin(), sample_request.end()
   )->as(turner::stun::binding);
 
@@ -233,7 +233,7 @@ TEST_F(stun, rfc5769_sample_request_with_long_term_authentication)
   // instantiate writer with data area
   std::array<uint8_t, expected.max_size()> data;
   std::error_code error;
-  auto writer = turner::stun::protocol.build(turner::stun::binding,
+  auto writer = turner::stun::protocol_t::build(turner::stun::binding,
     data.begin(), data.end()
   );
 
