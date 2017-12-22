@@ -138,6 +138,27 @@ inline const any_message_t<protocol_traits_t> *parse (It first, It last)
 
 
 /**
+ * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(data, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data)
+{
+  return protocol_t::parse(data);
+}
+
+
+/**
  * Create HMAC-SHA1 calculator for short term credentials.
  * \see https://tools.ietf.org/html/rfc5389#section-15.4
  *

@@ -18,7 +18,6 @@ namespace turn {
 
 // Pull STUN functions into turn namespace
 using stun::make_integrity_calculator;
-using stun::parse;
 
 
 /**
@@ -34,6 +33,48 @@ struct protocol_traits_t
  * Structure type describing TURN protocol message layout.
  */
 using protocol_t = turner::protocol_t<protocol_traits_t>;
+
+
+/**
+ * \copydoc turner::protocol_t::parse(It,It,std::error_code&);
+ */
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(first, last, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(It,It);
+ */
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last)
+{
+  return protocol_t::parse(first, last);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(data, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data)
+{
+  return protocol_t::parse(data);
+}
 
 
 } // namespace turn

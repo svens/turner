@@ -232,7 +232,6 @@ TEST_F(stun, rfc5769_sample_request_with_long_term_authentication)
 
   // instantiate writer with data area
   std::array<uint8_t, expected.max_size()> data;
-  std::error_code error;
   auto writer = turner::stun::binding.make(data);
 
   // instead of building message, copy expected without MESSAGE-INTEGRITY

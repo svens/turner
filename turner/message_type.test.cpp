@@ -19,8 +19,12 @@ TYPED_TEST(message_type, type)
 TYPED_TEST(message_type, compare)
 {
   auto t = TypeParam::msg_type();
+
   EXPECT_EQ(TypeParam::msg_type(), t);
   EXPECT_EQ(t, TypeParam::msg_type());
+
+  EXPECT_NE(TypeParam::msg_success_type(), t);
+  EXPECT_NE(t, TypeParam::msg_success_type());
 }
 
 
@@ -65,7 +69,6 @@ TYPED_TEST(message_type, make_range)
   null_transaction_id.fill(0);
   EXPECT_NE(null_transaction_id, msg->transaction_id());
 
-  // with exception handling
   EXPECT_NO_THROW(
     TypeParam::msg_type().make(data.begin(), data.end())
   );
@@ -84,6 +87,11 @@ TYPED_TEST(message_type, make_range_not_enough_room_header)
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_TRUE(!writer);
   EXPECT_EQ(original, data);
+
+  EXPECT_THROW(
+    TypeParam::msg_type().make(data.begin(), data.end()),
+    std::system_error
+  );
 }
 
 
@@ -132,6 +140,10 @@ TYPED_TEST(message_type, make_data)
   std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
   null_transaction_id.fill(0);
   EXPECT_NE(null_transaction_id, msg->transaction_id());
+
+  EXPECT_NO_THROW(
+    TypeParam::msg_type().make(data)
+  );
 }
 
 
@@ -147,6 +159,11 @@ TYPED_TEST(message_type, make_data_not_enough_room_header)
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_TRUE(!writer);
   EXPECT_EQ(original, data);
+
+  EXPECT_THROW(
+    TypeParam::msg_type().make(data),
+    std::system_error
+  );
 }
 
 

@@ -9,8 +9,8 @@
 #include <turner/error.hpp>
 #include <turner/message.hpp>
 #include <turner/message_type.hpp>
-#include <sal/byte_order.hpp>
 #include <array>
+#include <iterator>
 #include <type_traits>
 
 
@@ -147,9 +147,46 @@ public:
   template <typename It>
   static const any_message_t *parse (It first, It last)
   {
-    return parse(first, last,
-      sal::throw_on_error("protocol::parse")
-    );
+    return parse(first, last, sal::throw_on_error("protocol::parse"));
+  }
+
+
+  /**
+   * Return pointer to message instance wrapping raw network format in
+   * \a data.
+   *
+   * Returned pointed object is not actually instantiated but overlayed onto
+   * specified memory occupied by \a data. Each time any of any_message_t
+   * method is invocated, it parses fields relative to \a this.
+   *
+   * If during call to parse() message validation fails, nullptr is
+   * returned and error is set to code describing failure.
+   */
+  template <typename Data>
+  static const any_message_t *parse (const Data &data, std::error_code &error)
+    noexcept
+  {
+    using std::cbegin;
+    using std::cend;
+    return parse(cbegin(data), cend(data), error);
+  }
+
+
+  /**
+   * Return pointer to message instance wrapping raw network format in
+   * \a data.
+   *
+   * Returned pointed object is not actually instantiated but overlayed onto
+   * specified memory occupied by \a data. Each time any of any_message_t
+   * method is invocated, it parses fields relative to \a this.
+   *
+   * \throws std::system_error if during call to parse() message
+   * validation fails.
+   */
+  template <typename Data>
+  static const any_message_t *parse (const Data &data)
+  {
+    return parse(data, sal::throw_on_error("protocol::parse"));
   }
 
 

@@ -91,7 +91,8 @@ TEST_F(msturn, finish_with_integrity)
   // instantiate writer with data area
   std::vector<uint8_t> data(expected.size(), 0);
   std::error_code error;
-  auto writer = turner::msturn::allocate.make(data);
+  auto writer = turner::msturn::allocate.make(data, error);
+  ASSERT_TRUE(!error) << error.message();
 
   // instead of actually building message, copy expected message without
   // Message Integrity
@@ -136,7 +137,8 @@ TEST_F(msturn, finish_with_integrity_v3)
   // instantiate writer with data area
   std::vector<uint8_t> data(expected.size(), 0);
   std::error_code error;
-  auto writer = turner::msturn::allocate.make(data);
+  auto writer = turner::msturn::allocate.make(data, error);
+  ASSERT_TRUE(!error) << error.message();
 
   // instead of actually building message, copy expected message without
   // Message Integrity

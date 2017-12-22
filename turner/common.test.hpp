@@ -303,14 +303,18 @@ auto wire_data (Protocol, const char (&data)[N])
 template <typename Protocol, typename Data>
 inline auto &parse (Protocol, const Data &d)
 {
-  return Protocol::parse(d.begin(), d.end())->as(Protocol::msg_type());
+  return Protocol::parse(d, sal::throw_on_error("test::parse"))
+    ->as(Protocol::msg_type())
+  ;
 }
 
 
 template <typename Protocol, typename Data>
 inline auto build (Protocol, Data &d)
 {
-  return Protocol::msg_type().make(d);
+  return Protocol::msg_type()
+    .make(d, sal::throw_on_error("test::build"))
+  ;
 }
 
 

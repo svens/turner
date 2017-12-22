@@ -152,6 +152,27 @@ inline const any_message_t<protocol_traits_t> *parse (It first, It last)
 
 
 /**
+ * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(data, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data)
+{
+  return protocol_t::parse(data);
+}
+
+
+/**
  * Create HMAC-SHA1 calculator for MS-TURN message where MS-Version is absent
  * or less than 3 (for either side).
  *

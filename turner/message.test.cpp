@@ -233,6 +233,10 @@ TYPED_TEST(any_message, has_valid_integrity)
   auto integrity_calculator = TypeParam::msg_hmac();
   EXPECT_TRUE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_TRUE(!error) << error.message();
+
+  EXPECT_NO_THROW(
+    any_msg->has_valid_integrity(integrity_calculator)
+  );
 }
 
 
@@ -246,6 +250,11 @@ TYPED_TEST(any_message, has_valid_integrity_attribute_not_found)
   auto integrity_calculator = TypeParam::msg_hmac();
   EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_EQ(turner::errc::attribute_not_found, error);
+
+  EXPECT_THROW(
+    any_msg->has_valid_integrity(integrity_calculator),
+    std::system_error
+  );
 }
 
 
@@ -259,6 +268,11 @@ TYPED_TEST(any_message, has_valid_integrity_unexpected_attribute_length)
   sal::crypto::hmac_t<sal::crypto::md5> integrity_calculator;
   EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+
+  EXPECT_THROW(
+    any_msg->has_valid_integrity(integrity_calculator),
+    std::system_error
+  );
 }
 
 
@@ -273,6 +287,11 @@ TYPED_TEST(any_message, has_valid_integrity_unexpected_value)
   auto integrity_calculator = TypeParam::msg_hmac();
   EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
+
+  EXPECT_THROW(
+    any_msg->has_valid_integrity(integrity_calculator),
+    std::system_error
+  );
 }
 
 
