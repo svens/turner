@@ -144,11 +144,9 @@ public:
    */
   template <uint16_t MessageType>
   const message_reader_t<traits_t, MessageType> *try_as (
-    message_type_t<traits_t, MessageType>) const noexcept
+    message_type_t<traits_t, MessageType> message_type) const noexcept
   {
-    return type() == MessageType
-      ? as_ptr<message_reader_t<traits_t, MessageType>>()
-      : nullptr;
+    return message_type(this);
   }
 
 
@@ -160,11 +158,11 @@ public:
    */
   template <uint16_t MessageType>
   const message_reader_t<traits_t, MessageType> &as (
-    message_type_t<traits_t, MessageType>) const
+    message_type_t<traits_t, MessageType> message_type) const
   {
-    if (type() == MessageType)
+    if (auto msg = message_type(this))
     {
-      return *as_ptr<message_reader_t<traits_t, MessageType>>();
+      return *msg;
     }
     unexpected_message_type("any_message::as");
   }
@@ -205,6 +203,15 @@ public:
 protected:
 
   /// \cond internal
+  template <typename T>
+  const T *as_ptr () const noexcept
+  {
+    return reinterpret_cast<const T *>(this);
+  }
+  /// \endcond
+
+
+private:
 
   any_message_t () = delete;
   any_message_t (const any_message_t &) = delete;
@@ -219,14 +226,6 @@ protected:
       msg
     );
   }
-
-  template <typename T>
-  const T *as_ptr () const noexcept
-  {
-    return reinterpret_cast<const T *>(this);
-  }
-
-  /// \endcond
 };
 
 
@@ -267,9 +266,10 @@ public:
     attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto payload = this->template as_ptr<uint8_t>() + header_size;
+    auto payload = this->template as_ptr<uint8_t>()
+      + protocol_t::header_and_cookie_size();
     if (auto attribute = __bits::find_attribute(payload,
-        payload + this->length() - min_length,
+        payload + this->length() - protocol_t::min_payload_length(),
         AttributeType,
         traits_t::padding_size,
         error))
@@ -433,10 +433,6 @@ public:
 
 private:
 
-  static inline constexpr size_t header_size = protocol_t::header_and_cookie_size();
-  static inline constexpr uint16_t min_length = protocol_t::min_payload_length();
-
-
   template <uint16_t ResponseMessageType, typename It>
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
     It first, It last, std::error_code &error) const noexcept
@@ -446,19 +442,19 @@ private:
     );
 
     auto begin = sal::to_ptr(first), end = sal::to_end_ptr(first, last);
-    if (begin + header_size <= end)
+    if (begin + protocol_t::header_and_cookie_size() <= end)
     {
       auto src = this->template as_ptr<uint8_t>();
       if (src != begin)
       {
-        std::memmove(begin, src, header_size);
+        std::memmove(begin, src, protocol_t::header_and_cookie_size());
       }
 
       reinterpret_cast<uint16_t *>(begin)[0] =
         sal::native_to_network_byte_order(ResponseMessageType);
 
       reinterpret_cast<uint16_t *>(begin)[1] =
-        sal::native_to_network_byte_order(min_length);
+        sal::native_to_network_byte_order(protocol_t::min_payload_length());
 
       error.clear();
       return { begin, end };
@@ -649,7 +645,7 @@ private:
     , last_(last)
   {}
 
-  friend class turner::protocol_t<traits_t>;
+  friend class message_type_t<traits_t, MessageType>;
   friend class message_reader_t<traits_t, MessageType & ~0b0000'0001'0001'0000>;
 };
 

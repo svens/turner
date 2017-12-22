@@ -10,7 +10,6 @@
 #include <turner/message.hpp>
 #include <turner/message_type.hpp>
 #include <sal/byte_order.hpp>
-#include <sal/crypto/random.hpp>
 #include <array>
 #include <type_traits>
 
@@ -154,95 +153,6 @@ public:
   }
 
 
-  /**
-   * Return message writer object for \a MessageType. Returned object is
-   * allowed to write attributes into memory area [\a first, \a last).
-   *
-   * This method builds immediately message header but it does not add any
-   * attributes. Use returned object to add attributes and finalize message.
-   *
-   * On error, set \a error and return undefined message_writer_t object.
-   */
-  template <uint16_t MessageType, typename It>
-  static message_writer_t<traits_t, MessageType> build (
-    message_type_t<MessageType>,
-    It first,
-    It last,
-    std::error_code &error) noexcept
-  {
-    static_assert(traits_t::is_request(MessageType) || traits_t::is_indication(MessageType),
-      "expected request or indication message type"
-    );
-    auto begin = sal::to_ptr(first);
-    auto end = sal::to_end_ptr(first, last);
-    if (build_(MessageType, begin, end, error))
-    {
-      return {begin, end};
-    }
-    return {nullptr, nullptr};
-  }
-
-
-  /**
-   * Return message writer object for \a MessageType. Returned object is
-   * allowed to write attributes into memory area [\a first, \a last).
-   *
-   * This method builds immediately message header but it does not add any
-   * attributes. Use returned object to add attributes and finalize message.
-   *
-   * \throws std::system_error on message header building failure.
-   */
-  template <uint16_t MessageType, typename It>
-  static message_writer_t<traits_t, MessageType> build (
-    message_type_t<MessageType> message_type,
-    It first,
-    It last)
-  {
-    return build(message_type, first, last,
-      sal::throw_on_error("protocol::build")
-    );
-  }
-
-
-  /**
-   * Return message writer object for \a MessageType. Returned object is
-   * allowed to write attributes into memory area \a data.
-   *
-   * This method builds immediately message header but it does not add any
-   * attributes. Use returned object to add attributes and finalize message.
-   *
-   * On error, set \a error and return undefined message_writer_t object.
-   */
-  template <uint16_t MessageType, typename Data>
-  static message_writer_t<traits_t, MessageType> build (
-    message_type_t<MessageType> message_type,
-    Data &data,
-    std::error_code &error) noexcept
-  {
-    using std::begin;
-    using std::end;
-    return build(message_type, begin(data), end(data), error);
-  }
-
-
-  /**
-   * Return message writer object for \a MessageType. Returned object is
-   * allowed to write attributes into memory area \a data.
-   *
-   * This method builds immediately message header but it does not add any
-   * attributes. Use returned object to add attributes and finalize message.
-   *
-   * \throws std::system_error on message header building failure.
-   */
-  template <uint16_t MessageType, typename Data>
-  static message_writer_t<traits_t, MessageType> build (
-    message_type_t<MessageType> message_type,
-    Data &data)
-  {
-    return build(message_type, data, sal::throw_on_error("protocol::build"));
-  }
-
-
 private:
 
   static_assert(std::is_trivially_destructible_v<any_message_t>);
@@ -255,13 +165,6 @@ private:
   static const any_message_t *parse_ (
     const uint8_t *first,
     const uint8_t *last,
-    std::error_code &error
-  ) noexcept;
-
-  static bool build_ (
-    uint16_t message_type,
-    uint8_t *first,
-    uint8_t *last,
     std::error_code &error
   ) noexcept;
 };
@@ -314,39 +217,6 @@ auto protocol_t<ProtocolTraits>::parse_ (
 
   error.clear();
   return message;
-}
-
-
-template <typename ProtocolTraits>
-bool protocol_t<ProtocolTraits>::build_ (uint16_t message_type,
-  uint8_t *first,
-  uint8_t *last,
-  std::error_code &error) noexcept
-{
-  if (first + header_and_cookie_size() <= last)
-  {
-    // message type
-    reinterpret_cast<uint16_t *>(first)[0] =
-      sal::native_to_network_byte_order(message_type);
-
-    // message length
-    reinterpret_cast<uint16_t *>(first)[1] =
-      sal::native_to_network_byte_order(min_payload_length());
-
-    // cookie
-    *reinterpret_cast<cookie_t *>(first + traits_t::cookie_offset) =
-      traits_t::cookie;
-
-    // transaction id
-    auto p = first + traits_t::transaction_id_offset;
-    sal::crypto::random(p, p + traits_t::transaction_id_size);
-
-    error.clear();
-    return true;
-  }
-
-  error = make_error_code(errc::not_enough_room);
-  return false;
 }
 
 

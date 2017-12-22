@@ -6,6 +6,9 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <sal/crypto/random.hpp>
+#include <sal/memory.hpp>
+#include <iterator>
 
 
 __turner_begin
@@ -30,6 +33,7 @@ class message_type_t
 public:
 
   static_assert(is_valid_message_type(MessageType), "invalid message type");
+
 
   /**
    * Protocol traits.
@@ -68,6 +72,112 @@ public:
     const noexcept
   {
     return MessageType != OtherMessageType;
+  }
+
+
+  /**
+   * Try to cast generic \a message to concrete \a type message.
+   * \returns pointer to concrete message on success or nullptr on failure.
+   */
+  const message_reader_t<traits_t, MessageType> *operator() (
+    const any_message_t<traits_t> *message) const noexcept
+  {
+    return message->type() == type
+      ? reinterpret_cast<const message_reader_t<traits_t, type> *>(message)
+      : nullptr;
+  }
+
+
+  /**
+   * Return message writer object for this message type. Returned object is
+   * allowed to write attributes into memory area [\a first, \a last).
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes. Use returned object to add attributes and finalize message.
+   *
+   * On error, set \a error and return undefined message_writer_t object.
+   */
+  template <typename It>
+  message_writer_t<traits_t, MessageType> make (It first, It last,
+    std::error_code &error) const noexcept
+  {
+    auto begin = sal::to_ptr(first);
+    auto end = sal::to_end_ptr(first, last);
+
+    if (begin + protocol_t::header_and_cookie_size() <= end)
+    {
+      reinterpret_cast<uint16_t *>(begin)[0] =
+        sal::native_to_network_byte_order(MessageType);
+
+      reinterpret_cast<uint16_t *>(begin)[1] =
+        sal::native_to_network_byte_order(protocol_t::min_payload_length());
+
+      *reinterpret_cast<typename protocol_t::cookie_t *>(
+        begin + traits_t::cookie_offset
+      ) = traits_t::cookie;
+
+      sal::crypto::random(
+        begin + traits_t::transaction_id_offset,
+        begin + traits_t::transaction_id_offset + traits_t::transaction_id_size
+      );
+
+      error.clear();
+      return {begin, end};
+    }
+
+    error = make_error_code(errc::not_enough_room);
+    return {nullptr, nullptr};
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area [\a first, \a last).
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes. Use returned object to add attributes and finalize message.
+   *
+   * \throws std::system_error on message header building failure.
+   */
+  template <typename It>
+  message_writer_t<traits_t, MessageType> make (It first, It last) const
+  {
+    return make(first, last, sal::throw_on_error("message_type::make"));
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area \a data.
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes. Use returned object to add attributes and finalize message.
+   *
+   * On error, set \a error and return undefined message_writer_t object.
+   */
+  template <typename Data>
+  message_writer_t<traits_t, MessageType> make (Data &data, std::error_code &error)
+    const noexcept
+  {
+    using std::begin;
+    using std::end;
+    return make(begin(data), end(data), error);
+  }
+
+
+  /**
+   * Return message writer object for \a MessageType. Returned object is
+   * allowed to write attributes into memory area \a data.
+   *
+   * This method builds immediately message header but it does not add any
+   * attributes. Use returned object to add attributes and finalize message.
+   *
+   * \throws std::system_error on message header building failure.
+   */
+  template <typename Data>
+  message_writer_t<traits_t, MessageType> make (Data &data) const
+  {
+    return make(data, sal::throw_on_error("message_type::make"));
   }
 };
 

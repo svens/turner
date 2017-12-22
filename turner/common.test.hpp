@@ -310,7 +310,7 @@ inline auto &parse (Protocol, const Data &d)
 template <typename Protocol, typename Data>
 inline auto build (Protocol, Data &d)
 {
-  return Protocol::build(Protocol::msg_type(), d.begin(), d.end());
+  return Protocol::msg_type().make(d);
 }
 
 
