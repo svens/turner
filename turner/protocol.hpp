@@ -121,10 +121,13 @@ public:
   static const any_message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
-    if (first == last)
+    if constexpr (is_msvc_compiler && is_debug_build)
     {
-      error = make_error_code(errc::insufficient_header_data);
-      return {};
+      if (first == last)
+      {
+        error = make_error_code(errc::insufficient_header_data);
+        return {};
+      }
     }
 
     auto begin = sal::to_ptr(first);

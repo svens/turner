@@ -101,10 +101,13 @@ public:
   message_writer_t<traits_t, MessageType> make (It first, It last,
     std::error_code &error) const noexcept
   {
-    if (first == last)
+    if constexpr (is_msvc_compiler && is_debug_build)
     {
-      error = make_error_code(errc::not_enough_room);
-      return {nullptr, nullptr};
+      if (first == last)
+      {
+        error = make_error_code(errc::not_enough_room);
+        return {nullptr, nullptr};
+      }
     }
 
     auto begin = sal::to_ptr(first);
