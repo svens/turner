@@ -72,7 +72,7 @@ void parse_valid_with_error (benchmark::State &state)
   auto data = raw_message<Protocol>;
 
   std::error_code error;
-  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  auto msg = Protocol::parse(data, error);
   if (error)
   {
     state.SkipWithError("unexpected error");
@@ -80,7 +80,7 @@ void parse_valid_with_error (benchmark::State &state)
 
   for (auto _: state)
   {
-    msg = Protocol::parse(data.cbegin(), data.cend(), error);
+    msg = Protocol::parse(data, error);
     benchmark::DoNotOptimize(msg);
   }
 
@@ -100,7 +100,7 @@ void parse_valid_with_exception (benchmark::State &state)
   auto data = raw_message<Protocol>;
 
   std::error_code error;
-  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  auto msg = Protocol::parse(data, error);
   if (error)
   {
     state.SkipWithError("unexpected error");
@@ -108,7 +108,7 @@ void parse_valid_with_exception (benchmark::State &state)
 
   for (auto _: state)
   {
-    msg = Protocol::parse(data.cbegin(), data.cend());
+    msg = Protocol::parse(data);
     benchmark::DoNotOptimize(msg);
   }
 
@@ -129,7 +129,7 @@ void parse_invalid_with_error (benchmark::State &state)
   data[Protocol::traits_t::cookie_offset] ^= 1;
 
   std::error_code error;
-  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  auto msg = Protocol::parse(data, error);
   if (!error)
   {
     state.SkipWithError("expected error");
@@ -138,7 +138,7 @@ void parse_invalid_with_error (benchmark::State &state)
 
   for (auto _: state)
   {
-    msg = Protocol::parse(data.cbegin(), data.cend(), error);
+    msg = Protocol::parse(data, error);
     benchmark::DoNotOptimize(msg);
   }
 
@@ -159,7 +159,7 @@ void parse_invalid_with_exception (benchmark::State &state)
   data[Protocol::traits_t::cookie_offset] ^= 1;
 
   std::error_code error;
-  auto msg = Protocol::parse(data.cbegin(), data.cend(), error);
+  auto msg = Protocol::parse(data, error);
   if (!error)
   {
     state.SkipWithError("expected error");
@@ -170,7 +170,7 @@ void parse_invalid_with_exception (benchmark::State &state)
   {
     try
     {
-      msg = Protocol::parse(data.cbegin(), data.cend());
+      msg = Protocol::parse(data);
       benchmark::DoNotOptimize(msg);
     }
     catch (...)
