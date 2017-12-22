@@ -121,15 +121,49 @@ public:
   static const any_message_t *parse (It first, It last,
     std::error_code &error) noexcept
   {
-    if constexpr (is_msvc_compiler && is_debug_build)
+    if (first == last)
     {
-      if (first == last)
+      error = make_error_code(errc::insufficient_header_data);
+      return {};
+    }
+
+    auto begin = sal::to_ptr(first);
+    auto end = sal::to_end_ptr(first, last);
+    if (begin + header_and_cookie_size() > end)
+    {
+      error = make_error_code(errc::insufficient_header_data);
+      return {};
+    }
+
+    auto message = reinterpret_cast<const any_message_t *>(begin);
+    if (!is_valid_message_type(message->type()))
+    {
+      error = make_error_code(errc::invalid_message_type);
+      return {};
+    }
+
+    if constexpr (traits_t::padding_size > 1)
+    {
+      if (message->length() % traits_t::padding_size != 0)
       {
-        error = make_error_code(errc::insufficient_header_data);
+        error = make_error_code(errc::invalid_message_length);
         return {};
       }
     }
-    return parse_(sal::to_ptr(first), sal::to_end_ptr(first, last), error);
+    if (begin + traits_t::header_size + message->length() > end)
+    {
+      error = make_error_code(errc::insufficient_payload_data);
+      return {};
+    }
+
+    if (message->cookie() != traits_t::cookie)
+    {
+      error = make_error_code(errc::invalid_message_cookie);
+      return {};
+    }
+
+    error.clear();
+    return message;
   }
 
 
@@ -198,63 +232,7 @@ private:
     (traits_t::padding_size & (traits_t::padding_size - 1)) == 0,
     "expected value of traits_t::padding_size to be power of 2"
   );
-
-  static const any_message_t *parse_ (
-    const uint8_t *first,
-    const uint8_t *last,
-    std::error_code &error
-  ) noexcept;
 };
-
-
-template <typename ProtocolTraits>
-auto protocol_t<ProtocolTraits>::parse_ (
-  const uint8_t *first,
-  const uint8_t *last,
-  std::error_code &error) noexcept -> const any_message_t *
-{
-  // validate arguments
-  if (first + header_and_cookie_size() > last)
-  {
-    error = make_error_code(errc::insufficient_header_data);
-    return {};
-  }
-
-  // passed initial checks, overlay any_message_t on top of specified area
-  auto message = reinterpret_cast<const any_message_t *>(first);
-
-  // message type
-  if (!is_valid_message_type(message->type()))
-  {
-    error = make_error_code(errc::invalid_message_type);
-    return {};
-  }
-
-  // message length
-  if constexpr (traits_t::padding_size > 1)
-  {
-    if (message->length() % traits_t::padding_size != 0)
-    {
-      error = make_error_code(errc::invalid_message_length);
-      return {};
-    }
-  }
-  if (first + traits_t::header_size + message->length() > last)
-  {
-    error = make_error_code(errc::insufficient_payload_data);
-    return {};
-  }
-
-  // cookie
-  if (message->cookie() != traits_t::cookie)
-  {
-    error = make_error_code(errc::invalid_message_cookie);
-    return {};
-  }
-
-  error.clear();
-  return message;
-}
 
 
 __turner_end

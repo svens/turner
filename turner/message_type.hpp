@@ -101,9 +101,14 @@ public:
   message_writer_t<traits_t, MessageType> make (It first, It last,
     std::error_code &error) const noexcept
   {
+    if (first == last)
+    {
+      error = make_error_code(errc::not_enough_room);
+      return {nullptr, nullptr};
+    }
+
     auto begin = sal::to_ptr(first);
     auto end = sal::to_end_ptr(first, last);
-
     if (begin + protocol_t::header_and_cookie_size() <= end)
     {
       reinterpret_cast<uint16_t *>(begin)[0] =

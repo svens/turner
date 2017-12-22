@@ -75,6 +75,17 @@ TYPED_TEST(message_type, make_range)
 }
 
 
+TYPED_TEST(message_type, make_empty_range)
+{
+  std::vector<uint8_t> data;
+
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(!writer);
+}
+
+
 TYPED_TEST(message_type, make_range_not_enough_room_header)
 {
   std::array<uint8_t, TypeParam::header_and_cookie_size() - 1> data;
