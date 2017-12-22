@@ -685,11 +685,10 @@ inline constexpr const mturn_session_id_t mturn_session_id;
 
 
 template <typename ProtocolTraits>
-typename xor_address_attribute_processor_t<ProtocolTraits>::value_t
-  xor_address_attribute_processor_t<ProtocolTraits>::read (
-    const any_message_t<ProtocolTraits> &message,
-    const any_attribute_t &attribute,
-    std::error_code &error) noexcept
+auto xor_address_attribute_processor_t<ProtocolTraits>::read (
+  const any_message_t<ProtocolTraits> &message,
+  const any_attribute_t &attribute,
+  std::error_code &error) noexcept -> value_t
 {
   auto [ address, port ] = address_attribute_processor_t<ProtocolTraits>::read(
     message, attribute, error

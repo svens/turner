@@ -268,6 +268,7 @@ public:
   {
     auto payload = this->template as_ptr<uint8_t>()
       + protocol_t::header_and_cookie_size();
+
     if (auto attribute = __bits::find_attribute(payload,
         payload + this->length() - protocol_t::min_payload_length(),
         AttributeType,
@@ -276,6 +277,7 @@ public:
     {
       return AttributeProcessor<traits_t>::read(*this, *attribute, error);
     }
+
     return {};
   }
 
@@ -718,11 +720,10 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 
 template <typename ProtocolTraits, uint16_t MessageType>
 template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
-message_writer_t<ProtocolTraits, MessageType> &
-  message_writer_t<ProtocolTraits, MessageType>::write (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    const typename AttributeProcessor<ProtocolTraits>::value_t &value,
-    std::error_code &error) noexcept
+auto message_writer_t<ProtocolTraits, MessageType>::write (
+  attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+  const typename AttributeProcessor<ProtocolTraits>::value_t &value,
+  std::error_code &error) noexcept -> message_writer_t &
 {
   auto &message = *reinterpret_cast<any_message_t<traits_t> *>(first_);
   auto message_size = message.length();
@@ -742,24 +743,19 @@ message_writer_t<ProtocolTraits, MessageType> &
     {
       constexpr const auto r = traits_t::padding_size - 1;
       message_size = (message_size + r) & ~r;
+      if (first_ + traits_t::header_size + message_size > last_)
+      {
+        error = make_error_code(errc::not_enough_room);
+        return *this;
+      }
     }
-    if (first_ + traits_t::header_size + message_size > last_)
-    {
-      error = make_error_code(errc::not_enough_room);
-      return *this;
-    }
 
-    // attribute type
-    reinterpret_cast<uint16_t *>(attribute)[0] =
-      sal::native_to_network_byte_order(AttributeType);
-
-    // attribute length
-    reinterpret_cast<uint16_t *>(attribute)[1] =
-      sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
-
-    // message length
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(message_size);
+    reinterpret_cast<uint16_t *>(attribute)[0] =
+      sal::native_to_network_byte_order(AttributeType);
+    reinterpret_cast<uint16_t *>(attribute)[1] =
+      sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
   }
 
   return *this;
@@ -768,10 +764,9 @@ message_writer_t<ProtocolTraits, MessageType> &
 
 template <typename ProtocolTraits, uint16_t MessageType>
 template <typename Digest>
-std::pair<const uint8_t *, const uint8_t *>
-  message_writer_t<ProtocolTraits, MessageType>::finish (
-    sal::crypto::hmac_t<Digest> &integrity_calculator,
-    std::error_code &error) noexcept
+auto message_writer_t<ProtocolTraits, MessageType>::finish (
+  sal::crypto::hmac_t<Digest> &integrity_calculator,
+  std::error_code &error) noexcept -> std::pair<const uint8_t *, const uint8_t *>
 {
   uint16_t digest_size = integrity_calculator.digest_size;
   uint16_t original_length = length();
@@ -779,18 +774,17 @@ std::pair<const uint8_t *, const uint8_t *>
 
   if (first_ + new_length + traits_t::header_size <= last_)
   {
-    // update message length
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(new_length);
 
-    // add MESSAGE-INTEGRITY type & length
+    // integrity type & length
     auto attribute = first_ + traits_t::header_size + original_length;
     reinterpret_cast<uint16_t *>(attribute)[0] =
       sal::native_to_network_byte_order(traits_t::message_integrity);
     reinterpret_cast<uint16_t *>(attribute)[1] =
       sal::native_to_network_byte_order(digest_size);
 
-    // add MESSAGE-INTEGRITY value
+    // integrity value
     integrity_calculator.update(first_, attribute);
     if constexpr (traits_t::message_integrity_padding > 1)
     {
