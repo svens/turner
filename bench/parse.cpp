@@ -1,4 +1,5 @@
 #include "bench.hpp"
+#include <turner/msturn/msturn.hpp>
 #include <turner/stun/stun.hpp>
 #include <turner/turn/turn.hpp>
 #include <vector>
@@ -8,6 +9,35 @@ namespace {
 
 template <typename Protocol>
 constexpr const auto raw_message = false;
+
+
+// MSTURN {{{1
+
+
+using MSTURN = turner::msturn::protocol_t;
+
+template <>
+const std::vector<uint8_t> raw_message<MSTURN> =
+{
+  // header
+  0x00, 0x03, 0x00, 0x20,     // Type (Allocation), Length
+  0x00, 0x01, 0x02, 0x03,     // Transaction ID
+  0x04, 0x05, 0x06, 0x07,
+  0x08, 0x09, 0x0a, 0x0b,
+  0x0c, 0x0d, 0x0e, 0x0f,
+
+  // Magic Cookie
+  0x00, 0x0f, 0x00, 0x04,
+  0x72, 0xc6, 0x4b, 0xc6,
+
+  // Message Integrity
+  0x00, 0x08, 0x00, 0x14,     // Type, Length
+  0xf4, 0xaf, 0x03, 0xc6,     // 20B HMAC-SHA1
+  0x21, 0x6f, 0x19, 0x76,
+  0x65, 0x9f, 0x87, 0x21,
+  0x18, 0x7c, 0xff, 0xc5,
+  0x9e, 0xb7, 0x32, 0x2a,
+};
 
 
 // STUN {{{1
@@ -87,6 +117,7 @@ void parse_valid_with_error (benchmark::State &state)
   state.SetItemsProcessed(state.iterations());
 }
 
+BENCHMARK_TEMPLATE(parse_valid_with_error, MSTURN);
 BENCHMARK_TEMPLATE(parse_valid_with_error, STUN);
 BENCHMARK_TEMPLATE(parse_valid_with_error, TURN);
 
@@ -115,6 +146,7 @@ void parse_valid_with_exception (benchmark::State &state)
   state.SetItemsProcessed(state.iterations());
 }
 
+BENCHMARK_TEMPLATE(parse_valid_with_exception, MSTURN);
 BENCHMARK_TEMPLATE(parse_valid_with_exception, STUN);
 BENCHMARK_TEMPLATE(parse_valid_with_exception, TURN);
 
@@ -145,6 +177,7 @@ void parse_invalid_with_error (benchmark::State &state)
   state.SetItemsProcessed(state.iterations());
 }
 
+BENCHMARK_TEMPLATE(parse_invalid_with_error, MSTURN);
 BENCHMARK_TEMPLATE(parse_invalid_with_error, STUN);
 BENCHMARK_TEMPLATE(parse_invalid_with_error, TURN);
 
@@ -182,6 +215,7 @@ void parse_invalid_with_exception (benchmark::State &state)
   state.SetItemsProcessed(state.iterations());
 }
 
+BENCHMARK_TEMPLATE(parse_invalid_with_exception, MSTURN);
 BENCHMARK_TEMPLATE(parse_invalid_with_exception, STUN);
 BENCHMARK_TEMPLATE(parse_invalid_with_exception, TURN);
 
