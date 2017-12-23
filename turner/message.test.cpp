@@ -169,10 +169,10 @@ TYPED_TEST(any_message, try_as_valid)
 
   auto msg = any_msg->try_as(TypeParam::msg_type());
   ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(TypeParam::msg_type(), msg->type());
+  EXPECT_EQ(TypeParam::msg_type(), msg->type);
 
   EXPECT_EQ(any_msg, msg);
-  EXPECT_EQ(any_msg->type(), msg->type());
+  EXPECT_EQ(any_msg->type(), msg->type);
   EXPECT_EQ(any_msg->length(), msg->length());
   EXPECT_EQ(any_msg->cookie(), msg->cookie());
   EXPECT_EQ(any_msg->transaction_id(), msg->transaction_id());
@@ -186,9 +186,9 @@ TYPED_TEST(any_message, as_valid)
   ASSERT_TRUE(any_msg);
 
   auto &msg = any_msg->as(TypeParam::msg_type());
-  EXPECT_EQ(TypeParam::msg_type(), msg.type());
+  EXPECT_EQ(TypeParam::msg_type(), msg.type);
 
-  EXPECT_EQ(any_msg->type(), msg.type());
+  EXPECT_EQ(any_msg->type(), msg.type);
   EXPECT_EQ(any_msg->length(), msg.length());
   EXPECT_EQ(any_msg->cookie(), msg.cookie());
   EXPECT_EQ(any_msg->transaction_id(), msg.transaction_id());
@@ -223,189 +223,6 @@ TYPED_TEST(any_message, as_invalid)
 }
 
 
-TYPED_TEST(any_message, try_as_success_response_valid)
-{
-  auto t = TypeParam::msg_type();
-
-  auto data = TypeParam::msg_data();
-  reinterpret_cast<uint16_t *>(data.data())[0] =
-    sal::native_to_network_byte_order(t.success_response().type());
-
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-  EXPECT_FALSE(any_msg->is_request());
-  EXPECT_TRUE(any_msg->is_success_response());
-  EXPECT_FALSE(any_msg->is_error_response());
-  EXPECT_FALSE(any_msg->is_indication());
-
-  auto msg = any_msg->try_as(t.success_response());
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(t.success_response(), msg->type());
-}
-
-
-TYPED_TEST(any_message, as_success_response_valid)
-{
-  auto t = TypeParam::msg_type();
-
-  auto data = TypeParam::msg_data();
-  reinterpret_cast<uint16_t *>(data.data())[0] =
-    sal::native_to_network_byte_order(t.success_response().type());
-
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  auto &msg = any_msg->as(t.success_response());
-  EXPECT_EQ(t.success_response(), msg.type());
-}
-
-
-TYPED_TEST(any_message, try_as_success_response_invalid)
-{
-  auto data = TypeParam::msg_data();
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  auto msg = any_msg->try_as(TypeParam::msg_type().success_response());
-  EXPECT_EQ(nullptr, msg);
-}
-
-
-TYPED_TEST(any_message, as_success_response_invalid)
-{
-  auto data = TypeParam::msg_data();
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  EXPECT_THROW(
-    any_msg->as(TypeParam::msg_type().success_response()),
-    std::system_error
-  );
-}
-
-
-TYPED_TEST(any_message, try_as_error_response_valid)
-{
-  auto t = TypeParam::msg_type();
-
-  auto data = TypeParam::msg_data();
-  reinterpret_cast<uint16_t *>(data.data())[0] =
-    sal::native_to_network_byte_order(t.error_response().type());
-
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-  EXPECT_FALSE(any_msg->is_request());
-  EXPECT_FALSE(any_msg->is_success_response());
-  EXPECT_TRUE(any_msg->is_error_response());
-  EXPECT_FALSE(any_msg->is_indication());
-
-  auto msg = any_msg->try_as(t.error_response());
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(t.error_response(), msg->type());
-}
-
-
-TYPED_TEST(any_message, as_error_response_valid)
-{
-  auto t = TypeParam::msg_type();
-
-  auto data = TypeParam::msg_data();
-  reinterpret_cast<uint16_t *>(data.data())[0] =
-    sal::native_to_network_byte_order(t.error_response().type());
-
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  auto &msg = any_msg->as(t.error_response());
-  EXPECT_EQ(t.error_response(), msg.type());
-}
-
-
-TYPED_TEST(any_message, try_as_error_response_invalid)
-{
-  auto data = TypeParam::msg_data();
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  auto msg = any_msg->try_as(TypeParam::msg_type().error_response());
-  EXPECT_EQ(nullptr, msg);
-}
-
-
-TYPED_TEST(any_message, as_error_response_invalid)
-{
-  auto data = TypeParam::msg_data();
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  EXPECT_THROW(
-    any_msg->as(TypeParam::msg_type().error_response()),
-    std::system_error
-  );
-}
-
-
-TYPED_TEST(any_message, try_as_indication_valid)
-{
-  auto t = TypeParam::msg_type();
-
-  auto data = TypeParam::msg_data();
-  reinterpret_cast<uint16_t *>(data.data())[0] =
-    sal::native_to_network_byte_order(t.indication().type());
-
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-  EXPECT_FALSE(any_msg->is_request());
-  EXPECT_FALSE(any_msg->is_success_response());
-  EXPECT_FALSE(any_msg->is_error_response());
-  EXPECT_TRUE(any_msg->is_indication());
-
-  auto msg = any_msg->try_as(t.indication());
-  ASSERT_NE(nullptr, msg);
-  EXPECT_EQ(t.indication(), msg->type());
-}
-
-
-TYPED_TEST(any_message, as_indication_valid)
-{
-  auto t = TypeParam::msg_type();
-
-  auto data = TypeParam::msg_data();
-  reinterpret_cast<uint16_t *>(data.data())[0] =
-    sal::native_to_network_byte_order(t.indication().type());
-
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  auto &msg = any_msg->as(t.indication());
-  EXPECT_EQ(t.indication(), msg.type());
-}
-
-
-TYPED_TEST(any_message, try_as_indication_invalid)
-{
-  auto data = TypeParam::msg_data();
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  auto msg = any_msg->try_as(TypeParam::msg_type().indication());
-  EXPECT_EQ(nullptr, msg);
-}
-
-
-TYPED_TEST(any_message, as_indication_invalid)
-{
-  auto data = TypeParam::msg_data();
-  auto any_msg = TypeParam::parse(data.begin(), data.end());
-  ASSERT_TRUE(any_msg);
-
-  EXPECT_THROW(
-    any_msg->as(TypeParam::msg_type().indication()),
-    std::system_error
-  );
-}
-
-
 TYPED_TEST(any_message, has_valid_integrity)
 {
   auto data = TypeParam::msg_data();
@@ -416,6 +233,10 @@ TYPED_TEST(any_message, has_valid_integrity)
   auto integrity_calculator = TypeParam::msg_hmac();
   EXPECT_TRUE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_TRUE(!error) << error.message();
+
+  EXPECT_NO_THROW(
+    any_msg->has_valid_integrity(integrity_calculator)
+  );
 }
 
 
@@ -429,6 +250,11 @@ TYPED_TEST(any_message, has_valid_integrity_attribute_not_found)
   auto integrity_calculator = TypeParam::msg_hmac();
   EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_EQ(turner::errc::attribute_not_found, error);
+
+  EXPECT_THROW(
+    any_msg->has_valid_integrity(integrity_calculator),
+    std::system_error
+  );
 }
 
 
@@ -442,6 +268,11 @@ TYPED_TEST(any_message, has_valid_integrity_unexpected_attribute_length)
   sal::crypto::hmac_t<sal::crypto::md5> integrity_calculator;
   EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+
+  EXPECT_THROW(
+    any_msg->has_valid_integrity(integrity_calculator),
+    std::system_error
+  );
 }
 
 
@@ -456,6 +287,11 @@ TYPED_TEST(any_message, has_valid_integrity_unexpected_value)
   auto integrity_calculator = TypeParam::msg_hmac();
   EXPECT_FALSE(any_msg->has_valid_integrity(integrity_calculator, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
+
+  EXPECT_THROW(
+    any_msg->has_valid_integrity(integrity_calculator),
+    std::system_error
+  );
 }
 
 
@@ -479,7 +315,7 @@ TYPED_TEST(message_reader, to_success_response_new_region)
   auto writer = msg.to_success_response(new_data.begin(), new_data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_success_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -518,7 +354,7 @@ TYPED_TEST(message_reader, to_success_response_same_region)
   auto writer = msg.to_success_response(data.begin(), data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_success_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -563,7 +399,7 @@ TYPED_TEST(message_reader, to_success_response_overlapped_region_left)
   auto writer = msg.to_success_response(data.begin(), data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_success_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -579,7 +415,7 @@ TYPED_TEST(message_reader, to_success_response_overlapped_region_right)
   auto writer = msg.to_success_response(data.begin() + 1, data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_success_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size() - 1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -597,7 +433,7 @@ TYPED_TEST(message_reader, to_success_response_data_new_region)
   auto writer = msg.to_success_response(new_data, error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_success_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -634,7 +470,7 @@ TYPED_TEST(message_reader, to_success_response_data_same_region)
   auto writer = msg.to_success_response(data, error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_success_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -654,7 +490,7 @@ TYPED_TEST(message_reader, to_error_response_new_region)
   auto writer = msg.to_error_response(new_data.begin(), new_data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_error_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -693,7 +529,7 @@ TYPED_TEST(message_reader, to_error_response_same_region)
   auto writer = msg.to_error_response(data.begin(), data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_error_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -738,7 +574,7 @@ TYPED_TEST(message_reader, to_error_response_overlapped_region_left)
   auto writer = msg.to_error_response(data.begin(), data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_error_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -754,7 +590,7 @@ TYPED_TEST(message_reader, to_error_response_overlapped_region_right)
   auto writer = msg.to_error_response(data.begin() + 1, data.end(), error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_error_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size() - 1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -772,7 +608,7 @@ TYPED_TEST(message_reader, to_error_response_data_new_region)
   auto writer = msg.to_error_response(new_data, error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_error_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(1, writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
@@ -809,7 +645,7 @@ TYPED_TEST(message_reader, to_error_response_data_same_region)
   auto writer = msg.to_error_response(data, error);
   ASSERT_TRUE(!error) << error.message();
   ASSERT_FALSE(!writer);
-  EXPECT_EQ(TypeParam::msg_error_type(), writer.type());
+  EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
   EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());

@@ -12,69 +12,7 @@ TYPED_TEST_CASE(message_type, protocol_types);
 
 TYPED_TEST(message_type, type)
 {
-  EXPECT_EQ(
-    TypeParam::msg_type_v(),
-    TypeParam::msg_type().type()
-  );
-  EXPECT_TRUE(TypeParam::msg_type().is_request());
-  EXPECT_FALSE(TypeParam::msg_type().is_success_response());
-  EXPECT_FALSE(TypeParam::msg_type().is_error_response());
-  EXPECT_FALSE(TypeParam::msg_type().is_indication());
-}
-
-
-TYPED_TEST(message_type, name)
-{
-  auto t = TypeParam::msg_type();
-
-  const char *expected;
-  t >> expected;
-  EXPECT_STREQ(expected, t.name());
-}
-
-
-TYPED_TEST(message_type, name_unnamed)
-{
-  EXPECT_EQ(nullptr, unused_message_type<TypeParam>.name());
-}
-
-
-TYPED_TEST(message_type, ostream)
-{
-  auto t = TypeParam::msg_type();
-
-  const char *expected;
-  t >> expected;
-
-  std::ostringstream oss;
-  oss << t;
-  EXPECT_EQ(expected, oss.str());
-}
-
-
-TYPED_TEST(message_type, ostream_unnamed_with_named_protocol)
-{
-  std::ostringstream oss, expected;
-
-  expected
-    << TypeParam::name()
-    << ':'
-    << unused_message_type<TypeParam>.type();
-
-  oss << unused_message_type<TypeParam>;
-  EXPECT_EQ(expected.str(), oss.str());
-}
-
-
-TEST(message_type, ostream_unnamed_with_unnamed_protocol)
-{
-  std::ostringstream oss;
-  oss << unused_message_type<unnamed_protocol_t>;
-
-  EXPECT_EQ(
-    std::to_string(unused_message_type<unnamed_protocol_t>.type()),
-    oss.str()
-  );
+  EXPECT_EQ(TypeParam::msg_type_v(), TypeParam::msg_type().type);
 }
 
 
@@ -85,8 +23,8 @@ TYPED_TEST(message_type, compare)
   EXPECT_EQ(TypeParam::msg_type(), t);
   EXPECT_EQ(t, TypeParam::msg_type());
 
-  EXPECT_NE(t, t.success_response());
-  EXPECT_NE(t.success_response(), t);
+  EXPECT_NE(TypeParam::msg_success_type(), t);
+  EXPECT_NE(t, TypeParam::msg_success_type());
 }
 
 
@@ -103,63 +41,158 @@ TYPED_TEST(message_type, compare_value)
 }
 
 
-TYPED_TEST(message_type, success_response)
+TYPED_TEST(message_type, make_range)
 {
-  auto t = TypeParam::msg_type();
-  auto ts = t.success_response();
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 4> data;
+  data.fill(0);
 
-  EXPECT_NE(t, ts);
-  EXPECT_NE(ts, t);
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data.begin(), data.end(), error);
+  ASSERT_TRUE(!error);
+  EXPECT_FALSE(!writer);
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
+  EXPECT_EQ(4U, writer.available());
 
-  EXPECT_FALSE(ts.is_request());
-  EXPECT_TRUE(ts.is_success_response());
-  EXPECT_FALSE(ts.is_error_response());
-  EXPECT_FALSE(ts.is_indication());
+  auto [ begin, end ] = writer.finish();
+  EXPECT_EQ(&data[0], begin);
+  EXPECT_EQ(&data[TypeParam::header_and_cookie_size()], end);
 
-  EXPECT_EQ(
-    typeid(typename decltype(t)::success_response_t),
-    typeid(ts)
+  auto msg = TypeParam::parse(data.begin(), data.end(), error);
+  EXPECT_TRUE(!error);
+  ASSERT_TRUE(msg);
+
+  EXPECT_EQ(TypeParam::msg_type(), msg->type());
+  EXPECT_EQ(0U + TypeParam::min_payload_length(), msg->length());
+  EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
+
+  std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
+  null_transaction_id.fill(0);
+  EXPECT_NE(null_transaction_id, msg->transaction_id());
+
+  EXPECT_NO_THROW(
+    TypeParam::msg_type().make(data.begin(), data.end())
   );
 }
 
 
-TYPED_TEST(message_type, error_response)
+TYPED_TEST(message_type, make_empty_range)
 {
-  auto t = TypeParam::msg_type();
-  auto ts = t.error_response();
+  std::vector<uint8_t> data;
 
-  EXPECT_NE(t, ts);
-  EXPECT_NE(ts, t);
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(!writer);
+}
 
-  EXPECT_FALSE(ts.is_request());
-  EXPECT_FALSE(ts.is_success_response());
-  EXPECT_TRUE(ts.is_error_response());
-  EXPECT_FALSE(ts.is_indication());
 
-  EXPECT_EQ(
-    typeid(typename decltype(t)::error_response_t),
-    typeid(ts)
+TYPED_TEST(message_type, make_range_not_enough_room_header)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() - 1> data;
+  data.fill(0);
+
+  auto original = data;
+
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data.begin(), data.end(), error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(!writer);
+  EXPECT_EQ(original, data);
+
+  EXPECT_THROW(
+    TypeParam::msg_type().make(data.begin(), data.end()),
+    std::system_error
   );
 }
 
 
-TYPED_TEST(message_type, indication)
+TYPED_TEST(message_type, make_range_not_enough_room_for_finish)
 {
-  auto t = TypeParam::msg_type();
-  auto ts = t.indication();
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 1> data;
+  data.fill(0);
 
-  EXPECT_NE(t, ts);
-  EXPECT_NE(ts, t);
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data.begin(), data.end(), error);
+  ASSERT_TRUE(!error);
+  EXPECT_FALSE(!writer);
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
+  EXPECT_EQ(1U, writer.available());
 
-  EXPECT_FALSE(ts.is_request());
-  EXPECT_FALSE(ts.is_success_response());
-  EXPECT_FALSE(ts.is_error_response());
-  EXPECT_TRUE(ts.is_indication());
+  auto integrity_calculator = TypeParam::msg_hmac();
+  (void)writer.finish(integrity_calculator, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+}
 
-  EXPECT_EQ(
-    typeid(typename decltype(t)::indication_t),
-    typeid(ts)
+
+TYPED_TEST(message_type, make_data)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 4> data;
+  data.fill(0);
+
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data, error);
+  ASSERT_TRUE(!error);
+  EXPECT_FALSE(!writer);
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
+  EXPECT_EQ(4U, writer.available());
+
+  auto [ begin, end ] = writer.finish();
+  EXPECT_EQ(&data[0], begin);
+  EXPECT_EQ(&data[TypeParam::header_and_cookie_size()], end);
+
+  auto msg = TypeParam::parse(data.begin(), data.end(), error);
+  EXPECT_TRUE(!error);
+  ASSERT_TRUE(msg);
+
+  EXPECT_EQ(TypeParam::msg_type(), msg->type());
+  EXPECT_EQ(0U + TypeParam::min_payload_length(), msg->length());
+  EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
+
+  std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
+  null_transaction_id.fill(0);
+  EXPECT_NE(null_transaction_id, msg->transaction_id());
+
+  EXPECT_NO_THROW(
+    TypeParam::msg_type().make(data)
   );
+}
+
+
+TYPED_TEST(message_type, make_data_not_enough_room_header)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() - 1> data;
+  data.fill(0);
+
+  auto original = data;
+
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(!writer);
+  EXPECT_EQ(original, data);
+
+  EXPECT_THROW(
+    TypeParam::msg_type().make(data),
+    std::system_error
+  );
+}
+
+
+TYPED_TEST(message_type, make_data_not_enough_room_for_finish)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 1> data;
+  data.fill(0);
+
+  std::error_code error;
+  auto writer = TypeParam::msg_type().make(data, error);
+  ASSERT_TRUE(!error);
+  EXPECT_FALSE(!writer);
+  EXPECT_EQ(TypeParam::msg_type(), writer.type);
+  EXPECT_EQ(1U, writer.available());
+
+  auto integrity_calculator = TypeParam::msg_hmac();
+  (void)writer.finish(integrity_calculator, error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
 }
 
 

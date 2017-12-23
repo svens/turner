@@ -381,11 +381,10 @@ inline constexpr const alternate_server_t alternate_server;
 
 
 template <typename ProtocolTraits>
-typename channel_number_attribute_processor_t<ProtocolTraits>::value_t
-  channel_number_attribute_processor_t<ProtocolTraits>::read (
-    const any_message_t<ProtocolTraits> &,
-    const any_attribute_t &attribute,
-    std::error_code &error) noexcept
+auto channel_number_attribute_processor_t<ProtocolTraits>::read (
+  const any_message_t<ProtocolTraits> &,
+  const any_attribute_t &attribute,
+  std::error_code &error) noexcept -> value_t
 {
   auto value = __bits::read_uint32(attribute, error);
   if (!error)

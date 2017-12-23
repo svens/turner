@@ -9,13 +9,17 @@ using stun = turner_test::fixture;
 
 TEST_F(stun, binding)
 {
-  EXPECT_STREQ("binding", turner::stun::binding.name());
-  EXPECT_EQ(0x0001, turner::stun::binding.type());
-  EXPECT_TRUE(turner::stun::binding.is_request());
+  EXPECT_EQ((uint16_t)0x0001, turner::stun::binding);
+  EXPECT_TRUE(
+    turner::stun::protocol_traits_t::is_request(turner::stun::binding.type)
+  );
 
-  EXPECT_STREQ("binding_success", turner::stun::binding_success.name());
-  EXPECT_EQ(0x0101, turner::stun::binding_success.type());
-  EXPECT_TRUE(turner::stun::binding_success.is_success_response());
+  EXPECT_EQ((uint16_t)0x0101, turner::stun::binding_success);
+  EXPECT_TRUE(
+    turner::stun::protocol_traits_t::is_success_response(
+      turner::stun::binding_success.type
+    )
+  );
 }
 
 
@@ -58,7 +62,7 @@ const std::array<uint8_t, 108> sample_request =
 
 TEST_F(stun, rfc5769_sample_request)
 {
-  auto msg = turner::stun::protocol.parse(
+  auto msg = turner::stun::parse(
     sample_request.begin(), sample_request.end()
   );
 
@@ -99,7 +103,7 @@ TEST_F(stun, rfc5769_sample_ipv4_response)
   }};
 
   // sample_request
-  auto &binding = turner::stun::protocol.parse(
+  auto &binding = turner::stun::parse(
     sample_request.begin(), sample_request.end()
   )->as(turner::stun::binding);
 
@@ -157,7 +161,7 @@ TEST_F(stun, rfc5769_sample_ipv6_response)
   }};
 
   // sample_request
-  auto &binding = turner::stun::protocol.parse(
+  auto &binding = turner::stun::parse(
     sample_request.begin(), sample_request.end()
   )->as(turner::stun::binding);
 
@@ -228,10 +232,7 @@ TEST_F(stun, rfc5769_sample_request_with_long_term_authentication)
 
   // instantiate writer with data area
   std::array<uint8_t, expected.max_size()> data;
-  std::error_code error;
-  auto writer = turner::stun::protocol.build(turner::stun::binding,
-    data.begin(), data.end()
-  );
+  auto writer = turner::stun::binding.make(data);
 
   // instead of building message, copy expected without MESSAGE-INTEGRITY
   // and update length accordingly

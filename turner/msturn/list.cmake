@@ -9,4 +9,5 @@ list(APPEND turner_sources
 list(APPEND turner_unittests_sources
   turner/msturn/attributes.test.cpp
   turner/msturn/messages.test.cpp
+  turner/msturn/protocol.test.cpp
 )

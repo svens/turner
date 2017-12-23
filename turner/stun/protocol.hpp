@@ -74,15 +74,6 @@ struct protocol_traits_t
 
 
   /**
-   * Return true for valid message \a type.
-   */
-  static constexpr bool is_valid_message_type (uint16_t type) noexcept
-  {
-    return (type & 0b1100'0000'0000'0000) == 0;
-  }
-
-
-  /**
    * Return true if message \a type is request.
    */
   static constexpr bool is_request (uint16_t type) noexcept
@@ -116,42 +107,6 @@ struct protocol_traits_t
   {
     return (type & 0b0000'0001'0001'0000) == 0b000'0000'0001'0000;
   }
-
-
-  /**
-   * Return \a type as request.
-   */
-  static constexpr uint16_t to_request (uint16_t type) noexcept
-  {
-    return type & ~0b0000'0001'0001'0000;
-  }
-
-
-  /**
-   * Return \a type as success response.
-   */
-  static constexpr uint16_t to_success_response (uint16_t type) noexcept
-  {
-    return type | 0b0000'0001'0000'0000;
-  }
-
-
-  /**
-   * Return \a type as error response.
-   */
-  static constexpr uint16_t to_error_response (uint16_t type) noexcept
-  {
-    return type | 0b0000'0001'0001'0000;
-  }
-
-
-  /**
-   * Return \a type as indication.
-   */
-  static constexpr uint16_t to_indication (uint16_t type) noexcept
-  {
-    return type | 0b0000'0000'0001'0000;
-  }
 };
 
 
@@ -162,17 +117,44 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
- * STUN protocol instance.
+ * \copydoc turner::protocol_t::parse(It,It,std::error_code&);
  */
-inline constexpr const protocol_t protocol;
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(first, last, error);
+}
 
 
 /**
- * Return STUN protocol \a name in output argument.
+ * \copydoc turner::protocol_t::parse(It,It);
  */
-inline constexpr void operator>> (protocol_t, const char *&name) noexcept
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last)
 {
-  name = "STUN";
+  return protocol_t::parse(first, last);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(data, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data)
+{
+  return protocol_t::parse(data);
 }
 
 

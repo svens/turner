@@ -13,8 +13,6 @@
 
 struct MSTURN: public turner::msturn::protocol_t //{{{1
 {
-  static constexpr const char expected_name[] = "MS-TURN";
-
   static auto msg_data ()
   {
     return std::vector<uint8_t>
@@ -47,7 +45,7 @@ struct MSTURN: public turner::msturn::protocol_t //{{{1
 
   static constexpr auto msg_type_v ()
   {
-    return turner::msturn::allocate.type();
+    return turner::msturn::allocate.type;
   }
 
   static constexpr auto msg_len ()
@@ -89,8 +87,6 @@ struct MSTURN: public turner::msturn::protocol_t //{{{1
 
 struct STUN: public turner::stun::protocol_t //{{{1
 {
-  static constexpr const char expected_name[] = "STUN";
-
   static auto msg_data ()
   {
     return std::vector<uint8_t>
@@ -119,7 +115,7 @@ struct STUN: public turner::stun::protocol_t //{{{1
 
   static constexpr auto msg_type_v ()
   {
-    return turner::stun::binding.type();
+    return turner::stun::binding.type;
   }
 
   static constexpr auto msg_len ()
@@ -155,15 +151,13 @@ struct STUN: public turner::stun::protocol_t //{{{1
   {
     // there is no error response for STUN Binding
     // let's invent it for testing
-    return turner::stun::binding_t::error_response_t{};
+    return turner::stun::protocol_t::message_type_t<0x0111>{};
   }
 };
 
 
 struct TURN: public turner::turn::protocol_t //{{{1
 {
-  static constexpr const char expected_name[] = "TURN";
-
   static auto msg_data ()
   {
     return std::vector<uint8_t>
@@ -192,7 +186,7 @@ struct TURN: public turner::turn::protocol_t //{{{1
 
   static constexpr auto msg_type_v ()
   {
-    return turner::turn::allocation.type();
+    return turner::turn::allocation.type;
   }
 
   static constexpr auto msg_len ()
@@ -287,35 +281,6 @@ class with_protocol
 {};
 
 
-// Unnamed protocol for testing {{{1
-
-// unused message type (0 is unused for STUN/TURN/MSTURN)
-template <typename Protocol>
-using unused_message_type_t = typename Protocol::template message_type_t<0>;
-
-template <typename Protocol>
-static inline constexpr const unused_message_type_t<Protocol>
-  unused_message_type{};
-
-// protocol
-struct unnamed_protocol_traits_t : public turner::stun::protocol_traits_t {};
-using unnamed_protocol_t = turner::protocol_t<unnamed_protocol_traits_t>;
-static inline constexpr const unnamed_protocol_t unnamed_protocol;
-
-// message type
-using unnamed_protocol_message_type_t = unnamed_protocol_t::message_type_t<1>;
-static inline constexpr const unnamed_protocol_message_type_t
-  unnamed_protocol_message_type;
-
-inline constexpr void operator>> (unnamed_protocol_message_type_t,
-  const char *&name) noexcept
-{
-  name = "unnamed_protocol_message";
-}
-
-//}}}1
-
-
 template <typename Protocol, size_t N>
 auto wire_data (Protocol, const char (&data)[N])
 {
@@ -338,14 +303,18 @@ auto wire_data (Protocol, const char (&data)[N])
 template <typename Protocol, typename Data>
 inline auto &parse (Protocol, const Data &d)
 {
-  return Protocol::parse(d.begin(), d.end())->as(Protocol::msg_type());
+  return Protocol::parse(d, sal::throw_on_error("test::parse"))
+    ->as(Protocol::msg_type())
+  ;
 }
 
 
 template <typename Protocol, typename Data>
 inline auto build (Protocol, Data &d)
 {
-  return Protocol::build(Protocol::msg_type(), d.begin(), d.end());
+  return Protocol::msg_type()
+    .make(d, sal::throw_on_error("test::build"))
+  ;
 }
 
 

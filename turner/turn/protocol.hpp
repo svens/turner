@@ -16,7 +16,7 @@ __turner_begin
 namespace turn {
 
 
-// Pull STUN long term credentials key calculator into TURN namespace.
+// Pull STUN functions into turn namespace
 using stun::make_integrity_calculator;
 
 
@@ -36,17 +36,44 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
- * TURN protocol instance.
+ * \copydoc turner::protocol_t::parse(It,It,std::error_code&);
  */
-inline constexpr const protocol_t protocol{};
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(first, last, error);
+}
 
 
 /**
- * Return TURN protocol \a name in output argument.
+ * \copydoc turner::protocol_t::parse(It,It);
  */
-inline constexpr void operator>> (protocol_t, const char *&name) noexcept
+template <typename It>
+inline const any_message_t<protocol_traits_t> *parse (It first, It last)
 {
-  name = "TURN";
+  return protocol_t::parse(first, last);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data,
+  std::error_code &error) noexcept
+{
+  return protocol_t::parse(data, error);
+}
+
+
+/**
+ * \copydoc turner::protocol_t::parse(Data);
+ */
+template <typename Data>
+inline const any_message_t<protocol_traits_t> *parse (const Data &data)
+{
+  return protocol_t::parse(data);
 }
 
 

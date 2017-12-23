@@ -35,9 +35,14 @@ class any_message_t
 public:
 
   /**
+   * Protocol traits.
+   */
+  using traits_t = ProtocolTraits;
+
+  /**
    * Protocol class describing raw network message format.
    */
-  using protocol_t = turner::protocol_t<ProtocolTraits>;
+  using protocol_t = turner::protocol_t<traits_t>;
 
 
   /**
@@ -69,7 +74,7 @@ public:
    */
   bool is_request () const noexcept
   {
-    return ProtocolTraits::is_request(type());
+    return traits_t::is_request(type());
   }
 
 
@@ -78,7 +83,7 @@ public:
    */
   bool is_success_response () const noexcept
   {
-    return ProtocolTraits::is_success_response(type());
+    return traits_t::is_success_response(type());
   }
 
 
@@ -87,7 +92,7 @@ public:
    */
   bool is_error_response () const noexcept
   {
-    return ProtocolTraits::is_error_response(type());
+    return traits_t::is_error_response(type());
   }
 
 
@@ -96,7 +101,7 @@ public:
    */
   bool is_indication () const noexcept
   {
-    return ProtocolTraits::is_indication(type());
+    return traits_t::is_indication(type());
   }
 
 
@@ -116,7 +121,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      as_ptr<uint8_t>() + ProtocolTraits::cookie_offset
+      as_ptr<uint8_t>() + traits_t::cookie_offset
     );
   }
 
@@ -127,7 +132,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      as_ptr<uint8_t>() + ProtocolTraits::transaction_id_offset
+      as_ptr<uint8_t>() + traits_t::transaction_id_offset
     );
   }
 
@@ -138,12 +143,10 @@ public:
    * return nullptr.
    */
   template <uint16_t MessageType>
-  const message_reader_t<ProtocolTraits, MessageType> *try_as (
-    message_type_t<ProtocolTraits, MessageType>) const noexcept
+  const message_reader_t<traits_t, MessageType> *try_as (
+    message_type_t<traits_t, MessageType> message_type) const noexcept
   {
-    return type() == MessageType
-      ? as_ptr<message_reader_t<ProtocolTraits, MessageType>>()
-      : nullptr;
+    return message_type(this);
   }
 
 
@@ -154,12 +157,12 @@ public:
    * \throws std::system_error if \a this message type is not \a MessageType.
    */
   template <uint16_t MessageType>
-  const message_reader_t<ProtocolTraits, MessageType> &as (
-    message_type_t<ProtocolTraits, MessageType>) const
+  const message_reader_t<traits_t, MessageType> &as (
+    message_type_t<traits_t, MessageType> message_type) const
   {
-    if (type() == MessageType)
+    if (auto msg = message_type(this))
     {
-      return *as_ptr<message_reader_t<ProtocolTraits, MessageType>>();
+      return *msg;
     }
     unexpected_message_type("any_message::as");
   }
@@ -200,6 +203,15 @@ public:
 protected:
 
   /// \cond internal
+  template <typename T>
+  const T *as_ptr () const noexcept
+  {
+    return reinterpret_cast<const T *>(this);
+  }
+  /// \endcond
+
+
+private:
 
   any_message_t () = delete;
   any_message_t (const any_message_t &) = delete;
@@ -214,14 +226,6 @@ protected:
       msg
     );
   }
-
-  template <typename T>
-  const T *as_ptr () const noexcept
-  {
-    return reinterpret_cast<const T *>(this);
-  }
-
-  /// \endcond
 };
 
 
@@ -235,18 +239,19 @@ class message_reader_t
 public:
 
   /**
-   * Message type.
+   * Protocol traits.
    */
-  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
-
+  using traits_t = ProtocolTraits;
 
   /**
-   * Return message type.
+   * Protocol class describing raw network message format.
    */
-  static constexpr message_type_t type () noexcept
-  {
-    return {};
-  }
+  using protocol_t = turner::protocol_t<traits_t>;
+
+  /**
+   * Message type.
+   */
+  static inline constexpr const message_type_t<traits_t, MessageType> type{};
 
 
   /**
@@ -257,19 +262,22 @@ public:
     uint16_t AttributeType,
     template <typename> typename AttributeProcessor
   >
-  typename AttributeProcessor<ProtocolTraits>::value_t read (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+  typename AttributeProcessor<traits_t>::value_t read (
+    attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto payload = this->template as_ptr<uint8_t>() + header_size;
+    auto payload = this->template as_ptr<uint8_t>()
+      + protocol_t::header_and_cookie_size();
+
     if (auto attribute = __bits::find_attribute(payload,
-        payload + this->length() - min_length,
+        payload + this->length() - protocol_t::min_payload_length(),
         AttributeType,
-        ProtocolTraits::padding_size,
+        traits_t::padding_size,
         error))
     {
-      return AttributeProcessor<ProtocolTraits>::read(*this, *attribute, error);
+      return AttributeProcessor<traits_t>::read(*this, *attribute, error);
     }
+
     return {};
   }
 
@@ -282,8 +290,8 @@ public:
     uint16_t AttributeType,
     template <typename> typename AttributeProcessor
   >
-  typename AttributeProcessor<ProtocolTraits>::value_t read (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute) const
+  typename AttributeProcessor<traits_t>::value_t read (
+    attribute_type_t<traits_t, AttributeType, AttributeProcessor> attribute) const
   {
     return read(attribute, sal::throw_on_error("message_reader::read"));
   }
@@ -297,12 +305,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b0000'0001'0000'0000>
     to_success_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<ProtocolTraits::to_success_response(MessageType)>(
-      first, last, error
-    );
+    return to_response<MessageType | 0b0000'0001'0000'0000>(first, last, error);
   }
 
 
@@ -314,7 +320,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b0000'0001'0000'0000>
     to_success_response (It first, It last) const
   {
     return to_success_response(first, last,
@@ -331,12 +337,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b0000'0001'0000'0000>
     to_success_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<ProtocolTraits::to_success_response(MessageType)>(
+    return to_response<MessageType | 0b0000'0001'0000'0000>(
       begin(data), end(data), error
     );
   }
@@ -350,7 +356,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_success_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b0000'0001'0000'0000>
     to_success_response (Data &data) const
   {
     return to_success_response(data,
@@ -367,12 +373,10 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b000'0001'0001'0000>
     to_error_response (It first, It last, std::error_code &error) const noexcept
   {
-    return to_response<ProtocolTraits::to_error_response(MessageType)>(
-      first, last, error
-    );
+    return to_response<MessageType | 0b000'0001'0001'0000>(first, last, error);
   }
 
 
@@ -384,7 +388,7 @@ public:
    * occupied by this object in which case after call \a this becomes invalid.
    */
   template <typename It>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b000'0001'0001'0000>
     to_error_response (It first, It last) const
   {
     return to_error_response(first, last,
@@ -401,12 +405,12 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b000'0001'0001'0000>
     to_error_response (Data &data, std::error_code &error) const noexcept
   {
     using std::begin;
     using std::end;
-    return to_response<ProtocolTraits::to_error_response(MessageType)>(
+    return to_response<MessageType | 0b000'0001'0001'0000>(
       begin(data), end(data), error
     );
   }
@@ -420,7 +424,7 @@ public:
    * object in which case after call \a this becomes invalid.
    */
   template <typename Data>
-  message_writer_t<ProtocolTraits, ProtocolTraits::to_error_response(MessageType)>
+  message_writer_t<traits_t, MessageType | 0b000'0001'0001'0000>
     to_error_response (Data &data) const
   {
     return to_error_response(data,
@@ -431,35 +435,28 @@ public:
 
 private:
 
-  static inline constexpr size_t header_size =
-    turner::protocol_t<ProtocolTraits>::header_and_cookie_size();
-
-  static inline constexpr uint16_t min_length =
-    turner::protocol_t<ProtocolTraits>::min_payload_length();
-
-
   template <uint16_t ResponseMessageType, typename It>
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
     It first, It last, std::error_code &error) const noexcept
   {
-    static_assert(ProtocolTraits::is_request(MessageType),
+    static_assert(traits_t::is_request(MessageType),
       "expected request message type"
     );
 
     auto begin = sal::to_ptr(first), end = sal::to_end_ptr(first, last);
-    if (begin + header_size <= end)
+    if (begin + protocol_t::header_and_cookie_size() <= end)
     {
       auto src = this->template as_ptr<uint8_t>();
       if (src != begin)
       {
-        std::memmove(begin, src, header_size);
+        std::memmove(begin, src, protocol_t::header_and_cookie_size());
       }
 
       reinterpret_cast<uint16_t *>(begin)[0] =
         sal::native_to_network_byte_order(ResponseMessageType);
 
       reinterpret_cast<uint16_t *>(begin)[1] =
-        sal::native_to_network_byte_order(min_length);
+        sal::native_to_network_byte_order(protocol_t::min_payload_length());
 
       error.clear();
       return { begin, end };
@@ -480,14 +477,15 @@ class message_writer_t
 public:
 
   /**
-   * Protocol class describing raw network message format.
+   * Protocol traits.
    */
-  using protocol_t = turner::protocol_t<ProtocolTraits>;
+  using traits_t = ProtocolTraits;
+
 
   /**
-   * Message type.
+   * Protocol class describing raw network message format.
    */
-  using message_type_t = turner::message_type_t<ProtocolTraits, MessageType>;
+  using protocol_t = turner::protocol_t<traits_t>;
 
 
   /**
@@ -505,12 +503,9 @@ public:
 
 
   /**
-   * Return message type.
+   * Message type.
    */
-  static constexpr message_type_t type () noexcept
-  {
-    return {};
-  }
+  static inline constexpr const message_type_t<traits_t, MessageType> type{};
 
 
   /**
@@ -519,7 +514,7 @@ public:
    */
   bool good () const noexcept
   {
-    return first_ + ProtocolTraits::header_size <= last_;
+    return first_ + traits_t::header_size <= last_;
   }
 
 
@@ -550,7 +545,7 @@ public:
   const cookie_t &cookie () const noexcept
   {
     return *reinterpret_cast<const cookie_t *>(
-      sal::to_ptr(first_) + ProtocolTraits::cookie_offset
+      sal::to_ptr(first_) + traits_t::cookie_offset
     );
   }
 
@@ -561,7 +556,7 @@ public:
   const transaction_id_t &transaction_id () const noexcept
   {
     return *reinterpret_cast<const transaction_id_t *>(
-      sal::to_ptr(first_) + ProtocolTraits::transaction_id_offset
+      sal::to_ptr(first_) + traits_t::transaction_id_offset
     );
   }
 
@@ -572,7 +567,7 @@ public:
   uint16_t available () const noexcept
   {
     return static_cast<uint16_t>(
-      last_ - first_ - ProtocolTraits::header_size - length()
+      last_ - first_ - traits_t::header_size - length()
     );
   }
 
@@ -584,8 +579,8 @@ public:
    */
   template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
   message_writer_t &write (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    const typename AttributeProcessor<ProtocolTraits>::value_t &value,
+    attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
+    const typename AttributeProcessor<traits_t>::value_t &value,
     std::error_code &error
   ) noexcept;
 
@@ -596,8 +591,8 @@ public:
    */
   template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
   message_writer_t &write (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor> attribute,
-    const typename AttributeProcessor<ProtocolTraits>::value_t &value)
+    attribute_type_t<traits_t, AttributeType, AttributeProcessor> attribute,
+    const typename AttributeProcessor<traits_t>::value_t &value)
   {
     return write(attribute, value,
       sal::throw_on_error("message_writer::write")
@@ -611,7 +606,7 @@ public:
    */
   std::pair<const uint8_t *, const uint8_t *> finish () const noexcept
   {
-    return { first_, first_ + ProtocolTraits::header_size + length() };
+    return { first_, first_ + traits_t::header_size + length() };
   }
 
 
@@ -652,8 +647,8 @@ private:
     , last_(last)
   {}
 
-  friend class turner::protocol_t<ProtocolTraits>;
-  friend class message_reader_t<ProtocolTraits, ProtocolTraits::to_request(MessageType)>;
+  friend class message_type_t<traits_t, MessageType>;
+  friend class message_reader_t<traits_t, MessageType & ~0b0000'0001'0001'0000>;
 };
 
 
@@ -663,10 +658,10 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
   sal::crypto::hmac_t<Digest> &integrity_calculator,
   std::error_code &error) const noexcept
 {
-  auto payload = as_ptr<uint8_t>() + ProtocolTraits::header_size;
+  auto payload = as_ptr<uint8_t>() + traits_t::header_size;
   if (auto integrity = __bits::find_attribute(payload, payload + length(),
-      ProtocolTraits::message_integrity,
-      ProtocolTraits::padding_size,
+      traits_t::message_integrity,
+      traits_t::padding_size,
       error))
   {
     if (integrity->length() == integrity_calculator.digest_size)
@@ -692,10 +687,10 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
       );
 
       // padding if necessary
-      if constexpr (ProtocolTraits::message_integrity_padding > 1)
+      if constexpr (traits_t::message_integrity_padding > 1)
       {
         static constexpr const
-          std::array<uint8_t, ProtocolTraits::message_integrity_padding> pad{};
+          std::array<uint8_t, traits_t::message_integrity_padding> pad{};
         auto size = reinterpret_cast<const uint8_t *>(integrity) - as_ptr<uint8_t>();
         if (size % pad.size() != 0)
         {
@@ -725,17 +720,16 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 
 template <typename ProtocolTraits, uint16_t MessageType>
 template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
-message_writer_t<ProtocolTraits, MessageType> &
-  message_writer_t<ProtocolTraits, MessageType>::write (
-    attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
-    const typename AttributeProcessor<ProtocolTraits>::value_t &value,
-    std::error_code &error) noexcept
+auto message_writer_t<ProtocolTraits, MessageType>::write (
+  attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
+  const typename AttributeProcessor<ProtocolTraits>::value_t &value,
+  std::error_code &error) noexcept -> message_writer_t &
 {
-  auto &message = *reinterpret_cast<any_message_t<ProtocolTraits> *>(first_);
+  auto &message = *reinterpret_cast<any_message_t<traits_t> *>(first_);
   auto message_size = message.length();
 
-  auto attribute = first_ + ProtocolTraits::header_size + message_size;
-  auto attribute_size = AttributeProcessor<ProtocolTraits>::write(message,
+  auto attribute = first_ + traits_t::header_size + message_size;
+  auto attribute_size = AttributeProcessor<traits_t>::write(message,
     attribute + 2 * sizeof(uint16_t),
     last_,
     value,
@@ -745,28 +739,23 @@ message_writer_t<ProtocolTraits, MessageType> &
   if (!error)
   {
     message_size += static_cast<uint16_t>(2 * sizeof(uint16_t) + attribute_size);
-    if constexpr (ProtocolTraits::padding_size > 1)
+    if constexpr (traits_t::padding_size > 1)
     {
-      constexpr const auto r = ProtocolTraits::padding_size - 1;
+      constexpr const auto r = traits_t::padding_size - 1;
       message_size = (message_size + r) & ~r;
+      if (first_ + traits_t::header_size + message_size > last_)
+      {
+        error = make_error_code(errc::not_enough_room);
+        return *this;
+      }
     }
-    if (first_ + ProtocolTraits::header_size + message_size > last_)
-    {
-      error = make_error_code(errc::not_enough_room);
-      return *this;
-    }
 
-    // attribute type
-    reinterpret_cast<uint16_t *>(attribute)[0] =
-      sal::native_to_network_byte_order(AttributeType);
-
-    // attribute length
-    reinterpret_cast<uint16_t *>(attribute)[1] =
-      sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
-
-    // message length
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(message_size);
+    reinterpret_cast<uint16_t *>(attribute)[0] =
+      sal::native_to_network_byte_order(AttributeType);
+    reinterpret_cast<uint16_t *>(attribute)[1] =
+      sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
   }
 
   return *this;
@@ -775,34 +764,32 @@ message_writer_t<ProtocolTraits, MessageType> &
 
 template <typename ProtocolTraits, uint16_t MessageType>
 template <typename Digest>
-std::pair<const uint8_t *, const uint8_t *>
-  message_writer_t<ProtocolTraits, MessageType>::finish (
-    sal::crypto::hmac_t<Digest> &integrity_calculator,
-    std::error_code &error) noexcept
+auto message_writer_t<ProtocolTraits, MessageType>::finish (
+  sal::crypto::hmac_t<Digest> &integrity_calculator,
+  std::error_code &error) noexcept -> std::pair<const uint8_t *, const uint8_t *>
 {
   uint16_t digest_size = integrity_calculator.digest_size;
   uint16_t original_length = length();
   uint16_t new_length = original_length + 2 * sizeof(uint16_t) + digest_size;
 
-  if (first_ + new_length + ProtocolTraits::header_size <= last_)
+  if (first_ + new_length + traits_t::header_size <= last_)
   {
-    // update message length
     reinterpret_cast<uint16_t *>(first_)[1] =
       sal::native_to_network_byte_order(new_length);
 
-    // add MESSAGE-INTEGRITY type & length
-    auto attribute = first_ + ProtocolTraits::header_size + original_length;
+    // integrity type & length
+    auto attribute = first_ + traits_t::header_size + original_length;
     reinterpret_cast<uint16_t *>(attribute)[0] =
-      sal::native_to_network_byte_order(ProtocolTraits::message_integrity);
+      sal::native_to_network_byte_order(traits_t::message_integrity);
     reinterpret_cast<uint16_t *>(attribute)[1] =
       sal::native_to_network_byte_order(digest_size);
 
-    // add MESSAGE-INTEGRITY value
+    // integrity value
     integrity_calculator.update(first_, attribute);
-    if constexpr (ProtocolTraits::message_integrity_padding > 1)
+    if constexpr (traits_t::message_integrity_padding > 1)
     {
       static constexpr const
-        std::array<uint8_t, ProtocolTraits::message_integrity_padding> pad{};
+        std::array<uint8_t, traits_t::message_integrity_padding> pad{};
       auto size = attribute - first_;
       if (size % pad.size() != 0)
       {

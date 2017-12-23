@@ -8,7 +8,6 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
-#include <turner/__bits/helpers.hpp>
 #include <sal/byte_order.hpp>
 
 
@@ -96,15 +95,20 @@ class attribute_type_t
 public:
 
   /**
+   * Protocol traits.
+   */
+  using traits_t = ProtocolTraits;
+
+  /**
    * Protocol class describing raw network message format traits.
    */
-  using protocol_t = turner::protocol_t<ProtocolTraits>;
+  using protocol_t = turner::protocol_t<traits_t>;
 
 
   /**
    * Concrete \a AttributeType reader/writer.
    */
-  using processor_t = AttributeProcessor<ProtocolTraits>;
+  using processor_t = AttributeProcessor<traits_t>;
 
 
   /**
@@ -116,10 +120,7 @@ public:
   /**
    * \a AttributeType value in attributes' registry.
    */
-  static constexpr uint16_t type () noexcept
-  {
-    return AttributeType;
-  }
+  static inline constexpr const uint16_t type = AttributeType;
 
 
   /**

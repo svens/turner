@@ -26,297 +26,87 @@ namespace turn {
 
 
 /**
- * TURN Allocation message type.
+ * Allocation message type.
  */
-using allocation_t = protocol_t::message_type_t<0x003>;
+inline constexpr const protocol_t::message_type_t<0x0003> allocation;
 
 
 /**
- * Instance of TURN Allocation message type.
+ * Allocation success message type.
  */
-inline constexpr const allocation_t allocation;
+inline constexpr const protocol_t::message_type_t<0x0103> allocation_success;
 
 
 /**
- * Return TURN Allocation message \a name in output argument.
+ * Allocation error message type.
  */
-inline constexpr void operator>> (allocation_t, const char *&name) noexcept
-{
-  name = "allocation";
-}
+inline constexpr const protocol_t::message_type_t<0x0113> allocation_error;
 
 
 /**
- * TURN Allocation success response message type
+ * Refresh message type.
  */
-using allocation_success_t = allocation_t::success_response_t;
+inline constexpr const protocol_t::message_type_t<0x0004> refresh;
 
 
 /**
- * Instance of TURN Allocation success resposen message type.
+ * Refresh success message type.
  */
-inline constexpr const allocation_success_t allocation_success;
+inline constexpr const protocol_t::message_type_t<0x0104> refresh_success;
 
 
 /**
- * Return TURN Allocation success response message \a name in output argument.
+ * Refresh error message type.
  */
-inline constexpr void operator>> (allocation_success_t, const char *&name) noexcept
-{
-  name = "allocation_success";
-}
+inline constexpr const protocol_t::message_type_t<0x0114> refresh_error;
 
 
 /**
- * TURN Allocation error response message type
+ * Send Indication message type.
  */
-using allocation_error_t = allocation_t::error_response_t;
+inline constexpr const protocol_t::message_type_t<0x0016> send_indication;
 
 
 /**
- * Instance of TURN Allocation error resposen message type.
+ * Data Indication message type.
  */
-inline constexpr const allocation_error_t allocation_error;
+inline constexpr const protocol_t::message_type_t<0x0017> data_indication;
 
 
 /**
- * Return TURN Allocation error response message \a name in output argument.
+ * Create Permission message type.
  */
-inline constexpr void operator>> (allocation_error_t, const char *&name) noexcept
-{
-  name = "allocation_error";
-}
+inline constexpr const protocol_t::message_type_t<0x0008> create_permission;
 
 
 /**
- * TURN Refresh message type.
+ * Create Permission success message type.
  */
-using refresh_t = protocol_t::message_type_t<0x004>;
+inline constexpr const protocol_t::message_type_t<0x0108> create_permission_success;
 
 
 /**
- * Instance of TURN Refresh message type.
+ * Create Permission error message type.
  */
-inline constexpr const refresh_t refresh;
+inline constexpr const protocol_t::message_type_t<0x0118> create_permission_error;
 
 
 /**
- * Return TURN Refresh message \a name in output argument.
+ * Channel Bind message type.
  */
-inline constexpr void operator>> (refresh_t, const char *&name) noexcept
-{
-  name = "refresh";
-}
+inline constexpr const protocol_t::message_type_t<0x0009> channel_bind;
 
 
 /**
- * TURN Refresh success response message type
+ * Channel Bind success message type.
  */
-using refresh_success_t = refresh_t::success_response_t;
+inline constexpr const protocol_t::message_type_t<0x0109> channel_bind_success;
 
 
 /**
- * Instance of TURN Refresh success resposen message type.
+ * Channel Bind error message type.
  */
-inline constexpr const refresh_success_t refresh_success;
-
-
-/**
- * Return TURN Refresh success response message \a name in output argument.
- */
-inline constexpr void operator>> (refresh_success_t, const char *&name) noexcept
-{
-  name = "refresh_success";
-}
-
-
-/**
- * TURN Refresh error response message type
- */
-using refresh_error_t = refresh_t::error_response_t;
-
-
-/**
- * Instance of TURN Refresh error resposen message type.
- */
-inline constexpr const refresh_error_t refresh_error;
-
-
-/**
- * Return TURN Refresh error response message \a name in output argument.
- */
-inline constexpr void operator>> (refresh_error_t, const char *&name) noexcept
-{
-  name = "refresh_error";
-}
-
-
-/**
- * TURN Send indication message type.
- */
-using send_indication_t = protocol_t::message_type_t<0x006>::indication_t;
-
-
-/**
- * Instance of TURN Send indication message type.
- */
-inline constexpr const send_indication_t send_indication;
-
-
-/**
- * Return TURN Send indication message \a name in output argument.
- */
-inline constexpr void operator>> (send_indication_t, const char *&name) noexcept
-{
-  name = "send_indication";
-}
-
-
-/**
- * TURN Data indication message type.
- */
-using data_indication_t = protocol_t::message_type_t<0x007>::indication_t;
-
-
-/**
- * Instance of TURN Data indication message type.
- */
-inline constexpr const data_indication_t data_indication;
-
-
-/**
- * Return TURN Data indication message \a name in output argument.
- */
-inline constexpr void operator>> (data_indication_t, const char *&name) noexcept
-{
-  name = "data_indication";
-}
-
-
-/**
- * TURN CreatePermission message type.
- */
-using create_permission_t = protocol_t::message_type_t<0x008>;
-
-
-/**
- * Instance of TURN CreatePermission message type.
- */
-inline constexpr const create_permission_t create_permission;
-
-
-/**
- * Return TURN CreatePermission message \a name in output argument.
- */
-inline constexpr void operator>> (create_permission_t, const char *&name) noexcept
-{
-  name = "create_permission";
-}
-
-
-/**
- * TURN CreatePermission success response message type
- */
-using create_permission_success_t = create_permission_t::success_response_t;
-
-
-/**
- * Instance of TURN CreatePermission success resposen message type.
- */
-inline constexpr const create_permission_success_t create_permission_success;
-
-
-/**
- * Return TURN CreatePermission success response message \a name in output argument.
- */
-inline constexpr void operator>> (create_permission_success_t, const char *&name) noexcept
-{
-  name = "create_permission_success";
-}
-
-
-/**
- * TURN CreatePermission error response message type
- */
-using create_permission_error_t = create_permission_t::error_response_t;
-
-
-/**
- * Instance of TURN CreatePermission error resposen message type.
- */
-inline constexpr const create_permission_error_t create_permission_error;
-
-
-/**
- * Return TURN CreatePermission error response message \a name in output argument.
- */
-inline constexpr void operator>> (create_permission_error_t, const char *&name) noexcept
-{
-  name = "create_permission_error";
-}
-
-
-/**
- * TURN ChannelBind message type.
- */
-using channel_bind_t = protocol_t::message_type_t<0x009>;
-
-
-/**
- * Instance of TURN ChannelBind message type.
- */
-inline constexpr const channel_bind_t channel_bind;
-
-
-/**
- * Return TURN ChannelBind message \a name in output argument.
- */
-inline constexpr void operator>> (channel_bind_t, const char *&name) noexcept
-{
-  name = "channel_bind";
-}
-
-
-/**
- * TURN ChannelBind success response message type
- */
-using channel_bind_success_t = channel_bind_t::success_response_t;
-
-
-/**
- * Instance of TURN ChannelBind success resposen message type.
- */
-inline constexpr const channel_bind_success_t channel_bind_success;
-
-
-/**
- * Return TURN ChannelBind success response message \a name in output argument.
- */
-inline constexpr void operator>> (channel_bind_success_t, const char *&name) noexcept
-{
-  name = "channel_bind_success";
-}
-
-
-/**
- * TURN ChannelBind error response message type
- */
-using channel_bind_error_t = channel_bind_t::error_response_t;
-
-
-/**
- * Instance of TURN ChannelBind error resposen message type.
- */
-inline constexpr const channel_bind_error_t channel_bind_error;
-
-
-/**
- * Return TURN ChannelBind error response message \a name in output argument.
- */
-inline constexpr void operator>> (channel_bind_error_t, const char *&name) noexcept
-{
-  name = "channel_bind_error";
-}
+inline constexpr const protocol_t::message_type_t<0x0119> channel_bind_error;
 
 
 // \}

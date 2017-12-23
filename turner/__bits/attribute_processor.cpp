@@ -1,5 +1,4 @@
 #include <turner/__bits/attribute_processor.hpp>
-#include <turner/__bits/helpers.hpp>
 #include <turner/attribute.hpp>
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>

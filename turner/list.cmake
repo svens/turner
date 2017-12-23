@@ -13,7 +13,6 @@ list(APPEND turner_sources
   turner/__bits/attribute_processor.cpp
   turner/__bits/message.hpp
   turner/__bits/message.cpp
-  turner/__bits/helpers.hpp
 )
 
 list(APPEND turner_unittests_sources
