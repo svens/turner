@@ -63,7 +63,6 @@ TYPED_TEST(message_type, make_range)
 
   EXPECT_EQ(TypeParam::msg_type(), msg->type());
   EXPECT_EQ(0U + TypeParam::min_payload_length(), msg->length());
-  EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
 
   std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
   null_transaction_id.fill(0);
@@ -146,7 +145,6 @@ TYPED_TEST(message_type, make_data)
 
   EXPECT_EQ(TypeParam::msg_type(), msg->type());
   EXPECT_EQ(0U + TypeParam::min_payload_length(), msg->length());
-  EXPECT_EQ(TypeParam::traits_t::cookie, msg->cookie());
 
   std::array<uint8_t, TypeParam::traits_t::transaction_id_size> null_transaction_id;
   null_transaction_id.fill(0);

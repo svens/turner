@@ -15,16 +15,6 @@ __turner_begin
 
 
 /**
- * Return true if message \a type is valid according to STUN RFC
- * (two most significant bits should be zero)
- */
-inline constexpr bool is_valid_message_type (uint16_t type) noexcept
-{
-  return (type & 0b1100'0000'0000'0000) == 0;
-}
-
-
-/**
  * Define protocol \a MessageType.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
@@ -32,7 +22,9 @@ class message_type_t
 {
 public:
 
-  static_assert(is_valid_message_type(MessageType), "invalid message type");
+  static_assert((MessageType & 0b1100'0000'0000'0000) == 0,
+    "invalid message type"
+  );
 
 
   /**
@@ -122,7 +114,7 @@ public:
 
       *reinterpret_cast<typename protocol_t::cookie_t *>(
         begin + traits_t::cookie_offset
-      ) = traits_t::cookie;
+      ) = sal::native_to_network_byte_order(traits_t::cookie);
 
       sal::crypto::random(
         begin + traits_t::transaction_id_offset,

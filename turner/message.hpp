@@ -46,14 +46,6 @@ public:
 
 
   /**
-   * Per protocol magic cookie type. It is additional helper to detect
-   * network message protocol if multiple protocols are multiplexed on single
-   * channel.
-   */
-  using cookie_t = typename protocol_t::cookie_t;
-
-
-  /**
    * Per message unique transaction ID.
    */
   using transaction_id_t = typename protocol_t::transaction_id_t;
@@ -112,17 +104,6 @@ public:
   uint16_t length () const noexcept
   {
     return sal::network_to_native_byte_order(as_ptr<uint16_t>()[1]);
-  }
-
-
-  /**
-   * Return message cookie.
-   */
-  const cookie_t &cookie () const noexcept
-  {
-    return *reinterpret_cast<const cookie_t *>(
-      as_ptr<uint8_t>() + traits_t::cookie_offset
-    );
   }
 
 
@@ -489,14 +470,6 @@ public:
 
 
   /**
-   * Per protocol magic cookie type. It is additional helper to detect
-   * network message protocol if multiple protocols are multiplexed on single
-   * channel.
-   */
-  using cookie_t = typename protocol_t::cookie_t;
-
-
-  /**
    * Per message unique transaction ID.
    */
   using transaction_id_t = typename protocol_t::transaction_id_t;
@@ -535,17 +508,6 @@ public:
   {
     return sal::network_to_native_byte_order(
       reinterpret_cast<const uint16_t *>(first_)[1]
-    );
-  }
-
-
-  /**
-   * Return message cookie.
-   */
-  const cookie_t &cookie () const noexcept
-  {
-    return *reinterpret_cast<const cookie_t *>(
-      sal::to_ptr(first_) + traits_t::cookie_offset
     );
   }
 

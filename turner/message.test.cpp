@@ -174,7 +174,6 @@ TYPED_TEST(any_message, try_as_valid)
   EXPECT_EQ(any_msg, msg);
   EXPECT_EQ(any_msg->type(), msg->type);
   EXPECT_EQ(any_msg->length(), msg->length());
-  EXPECT_EQ(any_msg->cookie(), msg->cookie());
   EXPECT_EQ(any_msg->transaction_id(), msg->transaction_id());
 }
 
@@ -190,7 +189,6 @@ TYPED_TEST(any_message, as_valid)
 
   EXPECT_EQ(any_msg->type(), msg.type);
   EXPECT_EQ(any_msg->length(), msg.length());
-  EXPECT_EQ(any_msg->cookie(), msg.cookie());
   EXPECT_EQ(any_msg->transaction_id(), msg.transaction_id());
 }
 
@@ -317,7 +315,6 @@ TYPED_TEST(message_reader, to_success_response_new_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(1, writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(
@@ -356,7 +353,6 @@ TYPED_TEST(message_reader, to_success_response_same_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(
@@ -401,7 +397,6 @@ TYPED_TEST(message_reader, to_success_response_overlapped_region_left)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 }
 
@@ -417,7 +412,6 @@ TYPED_TEST(message_reader, to_success_response_overlapped_region_right)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size() - 1, writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 }
 
@@ -435,7 +429,6 @@ TYPED_TEST(message_reader, to_success_response_data_new_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(1, writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(msg.to_success_response(new_data));
@@ -472,7 +465,6 @@ TYPED_TEST(message_reader, to_success_response_data_same_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_success_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(msg.to_success_response(data));
@@ -492,7 +484,6 @@ TYPED_TEST(message_reader, to_error_response_new_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(1, writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(
@@ -531,7 +522,6 @@ TYPED_TEST(message_reader, to_error_response_same_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(
@@ -576,7 +566,6 @@ TYPED_TEST(message_reader, to_error_response_overlapped_region_left)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 }
 
@@ -592,7 +581,6 @@ TYPED_TEST(message_reader, to_error_response_overlapped_region_right)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size() - 1, writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 }
 
@@ -610,7 +598,6 @@ TYPED_TEST(message_reader, to_error_response_data_new_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(1, writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(msg.to_error_response(new_data));
@@ -647,7 +634,6 @@ TYPED_TEST(message_reader, to_error_response_data_same_region)
   ASSERT_FALSE(!writer);
   EXPECT_EQ(TypeParam::msg_error_type(), writer.type);
   EXPECT_EQ(data.size() - TypeParam::header_and_cookie_size(), writer.available());
-  EXPECT_EQ(TypeParam::traits_t::cookie, writer.cookie());
   EXPECT_EQ(TypeParam::msg_txn_id(), writer.transaction_id());
 
   EXPECT_NO_THROW(

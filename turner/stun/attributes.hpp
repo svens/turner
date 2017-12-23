@@ -52,8 +52,16 @@ struct xor_address_attribute_processor_t
 
 private:
 
-  static constexpr const uint16_t xor_cookie_16 = 0x2112;
-  static constexpr const uint32_t xor_cookie_32 = 0x2112a442;
+  static constexpr const uint16_t xor_cookie_16 =
+    (ProtocolTraits::cookie & 0xffff'0000) >> 16;
+
+  static constexpr const uint32_t xor_cookie_32 =
+    ProtocolTraits::cookie;
+
+  static constexpr const std::array<uint8_t, 4> cookie =
+  {{
+    0x21, 0x12, 0xa4, 0x42
+  }};
 };
 
 
@@ -249,7 +257,7 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
     else if (auto v6 = address.as_v6())
     {
       auto p = const_cast<uint8_t *>(v6->to_bytes().data());
-      for (auto b: ProtocolTraits::cookie)
+      for (auto b: cookie)
       {
         *p++ ^= b;
       }
@@ -286,7 +294,7 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
   else if (auto v6 = value.first.as_v6())
   {
     auto p = const_cast<uint8_t *>(v6->to_bytes().data());
-    for (auto b: ProtocolTraits::cookie)
+    for (auto b: cookie)
     {
       *p++ ^= b;
     }

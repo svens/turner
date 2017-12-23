@@ -36,7 +36,7 @@ public:
   /**
    * Cookie type for protocol message.
    */
-  using cookie_t = std::array<uint8_t, traits_t::cookie.max_size()>;
+  using cookie_t = std::remove_const_t<decltype(traits_t::cookie)>;
 
   /**
    * Transaction ID type for protocol message.
@@ -91,7 +91,7 @@ public:
     }
     else
     {
-      return static_cast<uint16_t>(traits_t::cookie.size());
+      return static_cast<uint16_t>(sizeof(cookie_t));
     }
   }
 
@@ -130,6 +130,7 @@ public:
       }
     }
 
+    // region length
     auto begin = sal::to_ptr(first);
     auto end = sal::to_end_ptr(first, last);
     if (begin + header_and_cookie_size() > end)
@@ -138,30 +139,37 @@ public:
       return {};
     }
 
+    // message type
     auto message = reinterpret_cast<const any_message_t *>(begin);
-    if (!is_valid_message_type(message->type()))
+    if ((message->type() & 0b1100'0000'0000'0000) != 0)
     {
       error = make_error_code(errc::invalid_message_type);
       return {};
     }
 
+    // cookie
+    auto cookie_p = reinterpret_cast<const cookie_t *>(
+      begin + traits_t::cookie_offset
+    );
+    if (*cookie_p != sal::native_to_network_byte_order(traits_t::cookie))
+    {
+      error = make_error_code(errc::invalid_message_cookie);
+      return {};
+    }
+
+    // payload length
+    auto payload_length = message->length();
     if constexpr (traits_t::padding_size > 1)
     {
-      if (message->length() % traits_t::padding_size != 0)
+      if (payload_length % traits_t::padding_size != 0)
       {
         error = make_error_code(errc::invalid_message_length);
         return {};
       }
     }
-    if (begin + traits_t::header_size + message->length() > end)
+    if (begin + traits_t::header_size + payload_length > end)
     {
       error = make_error_code(errc::insufficient_payload_data);
-      return {};
-    }
-
-    if (message->cookie() != traits_t::cookie)
-    {
-      error = make_error_code(errc::invalid_message_cookie);
       return {};
     }
 
