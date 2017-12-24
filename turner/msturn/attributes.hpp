@@ -10,6 +10,8 @@
 #include <turner/attribute.hpp>
 #include <turner/attribute_processor.hpp>
 #include <turner/msturn/protocol.hpp>
+#include <turner/stun/attributes.hpp>
+#include <turner/turn/attributes.hpp>
 
 
 __turner_begin
@@ -32,9 +34,7 @@ namespace msturn {
  * MS-TURN Mapped Address attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd906841(v=office.12).aspx
  */
-using mapped_address_t = protocol_t::attribute_type_t<0x0001,
-  address_attribute_processor_t
->;
+using mapped_address_t = protocol_t::reuse_attribute_t<stun::mapped_address_t>;
 
 
 /**
@@ -51,9 +51,7 @@ inline constexpr const mapped_address_t mapped_address;
  * MS-TURN Username attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd948088(v=office.12).aspx
  */
-using username_t = protocol_t::attribute_type_t<0x0006,
-  string_attribute_processor_t
->;
+using username_t = protocol_t::reuse_attribute_t<stun::username_t>;
 
 
 /**
@@ -70,9 +68,7 @@ inline constexpr const username_t username;
  * MS-TURN Error Code attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd924136(v=office.12).aspx
  */
-using error_code_t = protocol_t::attribute_type_t<0x0009,
-  error_attribute_processor_t
->;
+using error_code_t = protocol_t::reuse_attribute_t<stun::error_code_t>;
 
 
 /**
@@ -89,9 +85,7 @@ inline constexpr const error_code_t error_code;
  * MS-TURN Lifetime attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd922471(v=office.12).aspx
  */
-using lifetime_t = protocol_t::attribute_type_t<0x000d,
-  uint32_attribute_processor_t
->;
+using lifetime_t = protocol_t::reuse_attribute_t<turn::lifetime_t>;
 
 
 /**
@@ -184,9 +178,7 @@ inline constexpr const remote_address_t remote_address;
  * MS-TURN Data attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd909340(v=office.12).aspx
  */
-using data_t = protocol_t::attribute_type_t<0x0013,
-  array_attribute_processor_t
->;
+using data_t = protocol_t::reuse_attribute_t<turn::data_t>;
 
 
 /**
@@ -202,6 +194,7 @@ inline constexpr const data_t data;
 /**
  * MS-TURN Nonce attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd905560(v=office.12).aspx
+ * \note It's value is swapped with STUN REALM
  */
 using nonce_t = protocol_t::attribute_type_t<0x0014,
   array_attribute_processor_t
@@ -211,6 +204,7 @@ using nonce_t = protocol_t::attribute_type_t<0x0014,
 /**
  * MS-TURN Nonce attribute
  * \see https://msdn.microsoft.com/en-us/library/dd905560(v=office.12).aspx
+ * \note It's value is swapped with STUN REALM
  */
 inline constexpr const nonce_t nonce;
 
@@ -221,6 +215,7 @@ inline constexpr const nonce_t nonce;
 /**
  * MS-TURN Realm attribute type
  * \see https://msdn.microsoft.com/en-us/library/dd905474(v=office.12).aspx
+ * \note It's value is swapped with STUN NONCE
  */
 using realm_t = protocol_t::attribute_type_t<0x0015,
   string_attribute_processor_t
@@ -230,6 +225,7 @@ using realm_t = protocol_t::attribute_type_t<0x0015,
 /**
  * MS-TURN Realm attribute
  * \see https://msdn.microsoft.com/en-us/library/dd905474(v=office.12).aspx
+ * \note It's value is swapped with STUN NONCE
  */
 inline constexpr const realm_t realm;
 
@@ -376,6 +372,22 @@ using xor_mapped_address_t = protocol_t::attribute_type_t<0x8020,
  */
 inline constexpr const xor_mapped_address_t xor_mapped_address;
 
+
+// 0x8022 SOFTWARE {{{1
+
+
+/**
+ * STUN SOFTWARE attribute type
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
+ */
+using software_t = protocol_t::reuse_attribute_t<stun::software_t>;
+
+
+/**
+ * STUN SOFTWARE attribute
+ * (https://tools.ietf.org/html/rfc5389#section-15.10)
+ */
+inline constexpr const software_t software;
 
 
 // 0x8032 MS-Alternate Host Name {{{1
