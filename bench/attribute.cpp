@@ -125,6 +125,50 @@ BENCHMARK_TEMPLATE(attribute_read_missing, STUN);
 BENCHMARK_TEMPLATE(attribute_read_missing, TURN);
 
 
+// attribute_write {{{1
+
+
+template <typename Protocol>
+void attribute_write (benchmark::State &state)
+{
+  try
+  {
+    auto data = wire_data<Protocol>;
+    auto msg = Protocol::parse(data);
+    auto &request = msg->as(message_type<Protocol>);
+
+    std::error_code error;
+    request
+      .to_success_response(data, error)
+      .write(attribute_type<Protocol>, 600)
+    ;
+    if (error)
+    {
+      throw std::logic_error("unexpectd error: " + error.message());
+    }
+
+    for (auto _: state)
+    {
+      auto writer = request
+        .to_success_response(data, error)
+        .write(attribute_type<Protocol>, 600)
+      ;
+      benchmark::DoNotOptimize(writer);
+    }
+
+    state.SetItemsProcessed(state.iterations());
+  }
+  catch (const std::exception &e)
+  {
+    state.SkipWithError(e.what());
+  }
+}
+
+BENCHMARK_TEMPLATE(attribute_write, MSTURN);
+BENCHMARK_TEMPLATE(attribute_write, STUN);
+BENCHMARK_TEMPLATE(attribute_write, TURN);
+
+
 // }}}1
 
 
