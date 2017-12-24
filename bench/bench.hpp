@@ -11,13 +11,16 @@ namespace turner_bench {
 
 
 template <typename Protocol>
-inline constexpr const auto raw_message = false;
+inline constexpr const auto wire_data = false;
 
 template <typename Protocol>
 inline constexpr const auto message_type = false;
 
 template <typename Protocol>
 inline constexpr const auto another_message_type = false;
+
+template <typename Protocol>
+inline auto integrity_calculator = false;
 
 
 // MSTURN {{{1
@@ -26,7 +29,7 @@ inline constexpr const auto another_message_type = false;
 using MSTURN = turner::msturn::protocol_t;
 
 template <>
-inline const std::vector<uint8_t> raw_message<MSTURN> =
+inline const std::vector<uint8_t> wire_data<MSTURN> =
 {
   // header
   0x00, 0x03, 0x00, 0x20,     // Type (Allocate), Length
@@ -54,6 +57,10 @@ inline constexpr const auto message_type<MSTURN> = turner::msturn::allocate;
 template <>
 inline constexpr const auto another_message_type<MSTURN> = turner::msturn::allocate_success;
 
+template <>
+inline auto integrity_calculator<MSTURN> =
+  turner::msturn::make_integrity_calculator("realm", "user", "pass");
+
 
 // STUN {{{1
 
@@ -61,7 +68,7 @@ inline constexpr const auto another_message_type<MSTURN> = turner::msturn::alloc
 using STUN = turner::stun::protocol_t;
 
 template <>
-inline const std::vector<uint8_t> raw_message<STUN> =
+inline const std::vector<uint8_t> wire_data<STUN> =
 {
   // header
   0x00, 0x01, 0x00, 0x18,     // Type (Binding), Length
@@ -85,6 +92,10 @@ inline constexpr const auto message_type<STUN> = turner::stun::binding;
 template <>
 inline constexpr const auto another_message_type<STUN> = turner::stun::binding_success;
 
+template <>
+inline auto integrity_calculator<STUN> =
+  turner::stun::make_integrity_calculator("realm", "user", "pass");
+
 
 // TURN {{{1
 
@@ -92,7 +103,7 @@ inline constexpr const auto another_message_type<STUN> = turner::stun::binding_s
 using TURN = turner::turn::protocol_t;
 
 template <>
-inline const std::vector<uint8_t> raw_message<TURN> =
+inline const std::vector<uint8_t> wire_data<TURN> =
 {
   // header
   0x00, 0x03, 0x00, 0x18,     // Type (Allocation), Length
@@ -116,8 +127,26 @@ inline constexpr const auto message_type<TURN> = turner::turn::allocation;
 template <>
 inline constexpr const auto another_message_type<TURN> = turner::turn::allocation_success;
 
+template <>
+inline auto integrity_calculator<TURN> =
+  turner::turn::make_integrity_calculator("realm", "user", "pass");
+
 
 // }}}1
+
+
+template <typename Protocol, size_t N>
+auto wire_data_with_payload (Protocol, const char (&data)[N])
+{
+  // get raw data, replace payload with data
+  auto raw = wire_data<Protocol>;
+  raw.resize(Protocol::header_and_cookie_size());
+  raw.insert(raw.end(), data, data + N - 1);
+  reinterpret_cast<uint16_t *>(&raw[0])[1] = sal::native_to_network_byte_order(
+    static_cast<uint16_t>(N - 1 + Protocol::min_payload_length())
+  );
+  return raw;
+}
 
 
 } // namespace turner_bench

@@ -13,7 +13,7 @@ using namespace turner_bench;
 template <typename Protocol>
 void parse_valid_with_error (benchmark::State &state)
 {
-  auto data = raw_message<Protocol>;
+  auto data = wire_data<Protocol>;
 
   std::error_code error;
   auto msg = Protocol::parse(data, error);
@@ -42,7 +42,7 @@ BENCHMARK_TEMPLATE(parse_valid_with_error, TURN);
 template <typename Protocol>
 void parse_valid_with_exception (benchmark::State &state)
 {
-  auto data = raw_message<Protocol>;
+  auto data = wire_data<Protocol>;
 
   std::error_code error;
   auto msg = Protocol::parse(data, error);
@@ -71,7 +71,7 @@ BENCHMARK_TEMPLATE(parse_valid_with_exception, TURN);
 template <typename Protocol>
 void parse_invalid_with_error (benchmark::State &state)
 {
-  auto data = raw_message<Protocol>;
+  auto data = wire_data<Protocol>;
   data[Protocol::traits_t::cookie_offset] ^= 1;
 
   std::error_code error;
@@ -102,7 +102,7 @@ BENCHMARK_TEMPLATE(parse_invalid_with_error, TURN);
 template <typename Protocol>
 void parse_invalid_with_exception (benchmark::State &state)
 {
-  auto data = raw_message<Protocol>;
+  auto data = wire_data<Protocol>;
   data[Protocol::traits_t::cookie_offset] ^= 1;
 
   std::error_code error;
