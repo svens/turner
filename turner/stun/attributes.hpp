@@ -18,54 +18,6 @@ namespace stun {
 
 
 /**
- * Generic XORed address type attribute reader/writer.
- */
-template <typename ProtocolTraits>
-struct xor_address_attribute_processor_t
-{
-  /**
-   * Attribute value type.
-   * - first: address
-   * - second: port in host byte order
-   */
-  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
-
-
-  /**
-   * \copydoc uint32_attribute_processor_t::read()
-   */
-  static value_t read (const any_message_t<ProtocolTraits> &message,
-    const any_attribute_t &attribute,
-    std::error_code &error
-  ) noexcept;
-
-
-  /**
-   * \copydoc uint32_attribute_processor_t::write()
-   */
-  static size_t write (const any_message_t<ProtocolTraits> &message,
-    uint8_t *first, uint8_t *last,
-    value_t value,
-    std::error_code &error
-  ) noexcept;
-
-
-private:
-
-  static constexpr const uint16_t xor_cookie_16 =
-    (ProtocolTraits::cookie & 0xffff'0000) >> 16;
-
-  static constexpr const uint32_t xor_cookie_32 =
-    ProtocolTraits::cookie;
-
-  static constexpr const std::array<uint8_t, 4> cookie =
-  {{
-    0x21, 0x12, 0xa4, 0x42
-  }};
-};
-
-
-/**
  * \defgroup STUN_attributes STUN attributes
  * \{
  *
@@ -172,6 +124,54 @@ inline constexpr const nonce_t nonce;
 
 
 // 0x0020 XOR-MAPPED-ADDRESS {{{1
+
+
+/**
+ * Generic XORed address type attribute reader/writer.
+ */
+template <typename ProtocolTraits>
+struct xor_address_attribute_processor_t
+{
+  /**
+   * Attribute value type.
+   * - first: address
+   * - second: port in host byte order
+   */
+  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &message,
+    const any_attribute_t &attribute,
+    std::error_code &error
+  ) noexcept;
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &message,
+    uint8_t *first, uint8_t *last,
+    value_t value,
+    std::error_code &error
+  ) noexcept;
+
+
+private:
+
+  static constexpr const uint16_t xor_cookie_16 =
+    (ProtocolTraits::cookie & 0xffff'0000) >> 16;
+
+  static constexpr const uint32_t xor_cookie_32 =
+    ProtocolTraits::cookie;
+
+  static constexpr const std::array<uint8_t, 4> cookie =
+  {{
+    0x21, 0x12, 0xa4, 0x42
+  }};
+};
 
 
 /**
