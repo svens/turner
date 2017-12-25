@@ -8,6 +8,7 @@
 
 #include <turner/config.hpp>
 #include <turner/protocol.hpp>
+#include <sal/char_array.hpp>
 #include <sal/crypto/hash.hpp>
 #include <sal/crypto/hmac.hpp>
 
@@ -40,13 +41,12 @@ struct protocol_traits_t
 
   /**
    * Required cookie content.
+   *
+   * \note MSTURN documentation tells Magic Cookie to be always first
+   * attribute in payload. For uniform handling like STUN/TURN, library treats
+   * it as 8B value at first attribute offset.
    */
-  static inline constexpr const std::array<uint8_t, 8> cookie =
-  {{
-     0x00, 0x0f,                // Type
-     0x00, 0x04,                // Length
-     0x72, 0xc6, 0x4b, 0xc6     // Cookie
-  }};
+  static inline constexpr const uint64_t cookie = 0x00'0f'00'04'72'c6'4b'c6;
 
 
   /**

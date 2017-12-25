@@ -8,6 +8,7 @@
 
 #include <turner/config.hpp>
 #include <turner/protocol.hpp>
+#include <sal/char_array.hpp>
 #include <sal/crypto/hash.hpp>
 #include <sal/crypto/hmac.hpp>
 
@@ -37,10 +38,7 @@ struct protocol_traits_t
   /**
    * Required cookie content.
    */
-  static inline constexpr const std::array<uint8_t, 4> cookie =
-  {
-    { 0x21, 0x12, 0xa4, 0x42 }
-  };
+  static inline constexpr const uint32_t cookie = 0x21'12'a4'42;
 
 
   /**
