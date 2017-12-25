@@ -247,11 +247,7 @@ public:
     attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    auto payload = this->template as_ptr<uint8_t>()
-      + protocol_t::header_and_cookie_size();
-
-    if (auto attribute = __bits::find_attribute(payload,
-        payload + this->length() - protocol_t::min_payload_length(),
+    if (auto attribute = __bits::find_attribute(begin(), end(),
         AttributeType,
         traits_t::padding_size,
         error))
@@ -415,6 +411,16 @@ public:
 
 
 private:
+
+  const uint8_t *begin () const noexcept
+  {
+    return this->template as_ptr<uint8_t>() + protocol_t::header_and_cookie_size();
+  }
+
+  const uint8_t *end () const noexcept
+  {
+    return begin() + this->length() - protocol_t::min_payload_length();
+  }
 
   template <uint16_t ResponseMessageType, typename It>
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
