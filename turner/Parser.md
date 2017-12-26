@@ -28,11 +28,11 @@ from integer attribute, etc). Applications can even provide their own protocol
 traits to create new [STUN]-like protocols.
 
 Parsing incoming network message is divided into three phases:
--# check if bytes represent protocol message (bytes ->
+1. check if bytes represent protocol message (bytes ->
    turner::protocol_t::parse -> turner::any_message_t)
--# check what kind of request/response message is
+2. check what kind of request/response message is
    (turner::any_message_t::try_as -> turner::message_reader_t)
--# extract attributes from request/response (turner::message_reader_t::read ->
+3. extract attributes from request/response (turner::message_reader_t::read ->
    attribute value)
 
 > **Important** thing to remember is that during this process all instantiated
@@ -41,13 +41,13 @@ Parsing incoming network message is divided into three phases:
 > undefined behaviour). This allows to employ zero-copy approach.
 
 Generating new messages are equally simple:
--# create new message into given region (turner::message_type_t::make ->
+1. create new message into given region (turner::message_type_t::make ->
    turner::message_writer_t)
--# add attributes (turner::message_writer_t::write)
--# finalize message (turner::message_writer_t::finish)
+2. add attributes (turner::message_writer_t::write)
+3. finalize message (turner::message_writer_t::finish)
 
 Or to generate response for existing request:
--# turn existing message into response
+1. turn existing message into response
    (turner::message_reader_t::to_success_response or
    turner::message_reader_t::to_error_response)
 
@@ -77,7 +77,9 @@ Or slightly more complex sample with adding new field:
 The most complex of all, adding also message integrity:
   ~~~{.cpp}
   char buf[1024];
-  auto integrity_calculator = turner::msturn::make_integrity_calculator("realm", "username", "password");
+  auto integrity_calculator = turner::msturn::make_integrity_calculator(
+    "realm", "username", "password"
+  );
   auto [begin, end] = turner::msturn::allocate.make(buf)
     .write(turner::turn::software, "turner_client/1.0")
     .write(turner::turn::lifetime, 600)
@@ -97,8 +99,10 @@ then parse message
   if (auto message = turner::msturn::parse(raw_data))
   {
     // check if message has valid integrity
-    auto integrity_calculator = turner::msturn::make_integrity_calculator("realm", "username", "password");
-    if (message->has_valid_integrity(integrity_calculator))
+    auto integrity_calculator = turner::msturn::make_integrity_calculator(
+      "realm", "username", "password"
+    );
+    if (!message->has_valid_integrity(integrity_calculator))
     {
       return;
     }
@@ -152,7 +156,9 @@ Similar approach works for adding new attributes as well:
   ~~~{.cpp}
   // Add new string attribute, alternate_fqdn
   // see example below how to use it
-  constexpr const turner::turn::protocol_t::attribute_type_t<0x8001, turner::string_attribute_processor_t> alternate_fqdn;
+  constexpr const turner::turn::protocol_t::attribute_type_t<0x8001,
+    turner::string_attribute_processor_t
+  > alternate_fqdn;
   ~~~
 
 New message types can be added similar way:
