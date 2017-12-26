@@ -1,0 +1,39 @@
+var NAVTREE =
+[
+  [ "turner", "index.html", [
+    [ "STUN/TURN/MSTURN", "index.html", null ],
+    [ "Parser", "md___users_sven_src_turner_turner__parser.html", [
+      [ "Overview ", "md___users_sven_src_turner_turner__parser.html#overview", [
+        [ "Generate request ", "md___users_sven_src_turner_turner__parser.html#generate-request", null ],
+        [ "Parse request ", "md___users_sven_src_turner_turner__parser.html#parse-request", null ],
+        [ "Generate response for request ", "md___users_sven_src_turner_turner__parser.html#generate-response", null ],
+        [ "Extending library ", "md___users_sven_src_turner_turner__parser.html#extending", null ]
+      ] ]
+    ] ],
+    [ "Modules", "modules.html", "modules" ],
+    [ "Classes", "annotated.html", [
+      [ "Class List", "annotated.html", "annotated_dup" ],
+      [ "Class Index", "classes.html", null ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
+      [ "Class Members", "functions.html", [
+        [ "All", "functions.html", null ],
+        [ "Functions", "functions_func.html", null ],
+        [ "Variables", "functions_vars.html", null ],
+        [ "Typedefs", "functions_type.html", null ]
+      ] ]
+    ] ],
+    [ "Files", null, [
+      [ "File List", "files.html", "files" ]
+    ] ]
+  ] ]
+];
+
+var NAVTREEINDEX =
+[
+".html",
+"group___t_u_r_n__attributes.html#gade1da11dc5b92f7f028d8aebee211fc9",
+"turn_2errors_8hpp.html"
+];
+
+var SYNCONMSG = 'click to disable panel synchronisation';
+var SYNCOFFMSG = 'click to enable panel synchronisation';

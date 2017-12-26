@@ -1,2 +1,0 @@
-# turner
-STUN/TURN
