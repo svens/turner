@@ -189,6 +189,16 @@ protected:
   {
     return reinterpret_cast<const T *>(this);
   }
+
+  const uint8_t *begin () const noexcept
+  {
+    return as_ptr<uint8_t>() + protocol_t::header_and_cookie_size();
+  }
+
+  const uint8_t *end () const noexcept
+  {
+    return begin() + length() - protocol_t::min_payload_length();
+  }
   /// \endcond
 
 
@@ -247,7 +257,7 @@ public:
     attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    if (auto attribute = __bits::find_attribute(begin(), end(),
+    if (auto attribute = __bits::find_attribute(this->begin(), this->end(),
         AttributeType,
         traits_t::padding_size,
         error))
@@ -411,16 +421,6 @@ public:
 
 
 private:
-
-  const uint8_t *begin () const noexcept
-  {
-    return this->template as_ptr<uint8_t>() + protocol_t::header_and_cookie_size();
-  }
-
-  const uint8_t *end () const noexcept
-  {
-    return begin() + this->length() - protocol_t::min_payload_length();
-  }
 
   template <uint16_t ResponseMessageType, typename It>
   message_writer_t<ProtocolTraits, ResponseMessageType> to_response (
@@ -634,47 +634,42 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
   {
     if (integrity->length() == integrity_calculator.digest_size)
     {
-      // type and fixed length [first attribute, MESSAGE-INTEGRITY attribute)
-      const uint16_t type_and_length[] =
-      {
-        as_ptr<uint16_t>()[0],
+      std::array<uint8_t, 4096> buf;
+      auto n = reinterpret_cast<const uint8_t *>(integrity) - as_ptr<uint8_t>();
+      std::uninitialized_copy_n(as_ptr<uint8_t>(), n, buf.begin());
+
+      reinterpret_cast<uint16_t *>(buf.data())[1] =
         sal::native_to_network_byte_order(
           static_cast<uint16_t>(
-            (reinterpret_cast<const uint8_t *>(integrity) - payload)
+            n
+            - traits_t::header_size
             + 2 * sizeof(uint16_t)
             + integrity_calculator.digest_size
           )
-        ),
-      };
-      integrity_calculator.update(type_and_length);
+        );
 
-      // rest of message (up to MESSAGE-INTEGRITY)
-      integrity_calculator.update(
-        as_ptr<uint8_t>() + sizeof(type_and_length),
-        reinterpret_cast<const uint8_t *>(integrity)
-      );
-
-      // padding if necessary
       if constexpr (traits_t::message_integrity_padding > 1)
       {
-        static constexpr const
-          std::array<uint8_t, traits_t::message_integrity_padding> pad{};
-        auto size = reinterpret_cast<const uint8_t *>(integrity) - as_ptr<uint8_t>();
-        if (size % pad.size() != 0)
+        static constexpr const auto r = traits_t::message_integrity_padding - 1;
+        if (n % traits_t::message_integrity_padding != 0)
         {
-          auto pad_size = pad.size() - size % pad.size();
-          integrity_calculator.update(pad.cbegin(), pad.cbegin() + pad_size);
+          auto new_n = (n + r) & ~r;
+          std::fill(buf.begin() + n, buf.begin() + new_n, '\0');
+          n = new_n;
         }
       }
 
-      // check if valid
-      auto expected = integrity_calculator.finish();
+      auto expected = integrity_calculator
+        .update(buf.begin(), buf.begin() + n)
+        .finish();
+
       if (std::equal(expected.begin(), expected.end(),
           integrity->begin(), integrity->end()))
       {
         error.clear();
         return true;
       }
+
       error = make_error_code(errc::unexpected_attribute_value);
     }
     else
