@@ -25,9 +25,6 @@ inline constexpr const auto attribute_type = false;
 template <typename Protocol>
 inline constexpr const auto another_attribute_type = false;
 
-template <typename Protocol>
-inline auto integrity_calculator = false;
-
 
 // MSTURN {{{1
 
@@ -77,9 +74,10 @@ template <>
 inline constexpr const auto another_attribute_type<MSTURN> =
   turner::msturn::username;
 
-template <>
-inline auto integrity_calculator<MSTURN> =
-  turner::msturn::make_integrity_calculator("realm", "user", "pass");
+inline auto integrity_calculator (MSTURN)
+{
+  return turner::msturn::make_integrity_calculator("realm", "user", "pass");
+}
 
 
 // STUN {{{1
@@ -126,9 +124,10 @@ template <>
 inline constexpr const auto another_attribute_type<STUN> =
   turner::stun::username;
 
-template <>
-inline auto integrity_calculator<STUN> =
-  turner::stun::make_integrity_calculator("realm", "user", "pass");
+inline auto integrity_calculator (STUN)
+{
+  return turner::stun::make_integrity_calculator("realm", "user", "pass");
+}
 
 
 // TURN {{{1
@@ -176,9 +175,10 @@ template <>
 inline constexpr const auto another_attribute_type<TURN> =
   turner::turn::username;
 
-template <>
-inline auto integrity_calculator<TURN> =
-  turner::turn::make_integrity_calculator("realm", "user", "pass");
+inline auto integrity_calculator (TURN)
+{
+  return turner::turn::make_integrity_calculator("realm", "user", "pass");
+}
 
 
 // }}}1

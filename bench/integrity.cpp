@@ -17,7 +17,7 @@ void integrity_valid (benchmark::State &state)
   {
     auto data = wire_data<Protocol>;
     auto msg = Protocol::parse(data);
-    auto hmac = integrity_calculator<Protocol>;
+    auto hmac = integrity_calculator(Protocol());
 
     bool ok = msg->has_valid_integrity(hmac);
     if (!ok)
@@ -57,7 +57,7 @@ void integrity_invalid (benchmark::State &state)
     data.back() ^= 1;
 
     auto msg = Protocol::parse(data);
-    auto hmac = integrity_calculator<Protocol>;
+    auto hmac = integrity_calculator(Protocol());
 
     std::error_code error;
     bool ok = msg->has_valid_integrity(hmac, error);
@@ -95,7 +95,7 @@ void integrity_missing (benchmark::State &state)
   {
     auto data = wire_data_with_payload(Protocol(), "");
     auto msg = Protocol::parse(data);
-    auto hmac = integrity_calculator<Protocol>;
+    auto hmac = integrity_calculator(Protocol());
 
     std::error_code error;
     bool ok = msg->has_valid_integrity(hmac, error);

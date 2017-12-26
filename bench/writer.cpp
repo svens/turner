@@ -59,7 +59,7 @@ void writer_finish_with_integrity (benchmark::State &state)
     auto &request = msg->as(message_type<Protocol>);
 
     std::error_code error;
-    auto hmac = integrity_calculator<Protocol>;
+    auto hmac = integrity_calculator(Protocol());
     request.to_success_response(data).finish(hmac, error);
     if (error)
     {
