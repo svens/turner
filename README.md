@@ -29,6 +29,8 @@
 The source tree is organised as follows:
 
     .                   root directory
+    |-- bench           library micro-benchmarking application
     |-- cmake           CMake helpers
     |-- scripts         helper scripts
+    |-- tps             3rd party libraries as git submodules
     `-- turner          protocol parser library
