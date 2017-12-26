@@ -115,7 +115,7 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
- * \copydoc turner::protocol_t::parse(It,It,std::error_code&);
+ * \copydoc turner::protocol_t::parse(It, It, std::error_code &);
  */
 template <typename It>
 inline const any_message_t<protocol_traits_t> *parse (It first, It last,
@@ -126,7 +126,7 @@ inline const any_message_t<protocol_traits_t> *parse (It first, It last,
 
 
 /**
- * \copydoc turner::protocol_t::parse(It,It);
+ * \copydoc turner::protocol_t::parse(It, It);
  */
 template <typename It>
 inline const any_message_t<protocol_traits_t> *parse (It first, It last)
@@ -136,7 +136,7 @@ inline const any_message_t<protocol_traits_t> *parse (It first, It last)
 
 
 /**
- * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ * \copydoc turner::protocol_t::parse(const Data &, std::error_code &);
  */
 template <typename Data>
 inline const any_message_t<protocol_traits_t> *parse (const Data &data,
@@ -147,7 +147,7 @@ inline const any_message_t<protocol_traits_t> *parse (const Data &data,
 
 
 /**
- * \copydoc turner::protocol_t::parse(Data);
+ * \copydoc turner::protocol_t::parse(const Data &);
  */
 template <typename Data>
 inline const any_message_t<protocol_traits_t> *parse (const Data &data)

@@ -22,8 +22,9 @@ namespace msturn {
  * MS-TURN protocol message layout traits.
  *
  * \note For historical reasons (MS-TURN forked from unfinalized TURN draft),
- * Data Indication (0x115) doesn't follow usual message type classification
- * Methods below consider it internally and appear externally as it follows.
+ * Data Indication (0x115) doesn't follow usual message type classification.
+ * This class' methods consider it internally and appear externally as it
+ * follows.
  */
 struct protocol_traits_t
 {
@@ -42,9 +43,9 @@ struct protocol_traits_t
   /**
    * Required cookie content.
    *
-   * \note MSTURN documentation tells Magic Cookie to be always first
-   * attribute in payload. For uniform handling like STUN/TURN, library treats
-   * it as 8B value at first attribute offset.
+   * \note MSTURN documentation requires Magic Cookie to be first attribute in
+   * payload. For uniform handling like STUN/TURN, library treats it as 8B
+   * value at first attribute offset.
    */
   static inline constexpr const uint64_t cookie = 0x00'0f'00'04'72'c6'4b'c6;
 
@@ -131,7 +132,7 @@ using protocol_t = turner::protocol_t<protocol_traits_t>;
 
 
 /**
- * \copydoc turner::protocol_t::parse(It,It,std::error_code&);
+ * \copydoc turner::protocol_t::parse(It, It, std::error_code&);
  */
 template <typename It>
 inline const any_message_t<protocol_traits_t> *parse (It first, It last,
@@ -142,7 +143,7 @@ inline const any_message_t<protocol_traits_t> *parse (It first, It last,
 
 
 /**
- * \copydoc turner::protocol_t::parse(It,It);
+ * \copydoc turner::protocol_t::parse(It, It);
  */
 template <typename It>
 inline const any_message_t<protocol_traits_t> *parse (It first, It last)
@@ -152,7 +153,7 @@ inline const any_message_t<protocol_traits_t> *parse (It first, It last)
 
 
 /**
- * \copydoc turner::protocol_t::parse(Data,std::error_code&);
+ * \copydoc turner::protocol_t::parse(const Data &, std::error_code &);
  */
 template <typename Data>
 inline const any_message_t<protocol_traits_t> *parse (const Data &data,
@@ -163,7 +164,7 @@ inline const any_message_t<protocol_traits_t> *parse (const Data &data,
 
 
 /**
- * \copydoc turner::protocol_t::parse(Data);
+ * \copydoc turner::protocol_t::parse(const Data &);
  */
 template <typename Data>
 inline const any_message_t<protocol_traits_t> *parse (const Data &data)
