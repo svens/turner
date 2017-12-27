@@ -2,12 +2,12 @@ var NAVTREE =
 [
   [ "turner", "index.html", [
     [ "STUN/TURN/MSTURN", "index.html", null ],
-    [ "Parser", "md___users_sven_src_turner_turner__parser.html", [
-      [ "Overview ", "md___users_sven_src_turner_turner__parser.html#overview", [
-        [ "Generate request ", "md___users_sven_src_turner_turner__parser.html#generate-request", null ],
-        [ "Parse request ", "md___users_sven_src_turner_turner__parser.html#parse-request", null ],
-        [ "Generate response for request ", "md___users_sven_src_turner_turner__parser.html#generate-response", null ],
-        [ "Extending library ", "md___users_sven_src_turner_turner__parser.html#extending", null ]
+    [ "Parser", "md_docs__parser.html", [
+      [ "Overview ", "md_docs__parser.html#overview", [
+        [ "Generate request ", "md_docs__parser.html#generate-request", null ],
+        [ "Parse request ", "md_docs__parser.html#parse-request", null ],
+        [ "Generate response for request ", "md_docs__parser.html#generate-response", null ],
+        [ "Extending library ", "md_docs__parser.html#extending", null ]
       ] ]
     ] ],
     [ "Modules", "modules.html", "modules" ],
