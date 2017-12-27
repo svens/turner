@@ -108,6 +108,24 @@ public:
 
 
   /**
+   * Return pointer to beginning of message.
+   */
+  const uint8_t *begin () const noexcept
+  {
+    return as_ptr<uint8_t>();
+  }
+
+
+  /**
+   * Return pointer to one byte past end of the message.
+   */
+  const uint8_t *end () const noexcept
+  {
+    return as_ptr<uint8_t>() + traits_t::header_size + length();
+  }
+
+
+  /**
    * Return message transaction ID.
    */
   const transaction_id_t &transaction_id () const noexcept
@@ -190,14 +208,9 @@ protected:
     return reinterpret_cast<const T *>(this);
   }
 
-  const uint8_t *begin () const noexcept
+  const uint8_t *payload () const noexcept
   {
     return as_ptr<uint8_t>() + protocol_t::header_and_cookie_size();
-  }
-
-  const uint8_t *end () const noexcept
-  {
-    return begin() + length() - protocol_t::min_payload_length();
   }
   /// \endcond
 
@@ -257,7 +270,7 @@ public:
     attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     std::error_code &error) const noexcept
   {
-    if (auto attribute = __bits::find_attribute(this->begin(), this->end(),
+    if (auto attribute = __bits::find_attribute(this->payload(), this->end(),
         AttributeType,
         traits_t::padding_size,
         error))
@@ -626,8 +639,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
   sal::crypto::hmac_t<Digest> &integrity_calculator,
   std::error_code &error) const noexcept
 {
-  auto payload = as_ptr<uint8_t>() + traits_t::header_size;
-  if (auto integrity = __bits::find_attribute(payload, payload + length(),
+  if (auto integrity = __bits::find_attribute(payload(), end(),
       traits_t::message_integrity,
       traits_t::padding_size,
       error))
@@ -640,8 +652,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 
       reinterpret_cast<uint16_t *>(buf.data())[1] =
         sal::native_to_network_byte_order(
-          static_cast<uint16_t>(
-            n
+          static_cast<uint16_t>(n
             - traits_t::header_size
             + 2 * sizeof(uint16_t)
             + integrity_calculator.digest_size
