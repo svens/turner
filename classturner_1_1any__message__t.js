@@ -4,6 +4,8 @@ var classturner_1_1any__message__t =
     [ "traits_t", "classturner_1_1any__message__t.html#acc5c613c4e75ed4c000ab215d2ffea0e", null ],
     [ "transaction_id_t", "classturner_1_1any__message__t.html#a052ecb80199ebd92322d681a963c3f0a", null ],
     [ "as", "classturner_1_1any__message__t.html#aa4545f73d1cb0a4d85e2e0a50d70bbe0", null ],
+    [ "begin", "classturner_1_1any__message__t.html#a1d7fb9aa73bea466589314eaed3d59aa", null ],
+    [ "end", "classturner_1_1any__message__t.html#a2168ebddde75a8ff552bfa735ad70cd9", null ],
     [ "has_valid_integrity", "classturner_1_1any__message__t.html#a53d6e12fa388e6f9410f84df69787617", null ],
     [ "has_valid_integrity", "classturner_1_1any__message__t.html#ace80a5b584b89b1df0050097c7aaf56c", null ],
     [ "is_error_response", "classturner_1_1any__message__t.html#ac45f6413f02f61fa53ef2551be523c6b", null ],
