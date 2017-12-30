@@ -152,7 +152,6 @@ message and attribute ranges that can be extended by "designated expert".
 
 Business logic side can add easily new attribute types in application scope,
 after which those can be used just like any other attribute type:
-Similar approach works for adding new attributes as well:
   ~~~{.cpp}
   // Add new string attribute, alternate_fqdn
   // see example below how to use it
