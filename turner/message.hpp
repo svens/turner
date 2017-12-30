@@ -692,6 +692,11 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 }
 
 
+/**
+ * Encode \a value and append to message as \a AttributeType. If there is
+ * no enough room in internal buffer, \a set error to errc::not_enough_room
+ * and do nothing.
+ */
 template <typename ProtocolTraits, uint16_t MessageType>
 template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
 auto message_writer_t<ProtocolTraits, MessageType>::write (
@@ -736,6 +741,11 @@ auto message_writer_t<ProtocolTraits, MessageType>::write (
 }
 
 
+/**
+ * \copydoc finish()
+ * Also adds message integrity to the end of message. If remaining buffer is
+ * too small for integrity, set \a error to errc::not_enough_room.
+ */
 template <typename ProtocolTraits, uint16_t MessageType>
 template <typename Digest>
 auto message_writer_t<ProtocolTraits, MessageType>::finish (

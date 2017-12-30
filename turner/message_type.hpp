@@ -6,7 +6,10 @@
 
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
+#include <turner/error.hpp>
+#include <sal/byte_order.hpp>
 #include <sal/crypto/random.hpp>
+#include <sal/error.hpp>
 #include <sal/memory.hpp>
 #include <iterator>
 
