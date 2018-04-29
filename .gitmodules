@@ -7,3 +7,4 @@
 [submodule "tps/sal"]
 	path = tps/sal
 	url = https://github.com/svens/sal
+	branch = master
