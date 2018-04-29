@@ -38,7 +38,7 @@ INSTANTIATE_TEST_CASE_P(error, errc,
     turner::errc::unexpected_attribute_length,
     turner::errc::unexpected_attribute_value,
     turner::errc::not_enough_room
-  )
+  ),
 );
 
 
