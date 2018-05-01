@@ -8,6 +8,7 @@
 
 #include <turner/config.hpp>
 #include <turner/protocol.hpp>
+#include <sal/byte_order.hpp>
 #include <sal/char_array.hpp>
 #include <sal/crypto/hash.hpp>
 #include <sal/crypto/hmac.hpp>
@@ -78,6 +79,66 @@ struct protocol_traits_t
    * Padding size for calculating message integrity (0 or 1 for no padding)
    */
   static inline constexpr const size_t message_integrity_padding = 64;
+
+
+  /**
+   * Stream-based transport framing header data structure.
+   * \note Instances of this class is meant to be overlayed directly onto raw
+   * data and methods work relative to \c this.
+   */
+  struct stream_framing_header_t
+  {
+    /**
+     * Framing header size
+     */
+    static constexpr size_t size = 4;
+
+
+    /**
+     * Type of data following framing header.
+     */
+    enum class type_t: uint8_t
+    {
+      control_message = 0x02,   ///< MS-TURN control message
+      end_to_end_data = 0x03,   ///< End-to-end data
+    };
+
+
+    stream_framing_header_t () noexcept = default;
+
+
+    /**
+     * Construct new framing header at \a this using \a type and \a length for
+     * following data.
+     */
+    stream_framing_header_t (type_t type, size_t length) noexcept
+    {
+      reinterpret_cast<type_t *>(this)[0] = type;
+      reinterpret_cast<uint8_t *>(this)[1] = 0;
+      reinterpret_cast<uint16_t *>(this)[1] =
+        sal::native_to_network_byte_order(static_cast<uint16_t>(length));
+    }
+
+
+    /**
+     * Return type of data following after framing header.
+     */
+    type_t type () const noexcept
+    {
+      return reinterpret_cast<const type_t *>(this)[0];
+    }
+
+
+    /**
+     * Return length of data following framing header.
+     */
+    size_t length () const noexcept
+    {
+      return sal::network_to_native_byte_order(
+        reinterpret_cast<const uint16_t *>(this)[1]
+      );
+    }
+  };
 
 
   /**

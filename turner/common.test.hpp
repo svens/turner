@@ -82,6 +82,13 @@ struct MSTURN: public turner::msturn::protocol_t //{{{1
   {
     return turner::msturn::allocate_error;
   }
+
+  static constexpr auto attr_type ()
+  {
+    return turner::msturn::software;
+  }
+
+  static constexpr bool expect_framing_header = true;
 };
 
 
@@ -153,6 +160,13 @@ struct STUN: public turner::stun::protocol_t //{{{1
     // let's invent it for testing
     return turner::stun::protocol_t::message_type_t<0x0111>{};
   }
+
+  static constexpr auto attr_type ()
+  {
+    return turner::stun::software;
+  }
+
+  static constexpr bool expect_framing_header = false;
 };
 
 
@@ -222,6 +236,13 @@ struct TURN: public turner::turn::protocol_t //{{{1
   {
     return turner::turn::allocation_error;
   }
+
+  static constexpr auto attr_type ()
+  {
+    return turner::turn::software;
+  }
+
+  static constexpr bool expect_framing_header = false;
 };
 
 

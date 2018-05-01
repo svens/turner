@@ -150,9 +150,38 @@ private:
   {
     if (end_ != last_message_end_)
     {
-      if (auto message = Protocol::parse(last_message_end_, end_, error))
+      auto begin = last_message_end_;
+
+      if constexpr (protocol_t::has_stream_framing_header)
       {
-        last_message_end_ += message->size();
+        using framing_header_t = typename protocol_traits_t::stream_framing_header_t;
+
+        size_t size = end_ - begin;
+        if (size < framing_header_t::size)
+        {
+          return {};
+        }
+
+        auto framing_header = new(begin) framing_header_t;
+        if (framing_header->type() != framing_header_t::type_t::control_message)
+        {
+          error = make_error_code(errc::invalid_message_type);
+          return {};
+        }
+        if (framing_header->size + framing_header->length() > sizeof(buffer_))
+        {
+          error = make_error_code(errc::not_enough_room);
+          return {};
+        }
+
+        // don't check begin + length > end here:
+        // next if() deals with buffer squeezing
+        begin += framing_header_t::size;
+      }
+
+      if (auto message = Protocol::parse(begin, end_, error))
+      {
+        last_message_end_ = begin + message->size();
         return message;
       }
       else if (error == errc::insufficient_header_data
@@ -163,7 +192,14 @@ private:
           end_ = std::uninitialized_copy(last_message_end_, end_, buffer_);
           last_message_end_ = buffer_;
         }
-        error.clear();
+        if (end_ < buffer_end)
+        {
+          error.clear();
+        }
+        else
+        {
+          error = make_error_code(errc::not_enough_room);
+        }
       }
     }
     else if (end_ != buffer_)

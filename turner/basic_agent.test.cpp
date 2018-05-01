@@ -84,10 +84,29 @@ struct agent
   using datagram_client_t = client_t<false>;
   using stream_client_t = client_t<true>;
 
+
+  template <typename Data>
+  Data add_framing_header (Data data)
+  {
+    if constexpr (Protocol::has_stream_framing_header)
+    {
+      using framing_header_t = typename traits_t::stream_framing_header_t;
+      std::vector<uint8_t> buf(framing_header_t::size);
+      new(buf.data()) framing_header_t(
+        framing_header_t::type_t::control_message,
+        data.size()
+      );
+      data.insert(data.begin(), buf.begin(), buf.end());
+    }
+    return data;
+  }
+
+
   void SetUp () override
   {
     ::testing::DefaultValue<bool>::Set(true);
   }
+
 
   void TearDown () override
   {
@@ -297,7 +316,7 @@ TYPED_TEST(agent, datagram_receive_error)
 TYPED_TEST(agent, stream_receive)
 {
   typename TestFixture::stream_client_t client;
-  feed_t feed(TypeParam::msg_data());
+  feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()));
 
   ON_CALL(client.transport_, receive(_, _, _))
     .WillByDefault(Invoke(&feed, &feed_t::receive));
@@ -316,12 +335,13 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
   typename TestFixture::stream_client_t client;
 
   // first message
-  auto data = TypeParam::msg_data();
+  auto data = TestFixture::add_framing_header(TypeParam::msg_data());
 
   // add second message
   uint8_t buf[1024];
   auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
-  data.insert(data.end(), begin, end);
+  auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
+  data.insert(data.end(), second.begin(), second.end());
 
   feed_t feed(data);
   EXPECT_CALL(client.transport_, receive(_, _, _))
@@ -343,7 +363,7 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
 TYPED_TEST(agent, stream_receive_chunked_message)
 {
   typename TestFixture::stream_client_t client;
-  feed_t feed(TypeParam::msg_data(), 1);
+  feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()), 1);
 
   ON_CALL(client.transport_, receive(_, _, _))
     .WillByDefault(Invoke(&feed, &feed_t::receive));
@@ -361,14 +381,15 @@ TYPED_TEST(agent, stream_receive_full_and_partial_message)
   typename TestFixture::stream_client_t client;
 
   // first message
-  auto data = TypeParam::msg_data();
+  auto data = TestFixture::add_framing_header(TypeParam::msg_data());
   auto chunk_size = data.size();
 
   // add second message
   uint8_t buf[1024];
   auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
-  data.insert(data.end(), begin, end);
-  chunk_size += (end - begin) / 2;
+  auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
+  data.insert(data.end(), second.begin(), second.end());
+  chunk_size += second.size() / 2;
 
   feed_t feed(data, chunk_size);
   ON_CALL(client.transport_, receive(_, _, _))
@@ -392,13 +413,14 @@ TYPED_TEST(agent, stream_receive_two_messages)
   typename TestFixture::stream_client_t client;
 
   // first message
-  auto data = TypeParam::msg_data();
+  auto data = TestFixture::add_framing_header(TypeParam::msg_data());
   auto first_size = data.size();
 
   // add second message
   uint8_t buf[1024];
   auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
-  data.insert(data.end(), begin, end);
+  auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
+  data.insert(data.end(), second.begin(), second.end());
 
   feed_t feed(data, first_size);
   ON_CALL(client.transport_, receive(_, _, _))
@@ -486,6 +508,29 @@ TYPED_TEST(agent, stream_receive_error)
   std::error_code error;
   auto message = client.receive(error);
   EXPECT_EQ(std::errc::not_enough_memory, error);
+  EXPECT_EQ(nullptr, message);
+}
+
+
+TYPED_TEST(agent, stream_receive_buffer_overflow)
+{
+  typename TestFixture::stream_client_t client;
+
+  // Using internal implementation knowledge: client keeps buffer
+  // as uint8_t[2000]. Create message bigger than that
+  uint8_t buf[3 * sizeof(client)];
+  auto [begin, end] = TypeParam::msg_type().make(buf)
+    .write(TypeParam::attr_type(), std::string(2 * sizeof(client), 'X'))
+    .finish();
+  std::vector<uint8_t> data(begin, end);
+
+  feed_t feed(TestFixture::add_framing_header(data));
+  ON_CALL(client.transport_, receive(_, _, _))
+    .WillByDefault(Invoke(&feed, &feed_t::receive));
+
+  std::error_code error;
+  auto message = client.receive(error);
+  EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_EQ(nullptr, message);
 }
 
