@@ -6,6 +6,7 @@
  */
 
 #include <turner/stun/attributes.hpp>
+#include <turner/stun/client.hpp>
 #include <turner/stun/errors.hpp>
 #include <turner/stun/messages.hpp>
 #include <turner/stun/protocol.hpp>

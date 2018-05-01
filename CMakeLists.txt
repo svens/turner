@@ -9,6 +9,7 @@ message(STATUS "Turner: ${PROJECT_VERSION}")
 
 # optional features
 option(turner_unittests "Build unittests" ON)
+option(turner_client "Build turner_client application" ON)
 option(turner_bench "Build benchmarking application" OFF)
 option(turner_docs "Generate documentation" OFF)
 
@@ -66,6 +67,14 @@ include(cmake/sal.cmake)
 include(turner/list.cmake)
 add_library(turner ${turner_sources})
 add_dependencies(turner sal)
+
+# turner_client application
+if(turner_client)
+  include(client/list.cmake)
+  add_executable(turner_client ${turner_client_sources})
+  add_dependencies(turner_client turner sal)
+  target_link_libraries(turner_client turner sal ${TURNER_DEP_LIBS})
+endif()
 
 
 # Testing {{{1

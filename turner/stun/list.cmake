@@ -1,6 +1,7 @@
 list(APPEND turner_sources
   turner/stun/stun.hpp
   turner/stun/attributes.hpp
+  turner/stun/client.hpp
   turner/stun/errors.hpp
   turner/stun/messages.hpp
   turner/stun/protocol.hpp

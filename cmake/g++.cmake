@@ -2,7 +2,7 @@
 # GNU g++
 #
 
-set(CMAKE_CXX_FLAGS "-std=c++1z -Wall -Werror -Wextra -Weffc++ -Werror -pedantic -pipe")
+set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -Werror -Wextra -Weffc++ -Werror -pedantic -pipe")
 set(CMAKE_CXX_FLAGS_DEBUG "-D_DEBUG -ggdb -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 
@@ -43,6 +43,13 @@ if(COVERAGE)
     message(FATAL_ERROR "Executable genhtml not found")
   endif()
 
+  set(cov_excluded_sources
+    '*.test.?pp'
+    '${PROJECT_SOURCE_DIR}/client/*'
+    '${PROJECT_SOURCE_DIR}/server/*'
+    '${PROJECT_SOURCE_DIR}/tps/*'
+  )
+
   add_custom_target(${PROJECT_NAME}-cov
     DEPENDS unittests
     COMMENT "Generate coverage information"
@@ -55,7 +62,7 @@ if(COVERAGE)
     COMMAND ${CMAKE_COMMAND} --build . --target test
     COMMAND ${LCOV} ${LCOV_ARGS} --capture --no-external --derive-func-data --output-file turner-tests.info
     COMMAND ${LCOV} ${LCOV_ARGS} --add-tracefile turner-base.info --add-tracefile turner-tests.info --output-file turner.info
-    COMMAND ${LCOV} ${LCOV_ARGS} --remove turner.info '*.test.?pp' 'client/*' 'server/*' '*/sal/*' '*/gtest/*' --output-file turner.info
+    COMMAND ${LCOV} ${LCOV_ARGS} --remove turner.info ${cov_excluded_sources} --output-file turner.info
     COMMAND ${LCOV} ${LCOV_ARGS} --list turner.info
     COMMAND ${LCOV} ${LCOV_ARGS} --summary turner.info
   )
