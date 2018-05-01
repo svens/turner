@@ -108,6 +108,15 @@ public:
 
 
   /**
+   * Return calculated message size: header size + length()
+   */
+  size_t size () const noexcept
+  {
+    return traits_t::header_size + length();
+  }
+
+
+  /**
    * Return pointer to beginning of message.
    */
   const uint8_t *begin () const noexcept
@@ -121,7 +130,7 @@ public:
    */
   const uint8_t *end () const noexcept
   {
-    return as_ptr<uint8_t>() + traits_t::header_size + length();
+    return as_ptr<uint8_t>() + size();
   }
 
 

@@ -88,6 +88,7 @@ TYPED_TEST(any_message, length)
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
   EXPECT_EQ(TypeParam::msg_len(), msg->length());
+  EXPECT_EQ(data.size(), msg->size());
 }
 
 
