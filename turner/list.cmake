@@ -30,3 +30,6 @@ list(APPEND turner_unittests_sources
 include(turner/msturn/list.cmake)
 include(turner/stun/list.cmake)
 include(turner/turn/list.cmake)
+
+# transport
+include(turner/transport/list.cmake)

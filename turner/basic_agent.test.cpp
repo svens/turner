@@ -1,63 +1,9 @@
 #include <turner/common.test.hpp>
 #include <turner/basic_agent.hpp>
-#include <gmock/gmock.h>
+#include <turner/transport/mock.test.hpp>
 
 
 namespace turner_test { namespace {
-
-
-#if __GNUC__
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Weffc++"
-#endif
-
-template <bool IsStream>
-struct transport_t
-{
-  static constexpr bool is_stream = IsStream;
-
-  MOCK_METHOD2(wait_receive_for,
-    bool(std::chrono::milliseconds, std::error_code &)
-  );
-  MOCK_METHOD3(receive,
-    size_t(uint8_t *, uint8_t *, std::error_code &)
-  );
-};
-
-#if __GNUC__
-  #pragma GCC diagnostic pop
-#endif
-
-
-struct feed_t
-{
-  std::vector<uint8_t> data;
-  std::vector<uint8_t>::const_iterator ptr;
-  size_t chunk_size;
-
-  template <typename Data>
-  feed_t (const Data &content, size_t chunk_size = 0)
-    : data(std::cbegin(content), std::cend(content))
-    , ptr(std::cbegin(data))
-    , chunk_size(chunk_size)
-  { }
-
-  size_t receive (uint8_t *first, uint8_t *last, std::error_code &)
-  {
-    size_t size = (std::min)(last - first, data.end() - ptr);
-    if (chunk_size && chunk_size < size)
-    {
-      size = chunk_size;
-    }
-
-    std::uninitialized_copy_n(ptr, size,
-      sal::__bits::make_output_iterator(first, last)
-    );
-    ptr += size;
-
-    return size;
-  }
-};
 
 
 template <typename Protocol>
@@ -69,7 +15,7 @@ struct agent
   template <bool IsStream>
   using agent_t = turner::basic_agent_t<
     Protocol,
-    ::testing::NiceMock<transport_t<IsStream>>
+    ::testing::NiceMock<transport_mock_t<IsStream>>
   >;
 
   template <bool IsStream>
@@ -121,6 +67,37 @@ using ::testing::_;
 using ::testing::Invoke;
 using ::testing::Return;
 using ::testing::SetArgReferee;
+
+
+struct feed_t
+{
+  std::vector<uint8_t> data;
+  std::vector<uint8_t>::const_iterator ptr;
+  size_t chunk_size;
+
+  template <typename Data>
+  feed_t (const Data &content, size_t chunk_size = 0)
+    : data(std::cbegin(content), std::cend(content))
+    , ptr(std::cbegin(data))
+    , chunk_size(chunk_size)
+  { }
+
+  size_t receive (uint8_t *first, uint8_t *last, std::error_code &)
+  {
+    size_t size = (std::min)(last - first, data.end() - ptr);
+    if (chunk_size && chunk_size < size)
+    {
+      size = chunk_size;
+    }
+
+    std::uninitialized_copy_n(ptr, size,
+      sal::__bits::make_output_iterator(first, last)
+    );
+    ptr += size;
+
+    return size;
+  }
+};
 
 
 TYPED_TEST(agent, datagram_receive)
