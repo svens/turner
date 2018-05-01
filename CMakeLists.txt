@@ -79,7 +79,8 @@ if(turner_unittests)
   target_link_libraries(unittests
     turner
     sal
-    gtest_main
+    gtest
+    gmock_main
     ${TURNER_DEP_LIBS}
   )
   add_dependencies(unittests gtest)
