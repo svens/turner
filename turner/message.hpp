@@ -11,6 +11,7 @@
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/hmac.hpp>
+#include <cstring>
 
 
 __turner_begin

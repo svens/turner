@@ -69,44 +69,13 @@ using ::testing::Return;
 using ::testing::SetArgReferee;
 
 
-struct feed_t
-{
-  std::vector<uint8_t> data;
-  std::vector<uint8_t>::const_iterator ptr;
-  size_t chunk_size;
-
-  template <typename Data>
-  feed_t (const Data &content, size_t chunk_size = 0)
-    : data(std::cbegin(content), std::cend(content))
-    , ptr(std::cbegin(data))
-    , chunk_size(chunk_size)
-  { }
-
-  size_t receive (uint8_t *first, uint8_t *last, std::error_code &)
-  {
-    size_t size = (std::min)(last - first, data.end() - ptr);
-    if (chunk_size && chunk_size < size)
-    {
-      size = chunk_size;
-    }
-
-    std::uninitialized_copy_n(ptr, size,
-      sal::__bits::make_output_iterator(first, last)
-    );
-    ptr += size;
-
-    return size;
-  }
-};
-
-
 TYPED_TEST(agent, datagram_receive)
 {
   typename TestFixture::datagram_client_t client;
-  feed_t feed(TypeParam::msg_data());
+  transport_feed_t feed(TypeParam::msg_data());
 
   EXPECT_CALL(client.transport_, receive(_, _, _))
-    .WillOnce(Invoke(&feed, &feed_t::receive));
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -129,9 +98,9 @@ TYPED_TEST(agent, datagram_receive_coalesced_message)
   auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
   data.insert(data.end(), begin, end);
 
-  feed_t feed(data);
+  transport_feed_t feed(data);
   EXPECT_CALL(client.transport_, receive(_, _, _))
-    .WillOnce(Invoke(&feed, &feed_t::receive));
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -145,10 +114,11 @@ TYPED_TEST(agent, datagram_receive_coalesced_message)
 TYPED_TEST(agent, datagram_receive_chunked_message)
 {
   typename TestFixture::datagram_client_t client;
-  feed_t feed(TypeParam::msg_data(), 1);
+  transport_feed_t feed(TypeParam::msg_data());
+  feed.chunk_size = 1;
 
   EXPECT_CALL(client.transport_, receive(_, _, _))
-    .WillOnce(Invoke(&feed, &feed_t::receive));
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -171,9 +141,10 @@ TYPED_TEST(agent, datagram_receive_full_and_partial_message)
   data.insert(data.end(), begin, end);
   chunk_size += (end - begin) / 2;
 
-  feed_t feed(data, chunk_size);
+  transport_feed_t feed(data);
+  feed.chunk_size = chunk_size;
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -200,9 +171,10 @@ TYPED_TEST(agent, datagram_receive_two_messages)
   auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
   data.insert(data.end(), begin, end);
 
-  feed_t feed(data, first_size);
+  transport_feed_t feed(data);
+  feed.chunk_size = first_size;
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -220,10 +192,10 @@ TYPED_TEST(agent, datagram_receive_two_messages)
 TYPED_TEST(agent, datagram_receive_invalid_data)
 {
   typename TestFixture::datagram_client_t client;
-  feed_t feed(TestFixture::case_name);
+  transport_feed_t feed(TestFixture::case_name);
 
   EXPECT_CALL(client.transport_, receive(_, _, _))
-    .WillOnce(Invoke(&feed, &feed_t::receive));
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -293,10 +265,10 @@ TYPED_TEST(agent, datagram_receive_error)
 TYPED_TEST(agent, stream_receive)
 {
   typename TestFixture::stream_client_t client;
-  feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()));
+  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()));
 
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -320,9 +292,9 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
   auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
   data.insert(data.end(), second.begin(), second.end());
 
-  feed_t feed(data);
+  transport_feed_t feed(data);
   EXPECT_CALL(client.transport_, receive(_, _, _))
-    .WillRepeatedly(Invoke(&feed, &feed_t::receive));
+    .WillRepeatedly(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -340,10 +312,11 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
 TYPED_TEST(agent, stream_receive_chunked_message)
 {
   typename TestFixture::stream_client_t client;
-  feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()), 1);
+  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()));
+  feed.chunk_size = 1;
 
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -368,9 +341,10 @@ TYPED_TEST(agent, stream_receive_full_and_partial_message)
   data.insert(data.end(), second.begin(), second.end());
   chunk_size += second.size() / 2;
 
-  feed_t feed(data, chunk_size);
+  transport_feed_t feed(data);
+  feed.chunk_size = chunk_size;
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -399,9 +373,10 @@ TYPED_TEST(agent, stream_receive_two_messages)
   auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
   data.insert(data.end(), second.begin(), second.end());
 
-  feed_t feed(data, first_size);
+  transport_feed_t feed(data);
+  feed.chunk_size = first_size;
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -419,10 +394,10 @@ TYPED_TEST(agent, stream_receive_two_messages)
 TYPED_TEST(agent, stream_receive_invalid_data)
 {
   typename TestFixture::stream_client_t client;
-  feed_t feed(TestFixture::case_name);
+  transport_feed_t feed(TestFixture::case_name);
 
   EXPECT_CALL(client.transport_, receive(_, _, _))
-    .WillOnce(Invoke(&feed, &feed_t::receive));
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);
@@ -501,9 +476,9 @@ TYPED_TEST(agent, stream_receive_buffer_overflow)
     .finish();
   std::vector<uint8_t> data(begin, end);
 
-  feed_t feed(TestFixture::add_framing_header(data));
+  transport_feed_t feed(TestFixture::add_framing_header(data));
   ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(Invoke(&feed, &feed_t::receive));
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
   auto message = client.receive(error);

@@ -1,5 +1,8 @@
 #pragma once
 #include <chrono>
+#include <iterator>
+#include <limits>
+#include <vector>
 #include <system_error>
 #include <gmock/gmock.h>
 
@@ -33,6 +36,36 @@ struct transport_mock_t
 #if __GNUC__
   #pragma GCC diagnostic pop
 #endif
+
+
+struct transport_feed_t
+{
+  std::vector<uint8_t> data;
+  std::vector<uint8_t>::const_iterator ptr;
+  size_t chunk_size = std::numeric_limits<size_t>::max();
+
+  template <typename Data>
+  transport_feed_t (const Data &content)
+    : data(std::cbegin(content), std::cend(content))
+    , ptr(std::cbegin(data))
+  { }
+
+  size_t receive (uint8_t *first, uint8_t *last, std::error_code &)
+  {
+    size_t size = (std::min)(last - first, data.end() - ptr);
+    if (chunk_size && chunk_size < size)
+    {
+      size = chunk_size;
+    }
+
+    std::uninitialized_copy_n(ptr, size,
+      sal::__bits::make_output_iterator(first, last)
+    );
+    ptr += size;
+
+    return size;
+  }
+};
 
 
 } // namespace turner_test
