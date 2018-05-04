@@ -57,7 +57,7 @@ public:
         {
           if (auto message = stun::binding_success(reader))
           {
-            return message->read(xor_mapped_address);
+            return message->read(xor_mapped_address, error);
           }
           else
           {
