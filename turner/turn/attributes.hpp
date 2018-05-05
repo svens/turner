@@ -166,6 +166,78 @@ using xor_relayed_address_t = protocol_t::attribute_type_t<0x0016,
 inline constexpr const xor_relayed_address_t xor_relayed_address;
 
 
+// 0x0017 REQUESTED-ADDRESS-FAMILY {{{1
+
+
+/**
+ * Allocation address family
+ * \see https://tools.ietf.org/html/rfc6156#section-4.1.1
+ */
+enum class address_family_t: uint8_t
+{
+  v4 = 1,
+  v6 = 2,
+};
+
+
+/**
+ * TURN attribute REQUESTED-ADDRESS-FAMILY reader/writer
+ */
+template <typename ProtocolTraits>
+struct address_family_attribute_processor_t
+{
+  /**
+   * \copydoc uint32_attribute_processor_t::value_t
+   */
+  using value_t = address_family_t;
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    auto value = __bits::read_uint32(attribute, error);
+    if (!error)
+    {
+      value = (value & 0xff00'0000) >> 24;
+    }
+    return static_cast<value_t>(value);
+  }
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const value_t &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      (static_cast<uint32_t>(value) << 24) & 0xff00'0000,
+      error
+    );
+  }
+};
+
+
+/**
+ * TURN REQUESTED-ADDRESS-FAMILY attribute type
+ * (https://tools.ietf.org/html/rfc6156#section-4.1.1)
+ */
+using requested_address_family_t = protocol_t::attribute_type_t<0x0017,
+  address_family_attribute_processor_t
+>;
+
+
+/**
+ * TURN REQUESTED-ADDRESS-FAMILY attribute
+ * (https://tools.ietf.org/html/rfc6156#section-4.1.1)
+ */
+inline constexpr const requested_address_family_t requested_address_family;
+
+
 // 0x0019 REQUESTED-TRANSPORT {{{1
 
 
@@ -184,7 +256,7 @@ enum class transport_protocol_t: uint8_t
  * TURN attribute REQUESTED-TRANSPORT reader/writer.
  */
 template <typename ProtocolTraits>
-struct requested_transport_attribute_processor_t
+struct transport_protocol_attribute_processor_t
 {
   /**
    * \copydoc uint32_attribute_processor_t::value_t
@@ -227,7 +299,7 @@ struct requested_transport_attribute_processor_t
  * (https://tools.ietf.org/html/rfc5766#section-14.7)
  */
 using requested_transport_t = protocol_t::attribute_type_t<0x0019,
-  requested_transport_attribute_processor_t
+  transport_protocol_attribute_processor_t
 >;
 
 

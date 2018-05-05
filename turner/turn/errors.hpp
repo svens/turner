@@ -31,6 +31,7 @@ using stun::server_error;
  * \{
  *
  * \see https://tools.ietf.org/html/rfc5766#section-15
+ * \see https://tools.ietf.org/html/rfc6156#section-10.2
  */
 
 
@@ -53,6 +54,14 @@ inline constexpr const error_t allocation_mismatch{
 
 
 /**
+ * The server does not support the address family requested by the client.
+ */
+inline constexpr const error_t unsupported_address_family{
+  440, "Address Family not Supported"
+};
+
+
+/**
  * The credentials in request do not match those used to create the
  * allocation.
  */
@@ -67,6 +76,16 @@ inline constexpr const error_t wrong_credentials{
  */
 inline constexpr const error_t unsupported_transport_protocol{
   442, "Unsupported Transport Protocol"
+};
+
+
+/**
+ * A peer address was of a different address family than that of the relayed
+ * transport address of the allocation.
+ *
+ */
+inline constexpr const error_t peer_address_family_mismatch{
+  443, "Peer Address Family Mismatch"
 };
 
 
