@@ -93,7 +93,7 @@ int binding_impl ()
   turner::stun::client_t<Transport> client(server, server_port);
   client.timeout(wait_timeout);
 
-  auto [address, port] = client.binding();
+  auto [address, port] = client.server_reflexive_address();
   if (address.is_v4())
   {
     std::cout << address << ':' << port << '\n';

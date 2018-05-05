@@ -282,4 +282,34 @@ TYPED_TEST(stun_client, binding_chunked)
 }
 
 
+TYPED_TEST(stun_client, server_reflexive_address)
+{
+  typename TestFixture::client_t client;
+
+  EXPECT_CALL(client.transport_, send(_, _, _))
+    .WillOnce(
+      DoAll(
+        Invoke(expect_stun_binding),
+        Return(true)
+      )
+    );
+
+  ON_CALL(client.transport_, wait_receive_for(_, _))
+    .WillByDefault(Return(true));
+
+  transport_feed_t feed(binding_success(address_v4));
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  for (int i = 0;  i < 3;  ++i)
+  {
+    std::error_code error;
+    auto [result_address, result_port] = client.server_reflexive_address(error);
+    ASSERT_TRUE(!error) << error.message();
+    EXPECT_EQ(address_v4, result_address);
+    EXPECT_EQ(port, result_port);
+  }
+}
+
+
 }} // namespace turner_test

@@ -21,9 +21,10 @@ namespace stun {
 
 /**
  * Simple synchronous STUN client. Only supported operation is STUN Binding.
+ * This client is stateless, i.e. it does not cache idempotent responses.
  */
 template <typename Transport>
-class client_t
+class basic_client_t
   : public basic_agent_t<protocol_t, Transport>
 {
   using base_t = basic_agent_t<protocol_t, Transport>;
@@ -35,7 +36,7 @@ public:
    * constructor.
    */
   template <typename... Arg>
-  client_t (Arg &&...arg)
+  basic_client_t (Arg &&...arg)
     : base_t(std::forward<Arg>(arg)...)
   { }
 
@@ -78,6 +79,62 @@ public:
   {
     return binding(sal::throw_on_error("stun::client::binding"));
   }
+};
+
+
+/**
+ * Simple synchronous STUN client. It will cache server idempotent responses
+ * to decrease number of syscalls and network traffic.
+ */
+template <typename Transport>
+class client_t
+  : public basic_client_t<Transport>
+{
+public:
+
+  /**
+   * \copydoc basic_client_t::basic_client_t(Arg)
+   */
+  template <typename... Arg>
+  client_t (Arg &&...arg)
+    : basic_client_t<Transport>(std::forward<Arg>(arg)...)
+  {}
+
+
+  /**
+   * Return underlying transport local address as seen by server. On \a error
+   * returns unspecified address.
+   */
+  const xor_mapped_address_t::value_t &server_reflexive_address (
+    std::error_code &error) noexcept
+  {
+    if (server_reflexive_address_.second)
+    {
+      error.clear();
+    }
+    else
+    {
+      server_reflexive_address_ = basic_client_t<Transport>::binding(error);
+    }
+    return server_reflexive_address_;
+  }
+
+
+  /**
+   * \copydoc server_reflexive_address(std::error_code &)
+   * \throws std::system_error on failure
+   */
+  const xor_mapped_address_t::value_t &server_reflexive_address ()
+  {
+    return server_reflexive_address(
+      sal::throw_on_error("stun::client::server_reflexive_address")
+    );
+  }
+
+
+private:
+
+  xor_mapped_address_t::value_t server_reflexive_address_{};
 };
 
 
