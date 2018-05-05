@@ -42,7 +42,7 @@ struct transport_feed_t
 {
   std::vector<uint8_t> data;
   std::vector<uint8_t>::const_iterator ptr;
-  size_t chunk_size = std::numeric_limits<size_t>::max();
+  size_t chunk_size = (std::numeric_limits<size_t>::max)();
 
   template <typename Data>
   transport_feed_t (const Data &content)

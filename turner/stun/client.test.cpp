@@ -1,6 +1,5 @@
 #include <turner/common.test.hpp>
 #include <turner/transport/mock.test.hpp>
-#include <gmock/gmock.h>
 
 
 namespace turner_test { namespace {

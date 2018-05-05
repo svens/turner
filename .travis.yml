@@ -5,7 +5,7 @@ env:
     - COVERITY_SCAN_PROJECT_NAME="svens/turner"
     - COVERITY_SCAN_NOTIFICATION_EMAIL="sven+turner@alt.ee"
     - COVERITY_SCAN_BRANCH_PATTERN="next"
-    - COVERITY_SCAN_BUILD_COMMAND_PREPEND="cov-configure --comptype gcc --compiler gcc-7 --template"
+    - COVERITY_SCAN_BUILD_COMMAND_PREPEND="cov-configure --comptype gcc --compiler gcc-8 --template"
     - COVERITY_SCAN_BUILD_COMMAND="cmake --build ."
     - secure: "UJIpvpvHCFaMwKKcduSz1p5xwZsXKpoNU9sFAKGp9tVsjhlQYcZQ3aGTzk8cku8bLAa+oj0f6cmzwgrMZ4lVyhSZb7xA4cdadJ48RgOeYVpK/CHnebv5HUAqczTtYFPm/4A4nrDPTskp/VK8RQ+cYVAXQylc73Qfr1aihBnJM8zROdF51l5UViggmcsQtRp4KWo//ZEUGEqlqUV5Sa18kDxSscbG7ASnXyynbZzaOj6hEDlPNX1dDbeLIFyzZsEUGAUmeROGs4glgTEWF5EGiqZLUctDz7/PyELCLsbI7Lx4ofpyRhNdHwuNunOs9Oqgeoxtyul4K1plJgfveHhnTe0gaf0dnJgyhqG7USL0u52UdZg/QuaMCugjqte5sGgCFu462itQ1u39sTiNNfEFb6ob3462YMENJZWw2oZqis9Rc6eyXOsUTBYzGIi6wb98UalOQhNSnd0hHMPfAhbMAtjO48vw4iudF/e61ysbbbOVRUTbfUp6cHgxmF6wPmfmZQwpAmZuAYUTVkvnYBiPDBtYmxPs6FCvXIAnCXX4SXV1xE3B5TU5MEID39EpWN7PC5IsRm3IS2Y6i1EAY5rfHqO+TdFWcwMOolRpUMp47MV2Ndb0U+MDvN3ajOXH46AJdro2RuR3jo/HBxsBmbEhZp0U6tA9W1/zF8fsMX/KqIk="
 
