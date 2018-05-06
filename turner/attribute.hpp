@@ -9,6 +9,7 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <sal/byte_order.hpp>
+#include <utility>
 
 
 __turner_begin
@@ -31,6 +32,15 @@ public:
     return sal::network_to_native_byte_order(
       reinterpret_cast<const uint16_t *>(this)[0]
     );
+  }
+
+
+  /**
+   * Return true if attribute's type falls into comprehension-required range.
+   */
+  bool is_comprehension_required () const noexcept
+  {
+    return type() < 0x8000;
   }
 
 
@@ -121,6 +131,38 @@ public:
    * \a AttributeType value in attributes' registry.
    */
   static inline constexpr const uint16_t type = AttributeType;
+
+
+  /**
+   * Pair containing attribute type and const reference to it's value.
+   */
+  using value_cref_t = std::pair<attribute_type_t, const value_t &>;
+
+
+  /**
+   * Return pair containing attribute type and const reference to it's
+   * \a value.
+   */
+  value_cref_t value_cref (const value_t &value) const noexcept
+  {
+    return {*this, value};
+  }
+
+
+  /**
+   * Pair containing attribute type and mutable reference to it's value.
+   */
+  using value_ref_t = std::pair<attribute_type_t, value_t &>;
+
+
+  /**
+   * Return pair containing attribute type and mutable reference to it's
+   * \a value.
+   */
+  value_ref_t value_ref (value_t &value) const noexcept
+  {
+    return {*this, value};
+  }
 
 
   /**

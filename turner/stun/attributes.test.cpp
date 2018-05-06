@@ -7,6 +7,9 @@ namespace turner_test { namespace {
 using stun = turner_test::fixture;
 
 
+// XOR-MAPPED-ADDRESS {{{1
+
+
 inline const auto expected_address_v4 = sal::net::ip::make_address("1.2.3.4");
 
 inline const auto expected_address_v6 =
@@ -369,6 +372,190 @@ TEST_F(stun, write_xor_address_unexpected_attribute_value)
     std::system_error
   );
 }
+
+
+// read_many attributes {{{1
+
+
+TEST_F(stun, read_many)
+{
+  auto data = wire_data(STUN(),
+    "\x00\x06"          // Username (comprehension required)
+    "\x00\x08"          // Length
+    "username"          // Value
+
+    "\x80\x22"          // Software (comprehension optional)
+    "\x00\x08"          // Length
+    "software"          // Value
+  );
+  auto &msg = parse(STUN(), data);
+
+  std::string_view username, software;
+
+  std::error_code error;
+  uint16_t failed[4];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::username.value_ref(username),
+    turner::stun::software.value_ref(software)
+  );
+  EXPECT_EQ(0U, failed_count);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("username", username);
+  EXPECT_EQ("software", software);
+}
+
+
+TEST_F(stun, read_many_unknown_comprehension_required)
+{
+  auto data = wire_data(STUN(),
+    "\x00\x06"          // username
+    "\x00\x08"          // Length
+    "username"          // Value
+
+    "\x80\x22"          // software
+    "\x00\x08"          // Length
+    "software"          // Value
+  );
+  auto &msg = parse(STUN(), data);
+
+  std::string_view software;
+
+  std::error_code error;
+  uint16_t failed[4];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::software.value_ref(software)
+  );
+  EXPECT_EQ(turner::errc::unknown_comprehension_required, error);
+  ASSERT_EQ(1U, failed_count);
+  EXPECT_EQ(turner::stun::username.type, failed[0]);
+}
+
+
+TEST_F(stun, read_many_unknown_comprehension_required_overflow)
+{
+  auto data = wire_data(STUN(),
+    "\x00\x06"          // username
+    "\x00\x08"          // Length
+    "username"          // Value
+
+    "\x00\x20"          // xor_mapped_address
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value
+    "\x33\x26"          // Port
+    "\x20\x10\xa7\x46"  // IPv4
+
+    "\x80\x22"          // software
+    "\x00\x08"          // Length
+    "software"          // Value
+  );
+  auto &msg = parse(STUN(), data);
+
+  std::string_view software;
+
+  std::error_code error;
+  uint16_t failed[1];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::software.value_ref(software)
+  );
+  EXPECT_EQ(turner::errc::unknown_comprehension_required, error);
+  ASSERT_EQ(1U, failed_count);
+  EXPECT_EQ(turner::stun::username.type, failed[0]);
+}
+
+
+TEST_F(stun, read_many_missing)
+{
+  auto data = wire_data(STUN(),
+    "\x80\x22"          // software
+    "\x00\x08"          // Length
+    "software"          // Value
+  );
+  auto &msg = parse(STUN(), data);
+
+  std::string_view username;
+
+  std::error_code error;
+  uint16_t failed[4];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::username.value_ref(username)
+  );
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+  ASSERT_EQ(1U, failed_count);
+  EXPECT_EQ(turner::stun::username.type, failed[0]);
+}
+
+
+TEST_F(stun, read_many_missing_overflow)
+{
+  auto data = wire_data(STUN(),
+    "\x00\x06"          // username
+    "\x00\x08"          // Length
+    "username"          // Value
+  );
+  auto &msg = parse(STUN(), data);
+
+  std::string_view username, software;
+  turner::stun::alternate_server_t::value_t alternate_server;
+
+  std::error_code error;
+  uint16_t failed[1];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::username.value_ref(username),
+    turner::stun::software.value_ref(software),
+    turner::stun::alternate_server.value_ref(alternate_server)
+  );
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+  ASSERT_EQ(1U, failed_count);
+  EXPECT_EQ(turner::stun::software.type, failed[0]);
+}
+
+
+TEST_F(stun, read_many_unexpected_attribute_value)
+{
+  auto data = wire_data(STUN(),
+    "\x00\x20"          // xor_mapped_address
+    "\x00\x08"          // Length
+    "\x00\xff"          // Value (invalid)
+    "\x33\x26"          // Port
+    "\x20\x10\xa7\x46"  // IPv4
+  );
+  auto &msg = parse(STUN(), data);
+
+  turner::stun::xor_mapped_address_t::value_t xor_mapped_address;
+
+  std::error_code error;
+  uint16_t failed[4];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::xor_mapped_address.value_ref(xor_mapped_address)
+  );
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
+  EXPECT_EQ(0U, failed_count);
+}
+
+
+TEST_F(stun, read_many_insufficient_payload_data)
+{
+  auto data = wire_data(STUN(),
+    "\x00\x20"          // XOR-MAPPED-ADDRESS
+    "\x00\x08"          // Length
+    "\x00\xff"          // Value (invalid)
+    "\x33\x26"          // Port, but no address
+  );
+  auto &msg = parse(STUN(), data);
+
+  turner::stun::xor_mapped_address_t::value_t xor_mapped_address;
+
+  std::error_code error;
+  uint16_t failed[4];
+  auto failed_count = msg.read_many(error, failed,
+    turner::stun::xor_mapped_address.value_ref(xor_mapped_address)
+  );
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+  EXPECT_EQ(0U, failed_count);
+}
+
+
+// }}}1
 
 
 }} // namespace turner_test

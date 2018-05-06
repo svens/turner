@@ -308,6 +308,81 @@ public:
 
 
   /**
+   * Like read(), except value of \a Attribute is read into \a value_ref.
+   *
+   * \returns true if attribute was found and it's value was decoded and
+   * stored into \a value_ref successfuly. On failure, set \a error and return
+   * false.
+   */
+  template <typename Attribute>
+  bool read_one (Attribute,
+    typename Attribute::value_t &value_ref,
+    std::error_code &error) const noexcept
+  {
+    if (auto attribute_p = __bits::find_attribute(
+        this->payload(),
+        this->end(),
+        Attribute::type,
+        traits_t::padding_size,
+        error))
+    {
+      value_ref = Attribute::processor_t::read(*this,
+        *attribute_p,
+        error
+      );
+      return !error;
+    }
+    return false;
+  }
+
+
+  /**
+   * Read multiple \a attributes in batch.
+   *
+   * Before reading \a attributes values, this method checks:
+   * 1. if message contains any comprehension required attribute(s) that are
+   *    not planned to be read (i.e. not in \a attributes). In that case, all
+   *    such attributes type values are stored into \a failed_attributes, not
+   *    exceeding \a N and \a error is set to
+   *    \c errc::unknown_comprehension_required
+   * 2. if \a attributes contain attribute(s) that are not found in message,
+   *    these are stored into \a failed_attributes, not exceeding \a N and
+   *    \a error is set to \c errc::attribute_not_found
+   *
+   * If any of checks above fails, no attributes are read and method returns
+   * number of items stored into \a failed_attributes. If checks pass, each
+   * attribute value is read, stopping on first failure. In this case, nothing
+   * is stored into \a failed_attributes but \a error will be set to indicate
+   * what kind of error happened during reading. If all \a attributes are read
+   * successfully, \a error will be cleared.
+   */
+  template <size_t N, typename... Attribute>
+  size_t read_many (
+    std::error_code &error,
+    uint16_t (&failed_attributes)[N],
+    std::pair<Attribute, typename Attribute::value_t &> &&...attributes)
+      const noexcept
+  {
+    uint16_t attribute_types[] = { (attributes.first.type)..., 0 };
+    size_t size = __bits::gather_unknown_comprehension_required_or_missing(
+      this->payload(), this->end(),
+      attribute_types, sizeof(attribute_types)/sizeof(attribute_types[0]) - 1,
+      failed_attributes, N,
+      traits_t::padding_size,
+      error
+    );
+    if (!error)
+    {
+      if ((read_one(attributes.first, attributes.second, error) && ...))
+      {
+        return 0;
+      }
+    }
+    return size;
+  }
+
+
+  /**
    * Create success response for this message into region [\a first, \a last).
    * On failure, set \a error and returned object is in undefined state.
    *
