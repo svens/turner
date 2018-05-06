@@ -118,6 +118,91 @@ TYPED_TEST(attribute_processor, read_uint32_unexpected_attribute_length)
 }
 
 
+TYPED_TEST(attribute_processor, read_one_uint32)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x04"          // Length
+    "\x12\x34\x56\x78"  // Value
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  uint32_t value;
+  std::error_code error;
+  EXPECT_TRUE(msg.read_one(uint32_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(0x12345678U, value);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_uint32_last_attribute)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
+
+    "\x00\x01"          // Type (expected 0x1)
+    "\x00\x04"          // Length
+    "\x12\x34\x56\x78"  // Value
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  uint32_t value;
+  std::error_code error;
+  EXPECT_TRUE(msg.read_one(uint32_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(0x12345678U, value);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_uint32_attribute_not_found)
+{
+  auto data = wire_data(TypeParam(),
+    "\00\x02"           // Type (not expected 0x1)
+    "\00\x04"           // Length
+    "\12\x34\56\x78"    // Value
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  uint32_t value;
+  std::error_code error;
+  EXPECT_FALSE(msg.read_one(uint32_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_uint32_length_past_message_end)
+{
+  auto data = wire_data(TypeParam(),
+    "\00\x01"           // Type
+    "\00\x08"           // Length (past message)
+    "\12\x34\56\x78"    // Value
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  uint32_t value;
+  std::error_code error;
+  EXPECT_FALSE(msg.read_one(uint32_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_uint32_unexpected_attribute_length)
+{
+  auto data = wire_data(TypeParam(),
+    "\00\x01"           // Type
+    "\00\x03"           // Length (!= sizeof(uint32_t))
+    "\12\x34\56\x78"    // Value
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  uint32_t value;
+  std::error_code error;
+  EXPECT_FALSE(msg.read_one(uint32_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+}
+
+
 TYPED_TEST(attribute_processor, write_uint32)
 {
   std::array<uint8_t, TypeParam::header_and_cookie_size() + 8> data;
@@ -257,6 +342,91 @@ TYPED_TEST(attribute_processor, read_string_empty)
   EXPECT_EQ("", value);
 
   EXPECT_NO_THROW(msg.read(string_attr<TypeParam>));
+}
+
+
+TYPED_TEST(attribute_processor, read_one_string)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::string_view value;
+  EXPECT_TRUE(msg.read_one(string_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("str", value);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_string_last_attribute)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x00"  // Length
+
+    "\x00\x01"  // Type (expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::string_view value;
+  EXPECT_TRUE(msg.read_one(string_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("str", value);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_string_attribute_not_found)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::string_view value;
+  EXPECT_FALSE(msg.read_one(string_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_string_length_past_message_end)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x05"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::string_view value;
+  EXPECT_FALSE(msg.read_one(string_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_string_empty)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01" // Type
+    "\x00\x00" // Length
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::string_view value;
+  EXPECT_TRUE(msg.read_one(string_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("", value);
 }
 
 
@@ -442,6 +612,91 @@ TYPED_TEST(attribute_processor, read_array_empty)
   EXPECT_EQ(begin, end);
 
   EXPECT_NO_THROW(msg.read(array_attr<TypeParam>));
+}
+
+
+TYPED_TEST(attribute_processor, read_one_array)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<const uint8_t *, const uint8_t *> value;
+  EXPECT_TRUE(msg.read_one(array_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("str", std::string(value.first, value.second));
+}
+
+
+TYPED_TEST(attribute_processor, read_one_array_last_attribute)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x00"  // Length
+
+    "\x00\x01"  // Type (expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<const uint8_t *, const uint8_t *> value;
+  EXPECT_TRUE(msg.read_one(array_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("str", std::string(value.first, value.second));
+}
+
+
+TYPED_TEST(attribute_processor, read_one_array_attribute_not_found)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"  // Type (not expected 0x1)
+    "\x00\x03"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<const uint8_t *, const uint8_t *> value;
+  EXPECT_FALSE(msg.read_one(array_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_array_length_past_message_end)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x05"  // Length
+    "str\0"     // Value + padding
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<const uint8_t *, const uint8_t *> value;
+  EXPECT_FALSE(msg.read_one(array_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_array_empty)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x00"  // Length
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<const uint8_t *, const uint8_t *> value;
+  EXPECT_TRUE(msg.read_one(array_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(value.first, value.second);
 }
 
 
@@ -648,6 +903,96 @@ TYPED_TEST(attribute_processor, read_error_unexpected_attribute_length)
     msg.read(error_attr<TypeParam>),
     std::system_error
   );
+}
+
+
+TYPED_TEST(attribute_processor, read_one_error)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x07"          // Length
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  turner::error_t value;
+  EXPECT_TRUE(msg.read_one(error_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error) << error.message();
+  EXPECT_EQ(expected_error, value);
+  EXPECT_EQ("Msg", value.message);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_error_last_attribute)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
+
+    "\x00\x01"          // Type (expected 0x1)
+    "\x00\x07"          // Length
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  turner::error_t value;
+  EXPECT_TRUE(msg.read_one(error_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(expected_error, value);
+  EXPECT_EQ("Msg", value.message);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_error_attribute_not_found)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x07"          // Length
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  turner::error_t value;
+  EXPECT_FALSE(msg.read_one(error_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_error_length_past_message_end)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x09"          // Length (past message)
+    "\x00\x00\x03\x00"  // Value
+    "Msg\xab"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  turner::error_t value;
+  EXPECT_FALSE(msg.read_one(error_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_error_unexpected_attribute_length)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"  // Type
+    "\x00\x00"  // Length (need at least 4B)
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  turner::error_t value;
+  EXPECT_FALSE(msg.read_one(error_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 }
 
 
@@ -1004,6 +1349,227 @@ TYPED_TEST(attribute_processor, read_address_unexpected_attribute_value)
     msg.read(addr_attr<TypeParam>),
     std::system_error
   );
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v4)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error) << error.message();
+  EXPECT_EQ(expected_address_v4, value.first);
+  EXPECT_EQ(expected_port, value.second);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v6)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x14"          // Length
+    "\x00\x02"          // Value (v6 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error) << error.message();
+  EXPECT_EQ(expected_address_v6, value.first);
+  EXPECT_EQ(expected_port, value.second);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v4_last_attribute)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
+
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error) << error.message();
+  EXPECT_EQ(expected_address_v4, value.first);
+  EXPECT_EQ(expected_port, value.second);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v6_last_attribute)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x00"          // Length
+
+    "\x00\x01"          // Type
+    "\x00\x14"          // Length
+    "\x00\x02"          // Value (v6 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_TRUE(!error) << error.message();
+  EXPECT_EQ(expected_address_v6, value.first);
+  EXPECT_EQ(expected_port, value.second);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_attribute_not_found)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x02"          // Type (not expected 0x1)
+    "\x00\x08"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v4_length_past_message_end)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x09"          // Length
+    "\x00\x01"          // Value (v4 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v6_length_past_message_end)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x15"          // Length
+    "\x00\x02"          // Value (v6 address)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::insufficient_payload_data, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v4_unexpected_attribute_length)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x14"          // Length
+    "\x00\x01"          // Value (claimed v4 but have v6)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv6
+    "\x05\x06\x07\x08"
+    "\x09\x0a\x0b\x0c"
+    "\x0d\x0e\x0f\x10"
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_v6_unexpected_attribute_length)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x02"          // Value (claimed v6 but have v4)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_empty)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x00"          // Length (empty)
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+}
+
+
+TYPED_TEST(attribute_processor, read_one_address_unexpected_attribute_value)
+{
+  auto data = wire_data(TypeParam(),
+    "\x00\x01"          // Type
+    "\x00\x08"          // Length
+    "\x00\x99"          // Value (unexpected family)
+    "\x12\x34"          // Port
+    "\x01\x02\x03\x04"  // IPv4
+  );
+  auto &msg = parse(TypeParam(), data);
+
+  std::error_code error;
+  std::pair<sal::net::ip::address_t, uint16_t> value;
+  EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
 }
 
 
