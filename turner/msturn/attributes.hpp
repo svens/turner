@@ -237,8 +237,8 @@ inline constexpr const realm_t realm;
  * MS-TURN Requested Address Family attribute type
  * \see https://msdn.microsoft.com/en-us/library/hh643912(v=office.12).aspx
  */
-using requested_address_family_t = protocol_t::attribute_type_t<0x0017,
-  address_family_attribute_processor_t
+using requested_address_family_t = protocol_t::reuse_attribute_t<
+  turn::requested_address_family_t
 >;
 
 

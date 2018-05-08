@@ -230,7 +230,7 @@ TEST_F(turn, read_requested_address_family)
   std::error_code error;
   auto value = msg.read(turner::turn::requested_address_family, error);
   ASSERT_TRUE(!error);
-  EXPECT_EQ(turner::turn::address_family_t::v4, value);
+  EXPECT_EQ(turner::address_family_t::v4, value);
 
   EXPECT_NO_THROW(
     msg.read(turner::turn::requested_address_family)
@@ -254,7 +254,7 @@ TEST_F(turn, read_requested_address_family_last_attribute)
   std::error_code error;
   auto value = msg.read(turner::turn::requested_address_family, error);
   ASSERT_TRUE(!error);
-  EXPECT_EQ(turner::turn::address_family_t::v4, value);
+  EXPECT_EQ(turner::address_family_t::v4, value);
 
   EXPECT_NO_THROW(
     msg.read(turner::turn::requested_address_family)
@@ -313,7 +313,7 @@ TEST_F(turn, write_requested_address_family)
   EXPECT_EQ(8, writer.available());
 
   writer.write(turner::turn::requested_address_family,
-    turner::turn::address_family_t::v4,
+    turner::address_family_t::v4,
     error
   );
   EXPECT_TRUE(!error);
@@ -322,7 +322,7 @@ TEST_F(turn, write_requested_address_family)
   auto &msg = parse(TURN(), data);
   EXPECT_EQ(8, msg.length());
   EXPECT_EQ(
-    turner::turn::address_family_t::v4,
+    turner::address_family_t::v4,
     msg.read(turner::turn::requested_address_family)
   );
 }
@@ -337,7 +337,7 @@ TEST_F(turn, write_requested_address_family_not_enough_room)
   EXPECT_EQ(7, writer.available());
 
   writer.write(turner::turn::requested_address_family,
-    turner::turn::address_family_t::v4,
+    turner::address_family_t::v4,
     error
   );
   EXPECT_EQ(turner::errc::not_enough_room, error);
@@ -346,7 +346,7 @@ TEST_F(turn, write_requested_address_family_not_enough_room)
   EXPECT_THROW(
     build(TURN(), data).write(
       turner::turn::requested_address_family,
-      turner::turn::address_family_t::v4
+      turner::address_family_t::v4
     ),
     std::system_error
   );

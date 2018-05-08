@@ -246,8 +246,8 @@ struct address_attribute_processor_t
  */
 enum class address_family_t: uint8_t
 {
-  v4 = 0x01,
-  v6 = 0x02,
+  v4 = 1,
+  v6 = 2,
 };
 
 
