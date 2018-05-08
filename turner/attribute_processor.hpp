@@ -9,6 +9,7 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <turner/__bits/attribute_processor.hpp>
+#include <chrono>
 
 
 __turner_begin
@@ -49,6 +50,45 @@ struct uint32_attribute_processor_t
     std::error_code &error) noexcept
   {
     return __bits::write_uint32(first, last, value, error);
+  }
+};
+
+
+template <typename ProtocolTraits>
+struct seconds_attribute_processor_t
+{
+  /**
+   * Attribute value type
+   */
+  using value_t = std::chrono::seconds;
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    return value_t{__bits::read_uint32(attribute, error)};
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  template <typename Rep, typename Period>
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const std::chrono::duration<Rep, Period> &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      static_cast<uint32_t>(
+        std::chrono::duration_cast<value_t>(value).count()
+      ),
+      error
+    );
   }
 };
 

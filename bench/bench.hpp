@@ -10,6 +10,9 @@
 namespace turner_bench {
 
 
+using namespace std::chrono_literals;
+
+
 template <typename Protocol>
 inline constexpr const auto wire_data = false;
 

@@ -98,7 +98,7 @@ inline constexpr const channel_number_t channel_number;
  * (https://tools.ietf.org/html/rfc5766#section-14.2)
  */
 using lifetime_t = protocol_t::attribute_type_t<0x000d,
-  uint32_attribute_processor_t
+  seconds_attribute_processor_t
 >;
 
 

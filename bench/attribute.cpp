@@ -140,7 +140,7 @@ void attribute_write (benchmark::State &state)
     std::error_code error;
     request
       .to_success_response(data, error)
-      .write(attribute_type<Protocol>, 600)
+      .write(attribute_type<Protocol>, 600s)
     ;
     if (error)
     {
@@ -151,7 +151,7 @@ void attribute_write (benchmark::State &state)
     {
       auto writer = request
         .to_success_response(data, error)
-        .write(attribute_type<Protocol>, 600)
+        .write(attribute_type<Protocol>, 600s)
       ;
       benchmark::DoNotOptimize(writer);
     }
