@@ -1086,9 +1086,12 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
 
 
 template <typename Protocol>
-constexpr const typename Protocol::template attribute_type_t<0x01,
+using addr_attr_t = typename Protocol::template attribute_type_t<0x01,
   turner::address_attribute_processor_t
-> addr_attr{};
+>;
+
+template <typename Protocol>
+constexpr addr_attr_t<Protocol> addr_attr{};
 
 
 inline const auto expected_address_v4 = sal::net::ip::make_address("1.2.3.4");
@@ -1364,11 +1367,11 @@ TYPED_TEST(attribute_processor, read_one_address_v4)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_TRUE(!error) << error.message();
-  EXPECT_EQ(expected_address_v4, value.first);
-  EXPECT_EQ(expected_port, value.second);
+  EXPECT_EQ(expected_address_v4, value.address);
+  EXPECT_EQ(expected_port, value.port);
 }
 
 
@@ -1387,11 +1390,11 @@ TYPED_TEST(attribute_processor, read_one_address_v6)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_TRUE(!error) << error.message();
-  EXPECT_EQ(expected_address_v6, value.first);
-  EXPECT_EQ(expected_port, value.second);
+  EXPECT_EQ(expected_address_v6, value.address);
+  EXPECT_EQ(expected_port, value.port);
 }
 
 
@@ -1410,11 +1413,11 @@ TYPED_TEST(attribute_processor, read_one_address_v4_last_attribute)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_TRUE(!error) << error.message();
-  EXPECT_EQ(expected_address_v4, value.first);
-  EXPECT_EQ(expected_port, value.second);
+  EXPECT_EQ(expected_address_v4, value.address);
+  EXPECT_EQ(expected_port, value.port);
 }
 
 
@@ -1436,11 +1439,11 @@ TYPED_TEST(attribute_processor, read_one_address_v6_last_attribute)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_TRUE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_TRUE(!error) << error.message();
-  EXPECT_EQ(expected_address_v6, value.first);
-  EXPECT_EQ(expected_port, value.second);
+  EXPECT_EQ(expected_address_v6, value.address);
+  EXPECT_EQ(expected_port, value.port);
 }
 
 
@@ -1456,7 +1459,7 @@ TYPED_TEST(attribute_processor, read_one_address_attribute_not_found)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::attribute_not_found, error);
 }
@@ -1474,7 +1477,7 @@ TYPED_TEST(attribute_processor, read_one_address_v4_length_past_message_end)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 }
@@ -1495,7 +1498,7 @@ TYPED_TEST(attribute_processor, read_one_address_v6_length_past_message_end)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::insufficient_payload_data, error);
 }
@@ -1516,7 +1519,7 @@ TYPED_TEST(attribute_processor, read_one_address_v4_unexpected_attribute_length)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 }
@@ -1534,7 +1537,7 @@ TYPED_TEST(attribute_processor, read_one_address_v6_unexpected_attribute_length)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 }
@@ -1549,7 +1552,7 @@ TYPED_TEST(attribute_processor, read_one_address_empty)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
 }
@@ -1567,7 +1570,7 @@ TYPED_TEST(attribute_processor, read_one_address_unexpected_attribute_value)
   auto &msg = parse(TypeParam(), data);
 
   std::error_code error;
-  std::pair<sal::net::ip::address_t, uint16_t> value;
+  typename addr_attr_t<TypeParam>::value_t value;
   EXPECT_FALSE(msg.read_one(addr_attr<TypeParam>, value, error));
   EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
 }

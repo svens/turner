@@ -211,10 +211,12 @@ struct address_attribute_processor_t
 {
   /**
    * Attribute value type.
-   * - first: address
-   * - second: port in host byte order
    */
-  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+  struct value_t
+  {
+    sal::net::ip::address_t address{};
+    uint16_t port{};
+  };
 
 
   /**
@@ -224,7 +226,9 @@ struct address_attribute_processor_t
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
-    return __bits::read_address(attribute, error);
+    value_t result;
+    __bits::read_address(attribute, &result.address, &result.port, error);
+    return result;
   }
 
 
@@ -236,7 +240,7 @@ struct address_attribute_processor_t
     const value_t &value,
     std::error_code &error) noexcept
   {
-    return __bits::write_address(first, last, value, error);
+    return __bits::write_address(first, last, value.address, value.port, error);
   }
 };
 

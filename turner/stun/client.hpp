@@ -108,15 +108,15 @@ public:
   const xor_mapped_address_t::value_t &server_reflexive_address (
     std::error_code &error) noexcept
   {
-    if (server_reflexive_address_.second)
+    if (server_reflexive_.port)
     {
       error.clear();
     }
     else
     {
-      server_reflexive_address_ = basic_client_t<Transport>::binding(error);
+      server_reflexive_ = basic_client_t<Transport>::binding(error);
     }
-    return server_reflexive_address_;
+    return server_reflexive_;
   }
 
 
@@ -134,7 +134,7 @@ public:
 
 private:
 
-  xor_mapped_address_t::value_t server_reflexive_address_{};
+  xor_mapped_address_t::value_t server_reflexive_{};
 };
 
 

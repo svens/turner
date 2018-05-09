@@ -334,7 +334,7 @@ struct xor_address_attribute_processor_t
    * - first: address
    * - second: port in host byte order
    */
-  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+  using value_t = typename address_attribute_processor_t<ProtocolTraits>::value_t;
 
 
   /**
@@ -702,20 +702,20 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
   const any_attribute_t &attribute,
   std::error_code &error) noexcept -> value_t
 {
-  auto [ address, port ] = address_attribute_processor_t<ProtocolTraits>::read(
+  auto result = address_attribute_processor_t<ProtocolTraits>::read(
     message, attribute, error
   );
   if (!error)
   {
     auto &txn_id = message.transaction_id();
-    port ^= sal::network_to_native_byte_order(
+    result.port ^= sal::network_to_native_byte_order(
       *reinterpret_cast<const uint16_t *>(&txn_id[0])
     );
 
     // IPv4
-    if (auto v4 = address.as_v4())
+    if (auto v4 = result.address.as_v4())
     {
-      address = sal::net::ip::make_address_v4(v4->to_uint()
+      result.address = sal::net::ip::make_address_v4(v4->to_uint()
         ^ sal::network_to_native_byte_order(
           *reinterpret_cast<const uint32_t *>(&txn_id[0])
         )
@@ -723,7 +723,7 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
     }
 
     // IPv6
-    else if (auto v6 = address.as_v6())
+    else if (auto v6 = result.address.as_v6())
     {
       auto p = const_cast<uint8_t *>(v6->to_bytes().data());
       for (auto b: txn_id)
@@ -731,10 +731,8 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
         *p++ ^= b;
       }
     }
-
-    return { address, port };
   }
-  return {};
+  return result;
 }
 
 
@@ -746,14 +744,14 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
   std::error_code &error) noexcept
 {
   auto &txn_id = message.transaction_id();
-  value.second ^= sal::native_to_network_byte_order(
+  value.port ^= sal::native_to_network_byte_order(
     *reinterpret_cast<const uint16_t *>(&txn_id[0])
   );
 
   // IPv4
-  if (auto v4 = value.first.as_v4())
+  if (auto v4 = value.address.as_v4())
   {
-    value.first = sal::net::ip::make_address_v4(v4->to_uint()
+    value.address = sal::net::ip::make_address_v4(v4->to_uint()
       ^ sal::native_to_network_byte_order(
         *reinterpret_cast<const uint32_t *>(&txn_id[0])
       )
@@ -761,7 +759,7 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
   }
 
   // IPv6
-  else if (auto v6 = value.first.as_v6())
+  else if (auto v6 = value.address.as_v6())
   {
     auto p = const_cast<uint8_t *>(v6->to_bytes().data());
     for (auto b: txn_id)
@@ -770,7 +768,11 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
     }
   }
 
-  return turner::__bits::write_address(first, last, value, error);
+  return turner::__bits::write_address(first, last,
+    value.address,
+    value.port,
+    error
+  );
 }
 
 
