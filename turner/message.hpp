@@ -265,7 +265,7 @@ public:
   /**
    * Message type.
    */
-  static inline constexpr const message_type_t<traits_t, MessageType> type{};
+  static constexpr message_type_t<traits_t, MessageType> type{};
 
 
   /**
@@ -582,7 +582,7 @@ public:
   /**
    * Message type.
    */
-  static inline constexpr const message_type_t<traits_t, MessageType> type{};
+  static constexpr message_type_t<traits_t, MessageType> type{};
 
 
   /**
@@ -780,7 +780,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 
       if constexpr (traits_t::message_integrity_padding > 1)
       {
-        static constexpr const auto r = traits_t::message_integrity_padding - 1;
+        static constexpr auto r = traits_t::message_integrity_padding - 1;
         if (n % traits_t::message_integrity_padding != 0)
         {
           auto new_n = (n + r) & ~r;
@@ -834,7 +834,7 @@ bool message_writer_t<ProtocolTraits, MessageType>::write_one (
     message_size += static_cast<uint16_t>(2 * sizeof(uint16_t) + attribute_size);
     if constexpr (traits_t::padding_size > 1)
     {
-      constexpr const auto r = traits_t::padding_size - 1;
+      constexpr auto r = traits_t::padding_size - 1;
       message_size = (message_size + r) & ~r;
       if (first_ + traits_t::header_size + message_size > last_)
       {
@@ -888,8 +888,7 @@ auto message_writer_t<ProtocolTraits, MessageType>::finish (
     integrity_calculator.update(first_, attribute);
     if constexpr (traits_t::message_integrity_padding > 1)
     {
-      static constexpr const
-        std::array<uint8_t, traits_t::message_integrity_padding> pad{};
+      static constexpr std::array<uint8_t, traits_t::message_integrity_padding> pad{};
       auto size = attribute - first_;
       if (size % pad.size() != 0)
       {

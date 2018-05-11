@@ -45,7 +45,7 @@ public:
   /**
    * Message type numeric value (in host byte order)
    */
-  static inline constexpr const uint16_t type = MessageType;
+  static constexpr uint16_t type = MessageType;
 
 
   /**
@@ -189,7 +189,7 @@ public:
  * Return true if \a MessageType is same as numeric \a type.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
-inline constexpr bool operator== (
+constexpr bool operator== (
   message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
 {
   return MessageType == type;
@@ -200,7 +200,7 @@ inline constexpr bool operator== (
  * Return true if \a MessageType is same as numeric \a type.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
-inline constexpr bool operator== (
+constexpr bool operator== (
   uint16_t type, message_type_t<ProtocolTraits, MessageType>) noexcept
 {
   return MessageType == type;
@@ -211,7 +211,7 @@ inline constexpr bool operator== (
  * Return true if \a MessageType is not same as numeric \a type.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
-inline constexpr bool operator!= (
+constexpr bool operator!= (
   message_type_t<ProtocolTraits, MessageType>, uint16_t type) noexcept
 {
   return MessageType != type;
@@ -222,7 +222,7 @@ inline constexpr bool operator!= (
  * Return true if \a MessageType is not same as numeric \a type.
  */
 template <typename ProtocolTraits, uint16_t MessageType>
-inline constexpr bool operator!= (
+constexpr bool operator!= (
   uint16_t type, message_type_t<ProtocolTraits, MessageType>) noexcept
 {
   return MessageType != type;

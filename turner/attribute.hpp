@@ -130,7 +130,7 @@ public:
   /**
    * \a AttributeType value in attributes' registry.
    */
-  static inline constexpr const uint16_t type = AttributeType;
+  static constexpr uint16_t type = AttributeType;
 
 
   /**

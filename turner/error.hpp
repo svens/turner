@@ -120,7 +120,7 @@ struct error_t
  * Success code
  * \note This is not part of STUN/TURN/MSTURN protocols. Used only internally
  */
-constexpr const error_t success{0, "Success"};
+constexpr error_t success{0, "Success"};
 
 
 /**

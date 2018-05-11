@@ -212,7 +212,7 @@ size_t write_address (uint8_t *first, uint8_t *last,
   // IPv4
   if (auto v4 = address.as_v4())
   {
-    constexpr const size_t required_size = 8;
+    constexpr size_t required_size = 8;
     if (has_enough_room(first, last, required_size, error))
     {
       *first++ = 0x00;
@@ -231,7 +231,7 @@ size_t write_address (uint8_t *first, uint8_t *last,
   // IPv6
   else if (auto v6 = address.as_v6())
   {
-    constexpr const size_t required_size = 20;
+    constexpr size_t required_size = 20;
     if (has_enough_room(first, last, required_size, error))
     {
       *first++ = 0x00;

@@ -7,7 +7,7 @@ __turner_begin
 namespace {
 
 
-inline constexpr const char *to_message (errc e) noexcept
+constexpr const char *to_message (errc e) noexcept
 {
   switch (e)
   {

@@ -64,10 +64,10 @@ TEST(error, success)
   EXPECT_EQ(0U, turner::success.code);
   EXPECT_EQ("Success", turner::success.message);
 
-  constexpr const turner::error_t ok{0, "Ok"};
+  constexpr turner::error_t ok{0, "Ok"};
   EXPECT_EQ(ok, turner::success);
 
-  constexpr const turner::error_t fail{500, "Fail"};
+  constexpr turner::error_t fail{500, "Fail"};
   EXPECT_NE(fail, turner::success);
 
   std::ostringstream oss;

@@ -24,7 +24,7 @@ namespace msturn {
 /**
  * Client should contact an alternate server for this request.
  */
-constexpr const error_t try_alternate{
+constexpr error_t try_alternate{
   300, "Try Alternate"
 };
 
@@ -32,7 +32,7 @@ constexpr const error_t try_alternate{
 /**
  * Request does not include MESSAGE-INTEGRITY attribute.
  */
-constexpr const error_t unauthorized{
+constexpr error_t unauthorized{
   401, "Unauthorized"
 };
 
@@ -40,7 +40,7 @@ constexpr const error_t unauthorized{
 /**
  * Request contained unknown attributes.
  */
-constexpr const error_t unknown_attributes{
+constexpr error_t unknown_attributes{
   420, "Unknown Attributes"
 };
 
@@ -48,7 +48,7 @@ constexpr const error_t unknown_attributes{
 /**
  * Authentication failed.
  */
-constexpr const error_t integrity_check_failure{
+constexpr error_t integrity_check_failure{
   431, "Integrity Check Failure"
 };
 
@@ -56,7 +56,7 @@ constexpr const error_t integrity_check_failure{
 /**
  * Request does not contain USERNAME attribute.
  */
-constexpr const error_t missing_username{
+constexpr error_t missing_username{
   432, "Missing Username"
 };
 
@@ -64,7 +64,7 @@ constexpr const error_t missing_username{
 /**
  * Request does not contain REALM attribute.
  */
-constexpr const error_t missing_realm{
+constexpr error_t missing_realm{
   434, "Missing Realm"
 };
 
@@ -72,7 +72,7 @@ constexpr const error_t missing_realm{
 /**
  * Request does not contain NONCE attribute.
  */
-constexpr const error_t missing_nonce{
+constexpr error_t missing_nonce{
   435, "Missing Nonce"
 };
 
@@ -81,7 +81,7 @@ constexpr const error_t missing_nonce{
  * Request contained USERNAME attribute but it's value was not understood by
  * server.
  */
-constexpr const error_t unknown_user{
+constexpr error_t unknown_user{
   436, "Unknown User"
 };
 
@@ -89,7 +89,7 @@ constexpr const error_t unknown_user{
 /**
  * Request contains NONCE attribute but the value was not valid.
  */
-constexpr const error_t stale_nonce{
+constexpr error_t stale_nonce{
   438, "Stale Nonce"
 };
 
@@ -97,7 +97,7 @@ constexpr const error_t stale_nonce{
 /**
  * Allocation of transport addres failed for internal reasons.
  */
-constexpr const error_t server_error{
+constexpr error_t server_error{
   500, "Server Error"
 };
 

@@ -32,13 +32,13 @@ struct protocol_traits_t
   /**
    * Header size in bytes.
    */
-  static inline constexpr const size_t header_size = 20;
+  static constexpr size_t header_size = 20;
 
 
   /**
    * Offset from beginning of message to cookie field.
    */
-  static inline constexpr const size_t cookie_offset = 20;
+  static constexpr size_t cookie_offset = 20;
 
 
   /**
@@ -48,37 +48,37 @@ struct protocol_traits_t
    * payload. For uniform handling like STUN/TURN, library treats it as 8B
    * value at first attribute offset.
    */
-  static inline constexpr const uint64_t cookie = 0x00'0f'00'04'72'c6'4b'c6;
+  static constexpr uint64_t cookie = 0x00'0f'00'04'72'c6'4b'c6;
 
 
   /**
    * Offset from beginning of message to transaction ID field.
    */
-  static inline constexpr const size_t transaction_id_offset = 4;
+  static constexpr size_t transaction_id_offset = 4;
 
 
   /**
    * Transaction ID size in bytes.
    */
-  static inline constexpr const size_t transaction_id_size = 16;
+  static constexpr size_t transaction_id_size = 16;
 
 
   /**
    * Attributes (TLV) padding boundary.
    */
-  static inline constexpr const size_t padding_size = 1;
+  static constexpr size_t padding_size = 1;
 
 
   /**
    * Message Integrity attribute id.
    */
-  static inline constexpr const uint16_t message_integrity = 0x0008;
+  static constexpr uint16_t message_integrity = 0x0008;
 
 
   /**
    * Padding size for calculating message integrity (0 or 1 for no padding)
    */
-  static inline constexpr const size_t message_integrity_padding = 64;
+  static constexpr size_t message_integrity_padding = 64;
 
 
   /**

@@ -155,7 +155,7 @@ after which those can be used just like any other attribute type:
   ~~~{.cpp}
   // Add new string attribute, alternate_fqdn
   // see example below how to use it
-  constexpr const turner::turn::protocol_t::attribute_type_t<0x8001,
+  constexpr turner::turn::protocol_t::attribute_type_t<0x8001,
     turner::string_attribute_processor_t
   > alternate_fqdn;
   ~~~
@@ -165,7 +165,7 @@ New message types can be added similar way:
   // Add new message to TURN protocol (GO-AWAY to signal connected clients
   // that server will be going down and presenting new FQDN where they can
   // connect to)
-  constexpr const turner::turn::protocol_t::message_type_t<0x0800> go_away;
+  constexpr turner::turn::protocol_t::message_type_t<0x0800> go_away;
 
   char buf[1024];
   auto [begin, end] = go_away.make(buf)

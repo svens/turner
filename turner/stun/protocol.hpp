@@ -26,49 +26,49 @@ struct protocol_traits_t
   /**
    * Header size in bytes.
    */
-  static inline constexpr const size_t header_size = 20;
+  static constexpr size_t header_size = 20;
 
 
   /**
    * Offset from beginning of message to cookie field.
    */
-  static inline constexpr const size_t cookie_offset = 4;
+  static constexpr size_t cookie_offset = 4;
 
 
   /**
    * Required cookie content.
    */
-  static inline constexpr const uint32_t cookie = 0x21'12'a4'42;
+  static constexpr uint32_t cookie = 0x21'12'a4'42;
 
 
   /**
    * Offset from beginning of message to transaction ID field.
    */
-  static inline constexpr const size_t transaction_id_offset = 8;
+  static constexpr size_t transaction_id_offset = 8;
 
 
   /**
    * Transaction ID size in bytes.
    */
-  static inline constexpr const size_t transaction_id_size = 12;
+  static constexpr size_t transaction_id_size = 12;
 
 
   /**
    * Attributes (TLV) padding boundary.
    */
-  static inline constexpr const size_t padding_size = 4;
+  static constexpr size_t padding_size = 4;
 
 
   /**
    * MESSAGE-INTEGRITY attribute id.
    */
-  static inline constexpr const uint16_t message_integrity = 0x0008;
+  static constexpr uint16_t message_integrity = 0x0008;
 
 
   /**
    * Padding size for calculating message integrity (0 or 1 for no padding)
    */
-  static inline constexpr const size_t message_integrity_padding = 1;
+  static constexpr size_t message_integrity_padding = 1;
 
 
   /**

@@ -14,7 +14,7 @@ TYPED_TEST_CASE(attribute_processor, protocol_types);
 
 
 template <typename Protocol>
-constexpr const typename Protocol::template attribute_type_t<0x01,
+constexpr typename Protocol::template attribute_type_t<0x01,
   turner::uint32_attribute_processor_t
 > uint32_attr{};
 
@@ -244,7 +244,7 @@ TYPED_TEST(attribute_processor, write_uint32_not_enough_room)
 
 
 template <typename Protocol>
-constexpr const typename Protocol::template attribute_type_t<0x01,
+constexpr typename Protocol::template attribute_type_t<0x01,
   turner::string_attribute_processor_t
 > string_attr{};
 
@@ -514,7 +514,7 @@ TYPED_TEST(attribute_processor, write_string_not_enough_room_for_padding)
 
 
 template <typename Protocol>
-constexpr const typename Protocol::template attribute_type_t<0x01,
+constexpr typename Protocol::template attribute_type_t<0x01,
   turner::array_attribute_processor_t
 > array_attr{};
 
@@ -794,12 +794,12 @@ TYPED_TEST(attribute_processor, write_array_not_enough_room_for_padding)
 
 
 template <typename Protocol>
-constexpr const typename Protocol::template attribute_type_t<0x01,
+constexpr typename Protocol::template attribute_type_t<0x01,
   turner::error_attribute_processor_t
 > error_attr{};
 
 
-inline constexpr const turner::error_t expected_error{300, "Text"};
+constexpr turner::error_t expected_error{300, "Text"};
 
 
 TYPED_TEST(attribute_processor, read_error)
@@ -1024,7 +1024,7 @@ TYPED_TEST(attribute_processor, write_error_empty)
   auto writer = build(TypeParam(), data);
   EXPECT_EQ(8U, writer.available());
 
-  constexpr const turner::error_t empty_error{300, ""};
+  constexpr turner::error_t empty_error{300, ""};
   writer.write(error_attr<TypeParam>, empty_error, error);
   EXPECT_TRUE(!error) << error;
   EXPECT_EQ(0U, writer.available());
@@ -1070,7 +1070,7 @@ TYPED_TEST(attribute_processor, write_error_not_enough_room_for_padding)
   auto writer = build(TypeParam(), data);
   EXPECT_EQ(11U, writer.available());
 
-  constexpr const turner::error_t padded_error{300, "123"};
+  constexpr turner::error_t padded_error{300, "123"};
   writer.write(error_attr<TypeParam>, padded_error, error);
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_EQ(11U, writer.available());
@@ -1099,7 +1099,7 @@ inline const auto expected_address_v4 = sal::net::ip::make_address("1.2.3.4");
 inline const auto expected_address_v6 =
   sal::net::ip::make_address("102:304:506:708:90a:b0c:d0e:f10");
 
-inline constexpr const uint16_t expected_port = 0x1234;
+constexpr uint16_t expected_port = 0x1234;
 
 
 TYPED_TEST(attribute_processor, read_address_v4)

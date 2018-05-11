@@ -10,10 +10,9 @@ namespace __bits {
 
 namespace {
 
-constexpr const size_t type_and_length = 2 * sizeof(uint16_t);
+constexpr size_t type_and_length = 2 * sizeof(uint16_t);
 
-inline constexpr size_t round_up (size_t size, size_t padding_size)
-  noexcept
+constexpr size_t round_up (size_t size, size_t padding_size) noexcept
 {
   return type_and_length + ((size + padding_size - 1) & ~(padding_size - 1));
 }
