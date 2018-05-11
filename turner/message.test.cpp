@@ -799,6 +799,101 @@ TYPED_TEST(message_reader, read_many_one_failing)
 }
 
 
+// message_writer::write_many {{{1
+
+
+template <typename Protocol>
+using message_writer = turner_test::with_protocol<Protocol>;
+
+TYPED_TEST_CASE(message_writer, protocol_types);
+
+
+TYPED_TEST(message_writer, write_many)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 24> data;
+
+  // write
+  auto writer = build(TypeParam(), data);
+  std::error_code error;
+  auto n = writer.write_many(error,
+    TypeParam::username.value_cref("username"),
+    TypeParam::software.value_cref("software")
+  );
+  EXPECT_TRUE(!error) << error.message();
+  EXPECT_EQ(2U, n);
+
+  // read and check
+  auto &msg = parse(TypeParam(), data);
+  std::string_view username, software;
+  uint16_t failed[2];
+  auto failed_count = msg.read_many(error, failed,
+    TypeParam::username.value_ref(username),
+    TypeParam::software.value_ref(software)
+  );
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(0U, failed_count);
+  EXPECT_EQ("username", username);
+  EXPECT_EQ("software", software);
+}
+
+
+TYPED_TEST(message_writer, write_many_not_enough_room_for_any)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 11> data;
+
+  // write
+  auto writer = build(TypeParam(), data);
+  std::error_code error;
+  auto n = writer.write_many(error,
+    TypeParam::username.value_cref("username"),
+    TypeParam::software.value_cref("software")
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(0U, n);
+
+  // read and check
+  auto &msg = parse(TypeParam(), data);
+  std::string_view username, software;
+  uint16_t failed[2];
+  auto failed_count = msg.read_many(error, failed,
+    TypeParam::username.value_ref(username),
+    TypeParam::software.value_ref(software)
+  );
+  EXPECT_FALSE(!error);
+  ASSERT_EQ(2U, failed_count);
+  EXPECT_EQ(TypeParam::username.type, failed[0]);
+  EXPECT_EQ(TypeParam::software.type, failed[1]);
+}
+
+
+TYPED_TEST(message_writer, write_many_not_enough_room_for_last)
+{
+  std::array<uint8_t, TypeParam::header_and_cookie_size() + 12> data;
+
+  // write
+  auto writer = build(TypeParam(), data);
+  std::error_code error;
+  auto n = writer.write_many(error,
+    TypeParam::username.value_cref("username"),
+    TypeParam::software.value_cref("software")
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(1U, n);
+
+  // read and check
+  auto &msg = parse(TypeParam(), data);
+  std::string_view username, software;
+  uint16_t failed[2];
+  auto failed_count = msg.read_many(error, failed,
+    TypeParam::username.value_ref(username),
+    TypeParam::software.value_ref(software)
+  );
+  EXPECT_FALSE(!error);
+  ASSERT_EQ(1U, failed_count);
+  EXPECT_EQ(TypeParam::software.type, failed[0]);
+}
+
+
 // }}}1
 
 

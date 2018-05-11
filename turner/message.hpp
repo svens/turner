@@ -640,11 +640,11 @@ public:
 
   /**
    * Encode \a value and append to message as \a AttributeType. If there is
-   * no enough room in internal buffer, \a set error to errc::not_enough_room
+   * not enough room in internal buffer, set \a error to errc::not_enough_room
    * and do nothing.
    */
   template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
-  message_writer_t &write (
+  bool write_one (
     attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     const typename AttributeProcessor<traits_t>::value_t &value,
     std::error_code &error
@@ -652,8 +652,23 @@ public:
 
 
   /**
-   * Encode \a value and append to message as \a AttributeType. If there is
-   * no enough room in internal buffer, throw std::system_error.
+   * \copydoc write_one
+   */
+  template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
+  message_writer_t &write (
+    attribute_type_t<traits_t, AttributeType, AttributeProcessor> attribute,
+    const typename AttributeProcessor<traits_t>::value_t &value,
+    std::error_code &error) noexcept
+  {
+    write_one(attribute, value, error);
+    return *this;
+  }
+
+
+  /**
+   * \copybrief write_one
+   * If there is not enough room in internal buffer, throw std::system_error
+   * with error set to errc::not_enough_room
    */
   template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
   message_writer_t &write (
@@ -663,6 +678,25 @@ public:
     return write(attribute, value,
       sal::throw_on_error("message_writer::write")
     );
+  }
+
+
+  /**
+   * Append multiple \a attributes to message using write_one(). Stops on
+   * first error or completion and returns number of successfully written
+   * \a attributes.
+   */
+  template <typename... Attribute>
+  size_t write_many (std::error_code &error,
+    std::pair<Attribute, const typename Attribute::value_t &> &&...attributes)
+      noexcept
+  {
+    size_t n = 0;
+    if (((++n, write_one(attributes.first, attributes.second, error)) && ...))
+    {
+      return n;
+    }
+    return n - 1;
   }
 
 
@@ -777,17 +811,12 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 }
 
 
-/**
- * Encode \a value and append to message as \a AttributeType. If there is
- * no enough room in internal buffer, \a set error to errc::not_enough_room
- * and do nothing.
- */
 template <typename ProtocolTraits, uint16_t MessageType>
 template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
-auto message_writer_t<ProtocolTraits, MessageType>::write (
+bool message_writer_t<ProtocolTraits, MessageType>::write_one (
   attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
   const typename AttributeProcessor<ProtocolTraits>::value_t &value,
-  std::error_code &error) noexcept -> message_writer_t &
+  std::error_code &error) noexcept
 {
   auto &message = *reinterpret_cast<any_message_t<traits_t> *>(first_);
   auto message_size = message.length();
@@ -810,7 +839,7 @@ auto message_writer_t<ProtocolTraits, MessageType>::write (
       if (first_ + traits_t::header_size + message_size > last_)
       {
         error = make_error_code(errc::not_enough_room);
-        return *this;
+        return false;
       }
     }
 
@@ -820,9 +849,11 @@ auto message_writer_t<ProtocolTraits, MessageType>::write (
       sal::native_to_network_byte_order(AttributeType);
     reinterpret_cast<uint16_t *>(attribute)[1] =
       sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
+
+    return true;
   }
 
-  return *this;
+  return false;
 }
 
 
