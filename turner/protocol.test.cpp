@@ -21,14 +21,14 @@ TYPED_TEST(protocol, framing_header)
 
 TYPED_TEST(protocol, parse)
 {
-  auto data = TypeParam::msg_data();
+  auto data = TypeParam::message_data;
 
   std::error_code error;
   auto msg = TypeParam::parse(data.begin(), data.end(), error);
   EXPECT_TRUE(!error);
   ASSERT_TRUE(msg);
 
-  EXPECT_EQ(TypeParam::msg_type(), msg->type());
+  EXPECT_EQ(TypeParam::message, msg->type());
 }
 
 

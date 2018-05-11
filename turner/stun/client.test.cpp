@@ -23,10 +23,6 @@ struct stun_client
     using stun::client_t<Transport>::transport_;
   };
 };
-
-using datagram = ::testing::NiceMock<transport_mock_t<false>>;
-using stream = ::testing::NiceMock<transport_mock_t<true>>;
-using transport_types = ::testing::Types<datagram, stream>;
 TYPED_TEST_CASE(stun_client, transport_types);
 
 
@@ -56,7 +52,7 @@ auto binding_without_address ()
 auto binding_failure ()
 {
   uint8_t buf[1024];
-  auto [first, last] = STUN::msg_error_type().make(buf).finish();
+  auto [first, last] = STUN::error_message.make(buf).finish();
   return std::vector<uint8_t>{first, last};
 }
 
@@ -67,7 +63,7 @@ void expect_stun_binding (const uint8_t *first, const uint8_t *last,
   std::error_code error;
   auto message = stun::parse(first, last, error);
   EXPECT_TRUE(!error);
-  ASSERT_TRUE(message);
+  ASSERT_NE(nullptr, message);
   EXPECT_EQ(stun::binding, message->type());
 }
 

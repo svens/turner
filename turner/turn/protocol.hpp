@@ -17,6 +17,7 @@ namespace turn {
 
 
 // Pull STUN functions into turn namespace
+using stun::integrity_calculator_t;
 using stun::make_integrity_calculator;
 
 

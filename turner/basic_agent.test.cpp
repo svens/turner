@@ -72,7 +72,7 @@ using ::testing::SetArgReferee;
 TYPED_TEST(agent, datagram_receive)
 {
   typename TestFixture::datagram_client_t client;
-  transport_feed_t feed(TypeParam::msg_data());
+  transport_feed_t feed(TypeParam::message_data);
 
   EXPECT_CALL(client.transport_, receive(_, _, _))
     .WillOnce(Invoke(&feed, &transport_feed_t::receive));
@@ -82,7 +82,7 @@ TYPED_TEST(agent, datagram_receive)
   EXPECT_TRUE(!error) << error.message();
 
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 }
 
 
@@ -91,11 +91,11 @@ TYPED_TEST(agent, datagram_receive_coalesced_message)
   typename TestFixture::datagram_client_t client;
 
   // first message
-  auto data = TypeParam::msg_data();
+  auto data = TypeParam::message_data;
 
   // add second message
   uint8_t buf[1024];
-  auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
+  auto [begin, end] = TypeParam::success_message.make(buf).finish();
   data.insert(data.end(), begin, end);
 
   transport_feed_t feed(data);
@@ -107,14 +107,14 @@ TYPED_TEST(agent, datagram_receive_coalesced_message)
   EXPECT_TRUE(!error) << error.message();
 
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 }
 
 
 TYPED_TEST(agent, datagram_receive_chunked_message)
 {
   typename TestFixture::datagram_client_t client;
-  transport_feed_t feed(TypeParam::msg_data());
+  transport_feed_t feed(TypeParam::message_data);
   feed.chunk_size = 1;
 
   EXPECT_CALL(client.transport_, receive(_, _, _))
@@ -132,12 +132,12 @@ TYPED_TEST(agent, datagram_receive_full_and_partial_message)
   typename TestFixture::datagram_client_t client;
 
   // first message
-  auto data = TypeParam::msg_data();
+  auto data = TypeParam::message_data;
   auto chunk_size = data.size();
 
   // add second message
   uint8_t buf[1024];
-  auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
+  auto [begin, end] = TypeParam::success_message.make(buf).finish();
   data.insert(data.end(), begin, end);
   chunk_size += (end - begin) / 2;
 
@@ -150,7 +150,7 @@ TYPED_TEST(agent, datagram_receive_full_and_partial_message)
   auto message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 
   message = client.receive(error);
   EXPECT_FALSE(!error);
@@ -163,12 +163,12 @@ TYPED_TEST(agent, datagram_receive_two_messages)
   typename TestFixture::datagram_client_t client;
 
   // first message
-  auto data = TypeParam::msg_data();
+  auto data = TypeParam::message_data;
   auto first_size = data.size();
 
   // add second message
   uint8_t buf[1024];
-  auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
+  auto [begin, end] = TypeParam::success_message.make(buf).finish();
   data.insert(data.end(), begin, end);
 
   transport_feed_t feed(data);
@@ -180,12 +180,12 @@ TYPED_TEST(agent, datagram_receive_two_messages)
   auto message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 
   message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_success_type(), message->type());
+  EXPECT_EQ(TypeParam::success_message, message->type());
 }
 
 
@@ -265,7 +265,7 @@ TYPED_TEST(agent, datagram_receive_error)
 TYPED_TEST(agent, stream_receive)
 {
   typename TestFixture::stream_client_t client;
-  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()));
+  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::message_data));
 
   ON_CALL(client.transport_, receive(_, _, _))
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
@@ -275,7 +275,7 @@ TYPED_TEST(agent, stream_receive)
   EXPECT_TRUE(!error) << error.message();
 
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 }
 
 
@@ -284,11 +284,11 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
   typename TestFixture::stream_client_t client;
 
   // first message
-  auto data = TestFixture::add_framing_header(TypeParam::msg_data());
+  auto data = TestFixture::add_framing_header(TypeParam::message_data);
 
   // add second message
   uint8_t buf[1024];
-  auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
+  auto [begin, end] = TypeParam::success_message.make(buf).finish();
   auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
   data.insert(data.end(), second.begin(), second.end());
 
@@ -300,19 +300,19 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
   auto message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 
   message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_success_type(), message->type());
+  EXPECT_EQ(TypeParam::success_message, message->type());
 }
 
 
 TYPED_TEST(agent, stream_receive_chunked_message)
 {
   typename TestFixture::stream_client_t client;
-  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::msg_data()));
+  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::message_data));
   feed.chunk_size = 1;
 
   ON_CALL(client.transport_, receive(_, _, _))
@@ -322,7 +322,7 @@ TYPED_TEST(agent, stream_receive_chunked_message)
   auto message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 }
 
 
@@ -331,12 +331,12 @@ TYPED_TEST(agent, stream_receive_full_and_partial_message)
   typename TestFixture::stream_client_t client;
 
   // first message
-  auto data = TestFixture::add_framing_header(TypeParam::msg_data());
+  auto data = TestFixture::add_framing_header(TypeParam::message_data);
   auto chunk_size = data.size();
 
   // add second message
   uint8_t buf[1024];
-  auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
+  auto [begin, end] = TypeParam::success_message.make(buf).finish();
   auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
   data.insert(data.end(), second.begin(), second.end());
   chunk_size += second.size() / 2;
@@ -350,12 +350,12 @@ TYPED_TEST(agent, stream_receive_full_and_partial_message)
   auto message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 
   message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_success_type(), message->type());
+  EXPECT_EQ(TypeParam::success_message, message->type());
 }
 
 
@@ -364,12 +364,12 @@ TYPED_TEST(agent, stream_receive_two_messages)
   typename TestFixture::stream_client_t client;
 
   // first message
-  auto data = TestFixture::add_framing_header(TypeParam::msg_data());
+  auto data = TestFixture::add_framing_header(TypeParam::message_data);
   auto first_size = data.size();
 
   // add second message
   uint8_t buf[1024];
-  auto [begin, end] = TypeParam::msg_success_type().make(buf).finish();
+  auto [begin, end] = TypeParam::success_message.make(buf).finish();
   auto second = TestFixture::add_framing_header(std::vector<uint8_t>(begin, end));
   data.insert(data.end(), second.begin(), second.end());
 
@@ -382,12 +382,12 @@ TYPED_TEST(agent, stream_receive_two_messages)
   auto message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_type(), message->type());
+  EXPECT_EQ(TypeParam::message, message->type());
 
   message = client.receive(error);
   EXPECT_TRUE(!error) << error.message();
   ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::msg_success_type(), message->type());
+  EXPECT_EQ(TypeParam::success_message, message->type());
 }
 
 
@@ -471,8 +471,8 @@ TYPED_TEST(agent, stream_receive_buffer_overflow)
   // Using internal implementation knowledge: client keeps buffer
   // as uint8_t[2000]. Create message bigger than that
   uint8_t buf[3 * sizeof(client)];
-  auto [begin, end] = TypeParam::msg_type().make(buf)
-    .write(TypeParam::attr_type(), std::string(2 * sizeof(client), 'X'))
+  auto [begin, end] = TypeParam::message.make(buf)
+    .write(TypeParam::username, std::string(2 * sizeof(client), 'X'))
     .finish();
   std::vector<uint8_t> data(begin, end);
 

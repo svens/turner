@@ -9,7 +9,7 @@ using turn = turner_test::fixture;
 
 TEST_F(turn, parse_range)
 {
-  auto data = TURN::msg_data();
+  auto data = TURN::message_data;
 
   std::error_code error;
   turner::turn::parse(data.begin(), data.end(), error);
@@ -23,7 +23,7 @@ TEST_F(turn, parse_range)
 
 TEST_F(turn, parse_range_with_error)
 {
-  auto data = TURN::msg_data();
+  auto data = TURN::message_data;
   data[0] = 0xff;
 
   std::error_code error;
@@ -39,7 +39,7 @@ TEST_F(turn, parse_range_with_error)
 
 TEST_F(turn, parse_data)
 {
-  auto data = TURN::msg_data();
+  auto data = TURN::message_data;
 
   std::error_code error;
   turner::turn::parse(data, error);
@@ -53,7 +53,7 @@ TEST_F(turn, parse_data)
 
 TEST_F(turn, parse_data_with_error)
 {
-  auto data = TURN::msg_data();
+  auto data = TURN::message_data;
   data[0] = 0xff;
 
   std::error_code error;
