@@ -9,6 +9,7 @@
 #include <turner/agent_base.hpp>
 #include <turner/error.hpp>
 #include <turner/message_type.hpp>
+#include <sal/crypto/hmac.hpp>
 #include <sal/time.hpp>
 
 
@@ -68,6 +69,15 @@ public:
   }
 
 
+  /**
+   * Get timeout for receive operations.
+   */
+  std::chrono::milliseconds timeout () const noexcept
+  {
+    return timeout_;
+  }
+
+
 protected:
 
   /// \{
@@ -90,6 +100,110 @@ protected:
 
   basic_agent_t (const basic_agent_t &) = delete;
   basic_agent_t &operator= (const basic_agent_t &) = delete;
+
+
+  /**
+   */
+  template <uint16_t MessageType, typename... Attribute>
+  bool send (message_type_t<protocol_traits_t, MessageType> message_type,
+    std::error_code &error,
+    std::pair<Attribute, const typename Attribute::value_t &> &&...attribute)
+      noexcept
+  {
+    uint8_t buf[2048];
+    if (auto writer = message_type.make(buf, error))
+    {
+      auto n = writer.write_many(error, std::forward<Attribute>(attribute)...);
+      if (n == sizeof...(attribute))
+      {
+        auto [first, last] = writer.finish();
+        return transport_.send(first, last, error);
+      }
+    }
+    return false;
+  }
+
+
+  /**
+   */
+  template <uint16_t MessageType, typename Digest, typename... Attribute>
+  bool send (
+    message_type_t<protocol_traits_t, MessageType> message_type,
+    sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error,
+    std::pair<Attribute, const typename Attribute::value_t &> &&...attribute)
+      noexcept
+  {
+    uint8_t buf[2048];
+    if (auto writer = message_type.make(buf, error))
+    {
+      auto n = writer.write_many(error, std::forward<Attribute>(attribute)...);
+      if (n == sizeof...(attribute))
+      {
+        auto [first, last] = writer.finish(integrity_calculator);
+        return transport_.send(first, last, error);
+      }
+    }
+    return false;
+  }
+
+
+  /**
+   */
+  template <uint16_t MessageType, typename... Attribute>
+  bool receive (
+    message_type_t<protocol_traits_t, MessageType> expected_type,
+    std::error_code &error,
+    std::pair<Attribute, typename Attribute::value_t &> &&...attribute)
+      noexcept
+  {
+    if (auto message = receive(error))
+    {
+      if (auto reader = expected_type(message))
+      {
+        if ((reader->read_one(attribute.first, attribute.second, error) && ...))
+        {
+          return true;
+        }
+      }
+      else
+      {
+        error = make_error_code(errc::unexpected_message_type);
+      }
+    }
+    return false;
+  }
+
+
+  /**
+   */
+  template <uint16_t MessageType, typename Digest, typename... Attribute>
+  bool receive (
+    message_type_t<protocol_traits_t, MessageType> expected_type,
+    sal::crypto::hmac_t<Digest> &integrity_calculator,
+    std::error_code &error,
+    std::pair<Attribute, typename Attribute::value_t &> &&...attribute)
+      noexcept
+  {
+    if (auto message = receive(error))
+    {
+      if (message->has_valid_integrity(integrity_calculator, error))
+      {
+        if (auto reader = expected_type(message))
+        {
+          if ((reader->read_one(attribute.first, attribute.second, error) && ...))
+          {
+            return true;
+          }
+        }
+        else
+        {
+          error = make_error_code(errc::unexpected_message_type);
+        }
+      }
+    }
+    return false;
+  }
 
 
   /**

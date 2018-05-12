@@ -69,3 +69,21 @@ struct transport_feed_t
 
 
 } // namespace turner_test
+
+
+//
+// Intentionally kept out of namespace to beautify gtest names
+//
+
+
+struct datagram
+  : public ::testing::NiceMock<::turner_test::transport_mock_t<false>>
+{};
+
+
+struct stream
+  : public ::testing::NiceMock<::turner_test::transport_mock_t<true>>
+{};
+
+
+using transport_types = ::testing::Types<datagram, stream>;

@@ -22,6 +22,15 @@ struct MSTURN: public turner::msturn::protocol_t //{{{1
     );
   }
 
+  static auto message_invalid_hmac ()
+  {
+    return turner::msturn::make_integrity_calculator(
+      "realm",
+      "user",
+      "invalid"
+    );
+  }
+
   static constexpr auto message = turner::msturn::allocate;
   static constexpr auto message_v = message.type;
   static constexpr auto message_length = 0x20;
@@ -77,6 +86,15 @@ struct STUN: public turner::stun::protocol_t //{{{1
     );
   }
 
+  static auto message_invalid_hmac ()
+  {
+    return turner::stun::make_integrity_calculator(
+      "realm",
+      "user",
+      "invalid"
+    );
+  }
+
   static constexpr auto message = turner::stun::binding;
   static constexpr auto message_v = message.type;
   static constexpr auto message_length = 0x18;
@@ -124,6 +142,15 @@ struct TURN: public turner::turn::protocol_t //{{{1
       "realm",
       "user",
       "pass"
+    );
+  }
+
+  static auto message_invalid_hmac ()
+  {
+    return turner::turn::make_integrity_calculator(
+      "realm",
+      "user",
+      "invalid"
     );
   }
 

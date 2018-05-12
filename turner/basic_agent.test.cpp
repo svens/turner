@@ -78,11 +78,77 @@ TYPED_TEST(agent, datagram_receive)
     .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
+}
 
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+
+TYPED_TEST(agent, datagram_receive_unexpected_message)
+{
+  typename TestFixture::datagram_client_t client;
+  transport_feed_t feed(TypeParam::message_data);
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::error_code error;
+  EXPECT_FALSE(client.receive(TypeParam::success_message, error));
+  EXPECT_EQ(turner::errc::unexpected_message_type, error);
+}
+
+
+TYPED_TEST(agent, datagram_receive_with_integrity)
+{
+  typename TestFixture::datagram_client_t client;
+
+  uint8_t buf[1024];
+  auto hmac = TypeParam::message_hmac();
+  auto [begin, end] = TypeParam::message.make(buf).finish(hmac);
+  transport_feed_t feed(std::vector<uint8_t>{begin, end});
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::error_code error;
+  EXPECT_TRUE(client.receive(TypeParam::message, hmac, error));
+  EXPECT_TRUE(!error);
+}
+
+
+TYPED_TEST(agent, datagram_receive_with_invalid_integrity)
+{
+  typename TestFixture::datagram_client_t client;
+
+  uint8_t buf[1024];
+  auto hmac = TypeParam::message_hmac();
+  auto [begin, end] = TypeParam::message.make(buf).finish(hmac);
+  transport_feed_t feed(std::vector<uint8_t>{begin, end});
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  auto invalid_hmac = TypeParam::message_invalid_hmac();
+  std::error_code error;
+  EXPECT_FALSE(client.receive(TypeParam::message, invalid_hmac, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
+}
+
+
+TYPED_TEST(agent, datagram_receive_with_missing_integrity)
+{
+  typename TestFixture::datagram_client_t client;
+
+  uint8_t buf[1024];
+  auto [begin, end] = TypeParam::message.make(buf).finish();
+  transport_feed_t feed(std::vector<uint8_t>{begin, end});
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::error_code error;
+  auto hmac = TypeParam::message_hmac();
+  EXPECT_FALSE(client.receive(TypeParam::message, hmac, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
 }
 
 
@@ -103,11 +169,8 @@ TYPED_TEST(agent, datagram_receive_coalesced_message)
     .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 }
 
 
@@ -121,9 +184,8 @@ TYPED_TEST(agent, datagram_receive_chunked_message)
     .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
+  EXPECT_FALSE(client.receive(TypeParam::message, error));
   EXPECT_FALSE(!error);
-  EXPECT_EQ(nullptr, message);
 }
 
 
@@ -147,14 +209,11 @@ TYPED_TEST(agent, datagram_receive_full_and_partial_message)
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 
-  message = client.receive(error);
+  EXPECT_FALSE(client.receive(TypeParam::success_message, error));
   EXPECT_FALSE(!error);
-  EXPECT_EQ(nullptr, message);
 }
 
 
@@ -177,15 +236,11 @@ TYPED_TEST(agent, datagram_receive_two_messages)
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 
-  message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::success_message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::success_message, error));
+  EXPECT_TRUE(!error);
 }
 
 
@@ -198,9 +253,28 @@ TYPED_TEST(agent, datagram_receive_invalid_data)
     .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
+  EXPECT_FALSE(client.receive(TypeParam::message, error));
   EXPECT_FALSE(!error);
-  EXPECT_EQ(nullptr, message);
+}
+
+
+TYPED_TEST(agent, datagram_set_timeout)
+{
+  typename TestFixture::datagram_client_t client;
+
+  using namespace std::chrono;
+  using namespace std::chrono_literals;
+
+  auto timeout = 1s;
+  client.timeout(timeout);
+  EXPECT_EQ(timeout, client.timeout());
+
+  auto timeout_ms = duration_cast<milliseconds>(timeout);
+  EXPECT_CALL(client.transport_, wait_receive_for(timeout_ms, _))
+    .WillOnce(Return(false));
+
+  std::error_code error;
+  client.receive(error);
 }
 
 
@@ -271,11 +345,83 @@ TYPED_TEST(agent, stream_receive)
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
+}
 
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+
+TYPED_TEST(agent, stream_receive_unexpected_type)
+{
+  typename TestFixture::stream_client_t client;
+  transport_feed_t feed(TestFixture::add_framing_header(TypeParam::message_data));
+
+  ON_CALL(client.transport_, receive(_, _, _))
+    .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
+
+  std::error_code error;
+  EXPECT_FALSE(client.receive(TypeParam::success_message, error));
+  EXPECT_EQ(turner::errc::unexpected_message_type, error);
+}
+
+
+TYPED_TEST(agent, stream_receive_with_integrity)
+{
+  typename TestFixture::stream_client_t client;
+
+  uint8_t buf[1024];
+  auto hmac = TypeParam::message_hmac();
+  auto [begin, end] = TypeParam::message.make(buf).finish(hmac);
+  transport_feed_t feed(
+    TestFixture::add_framing_header(std::vector<uint8_t>{begin, end})
+  );
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::error_code error;
+  EXPECT_TRUE(client.receive(TypeParam::message, hmac, error));
+  EXPECT_TRUE(!error);
+}
+
+
+TYPED_TEST(agent, stream_receive_with_invalid_integrity)
+{
+  typename TestFixture::stream_client_t client;
+
+  uint8_t buf[1024];
+  auto hmac = TypeParam::message_hmac();
+  auto [begin, end] = TypeParam::message.make(buf).finish(hmac);
+  transport_feed_t feed(
+    TestFixture::add_framing_header(std::vector<uint8_t>{begin, end})
+  );
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  auto invalid_hmac = TypeParam::message_invalid_hmac();
+  std::error_code error;
+  EXPECT_FALSE(client.receive(TypeParam::message, invalid_hmac, error));
+  EXPECT_EQ(turner::errc::unexpected_attribute_value, error);
+}
+
+
+TYPED_TEST(agent, stream_receive_with_missing_integrity)
+{
+  typename TestFixture::stream_client_t client;
+
+  uint8_t buf[1024];
+  auto [begin, end] = TypeParam::message.make(buf).finish();
+  transport_feed_t feed(
+    TestFixture::add_framing_header(std::vector<uint8_t>{begin, end})
+  );
+
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::error_code error;
+  auto hmac = TypeParam::message_hmac();
+  EXPECT_FALSE(client.receive(TypeParam::message, hmac, error));
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
 }
 
 
@@ -297,15 +443,11 @@ TYPED_TEST(agent, stream_receive_coalesced_message)
     .WillRepeatedly(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 
-  message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::success_message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::success_message, error));
+  EXPECT_TRUE(!error);
 }
 
 
@@ -319,10 +461,8 @@ TYPED_TEST(agent, stream_receive_chunked_message)
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 }
 
 
@@ -347,15 +487,11 @@ TYPED_TEST(agent, stream_receive_full_and_partial_message)
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 
-  message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::success_message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::success_message, error));
+  EXPECT_TRUE(!error);
 }
 
 
@@ -379,15 +515,11 @@ TYPED_TEST(agent, stream_receive_two_messages)
     .WillByDefault(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::message, error));
+  EXPECT_TRUE(!error);
 
-  message = client.receive(error);
-  EXPECT_TRUE(!error) << error.message();
-  ASSERT_NE(nullptr, message);
-  EXPECT_EQ(TypeParam::success_message, message->type());
+  EXPECT_TRUE(client.receive(TypeParam::success_message, error));
+  EXPECT_TRUE(!error);
 }
 
 
@@ -400,9 +532,48 @@ TYPED_TEST(agent, stream_receive_invalid_data)
     .WillOnce(Invoke(&feed, &transport_feed_t::receive));
 
   std::error_code error;
-  auto message = client.receive(error);
+  EXPECT_FALSE(client.receive(TypeParam::message, error));
   EXPECT_FALSE(!error);
-  EXPECT_EQ(nullptr, message);
+}
+
+
+inline std::string range_to_string (
+  std::chrono::milliseconds a,
+  std::chrono::milliseconds b)
+{
+  return "between "
+    + std::to_string(a.count())
+    + ".."
+    + std::to_string(b.count())
+    + "ms";
+}
+
+
+MATCHER_P2(Timeout, a, b, range_to_string(a, b))
+{
+  *result_listener << arg.count() << "ms";
+  return a <= arg && arg <= b;
+}
+
+
+TYPED_TEST(agent, stream_set_timeout)
+{
+  typename TestFixture::stream_client_t client;
+
+  using namespace std::chrono;
+  using namespace std::chrono_literals;
+
+  auto timeout = 1000ms;
+  client.timeout(timeout);
+  EXPECT_EQ(timeout, client.timeout());
+
+  auto low  = timeout - 100ms;
+  auto high  = timeout + 100ms;
+  EXPECT_CALL(client.transport_, wait_receive_for(Timeout(low, high), _))
+    .WillOnce(Return(false));
+
+  std::error_code error;
+  client.receive(error);
 }
 
 

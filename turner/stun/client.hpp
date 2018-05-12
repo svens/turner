@@ -48,23 +48,13 @@ public:
    */
   xor_mapped_address_t::value_t binding (std::error_code &error) noexcept
   {
-    uint8_t buf[1024];
-    if (auto writer = stun::binding.make(buf, error))
+    if (base_t::send(stun::binding, error))
     {
-      auto [first, last] = writer.finish();
-      if (base_t::transport_.send(first, last, error))
+      xor_mapped_address_t::value_t result;
+      if (base_t::receive(stun::binding_success, error,
+          xor_mapped_address.value_ref(result)))
       {
-        if (auto reader = base_t::receive(error))
-        {
-          if (auto message = stun::binding_success(reader))
-          {
-            return message->read(xor_mapped_address, error);
-          }
-          else
-          {
-            error = make_error_code(errc::unexpected_message_type);
-          }
-        }
+        return result;
       }
     }
     return {};
