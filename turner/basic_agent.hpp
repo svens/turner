@@ -111,15 +111,19 @@ protected:
       noexcept
   {
     uint8_t buf[2048];
-    if (auto writer = message_type.make(buf, error))
+    if (auto writer = message_type.make(
+        after_framing_header(buf),
+        buf + sizeof(buf),
+        error))
     {
-      auto n = writer.write_many(error, std::forward<Attribute>(attribute)...);
+      auto n = writer.write_many(error, attribute...);
       if (n == sizeof...(attribute))
       {
-        auto [first, last] = writer.finish();
+        auto [first, last] = fill_framing_header(buf, writer.finish());
         return transport_.send(first, last, error);
       }
     }
+
     return false;
   }
 
@@ -135,12 +139,17 @@ protected:
       noexcept
   {
     uint8_t buf[2048];
-    if (auto writer = message_type.make(buf, error))
+    if (auto writer = message_type.make(
+        after_framing_header(buf),
+        buf + sizeof(buf),
+        error))
     {
-      auto n = writer.write_many(error, std::forward<Attribute>(attribute)...);
+      auto n = writer.write_many(error, attribute...);
       if (n == sizeof...(attribute))
       {
-        auto [first, last] = writer.finish(integrity_calculator);
+        auto [first, last] = fill_framing_header(buf,
+          writer.finish(integrity_calculator)
+        );
         return transport_.send(first, last, error);
       }
     }
@@ -222,7 +231,7 @@ protected:
     //
     // Stream (keep reading until full message, error or timeout)
     //
-    if constexpr (Transport::is_stream)
+    if constexpr (is_stream_oriented)
     {
       const auto deadline = sal::now() + timeout_;
       do
@@ -350,6 +359,36 @@ private:
       error = std::make_error_code(std::errc::connection_reset);
     }
     return false;
+  }
+
+
+  constexpr uint8_t *after_framing_header (uint8_t *buf)
+  {
+    if constexpr (is_stream_oriented && protocol_t::has_stream_framing_header)
+    {
+      return buf + protocol_traits_t::stream_framing_header_t::size;
+    }
+    return buf;
+  }
+
+
+  auto fill_framing_header (uint8_t *buf,
+    std::pair<const uint8_t *, const uint8_t *> &&range) const noexcept
+  {
+    if constexpr (is_stream_oriented && protocol_t::has_stream_framing_header)
+    {
+      using framing_header_t = typename protocol_traits_t::stream_framing_header_t;
+      new(buf) framing_header_t(
+        framing_header_t::type_t::control_message,
+        range.second - range.first
+      );
+      range.first = buf;
+    }
+    else
+    {
+      (void)buf;
+    }
+    return range;
   }
 };
 

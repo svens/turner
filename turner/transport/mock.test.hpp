@@ -40,15 +40,20 @@ struct transport_mock_t
 
 struct transport_feed_t
 {
-  std::vector<uint8_t> data;
-  std::vector<uint8_t>::const_iterator ptr;
+  std::vector<uint8_t> data{};
+  std::vector<uint8_t>::const_iterator ptr{};
   size_t chunk_size = (std::numeric_limits<size_t>::max)();
+
+
+  transport_feed_t () = default;
+
 
   template <typename Data>
   transport_feed_t (const Data &content)
     : data(std::cbegin(content), std::cend(content))
     , ptr(std::cbegin(data))
   { }
+
 
   size_t receive (uint8_t *first, uint8_t *last, std::error_code &)
   {
@@ -64,6 +69,14 @@ struct transport_feed_t
     ptr += size;
 
     return size;
+  }
+
+
+  bool send (const uint8_t *first, const uint8_t *last, std::error_code &)
+  {
+    data.assign(first, last);
+    ptr = data.cbegin();
+    return true;
   }
 };
 

@@ -688,7 +688,7 @@ public:
    */
   template <typename... Attribute>
   size_t write_many (std::error_code &error,
-    std::pair<Attribute, const typename Attribute::value_t &> &&...attributes)
+    const std::pair<Attribute, const typename Attribute::value_t &> &...attributes)
       noexcept
   {
     size_t n = 0;

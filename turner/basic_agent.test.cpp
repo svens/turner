@@ -24,6 +24,7 @@ struct agent
   {
     // make protected members visible for testing
     using agent_t<IsStream>::receive;
+    using agent_t<IsStream>::send;
     using agent_t<IsStream>::transport_;
   };
 
@@ -258,6 +259,25 @@ TYPED_TEST(agent, datagram_receive_invalid_data)
 }
 
 
+TYPED_TEST(agent, datagram_receive_error)
+{
+  typename TestFixture::datagram_client_t client;
+
+  ON_CALL(client.transport_, receive(_, _, _))
+    .WillByDefault(
+      DoAll(
+        SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
+        Return(0)
+      )
+    );
+
+  std::error_code error;
+  auto message = client.receive(error);
+  EXPECT_EQ(std::errc::not_enough_memory, error);
+  EXPECT_EQ(nullptr, message);
+}
+
+
 TYPED_TEST(agent, datagram_set_timeout)
 {
   typename TestFixture::datagram_client_t client;
@@ -317,22 +337,154 @@ TYPED_TEST(agent, datagram_wait_error)
 }
 
 
-TYPED_TEST(agent, datagram_receive_error)
+
+
+TYPED_TEST(agent, datagram_send)
+{
+  typename TestFixture::datagram_client_t client;
+  transport_feed_t feed;
+
+  // send
+  EXPECT_CALL(client.transport_, send(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::send));
+
+  std::error_code error;
+  EXPECT_TRUE(
+    client.send(TypeParam::message, error,
+      TypeParam::username.value_cref(TestFixture::case_name)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(feed.data.empty());
+
+  // receive and check
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::string_view username;
+  EXPECT_TRUE(
+    client.receive(TypeParam::message, error,
+      TypeParam::username.value_ref(username)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  EXPECT_EQ(TestFixture::case_name, username);
+}
+
+
+TYPED_TEST(agent, datagram_send_with_integrity)
+{
+  typename TestFixture::datagram_client_t client;
+  transport_feed_t feed;
+  auto hmac = TypeParam::message_hmac();
+
+  // send
+  EXPECT_CALL(client.transport_, send(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::send));
+
+  std::error_code error;
+  EXPECT_TRUE(
+    client.send(TypeParam::message, hmac, error,
+      TypeParam::username.value_cref(TestFixture::case_name)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(feed.data.empty());
+
+  // receive and check
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::string_view username;
+  EXPECT_TRUE(
+    client.receive(TypeParam::message, hmac, error,
+      TypeParam::username.value_ref(username)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  EXPECT_EQ(TestFixture::case_name, username);
+}
+
+
+TYPED_TEST(agent, datagram_send_overflow)
+{
+  typename TestFixture::datagram_client_t client;
+  transport_feed_t feed;
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(Invoke(&feed, &transport_feed_t::send));
+
+  auto big_data = std::string(4000, 'X');
+  std::error_code error;
+  EXPECT_FALSE(
+    client.send(TypeParam::message, error,
+      TypeParam::username.value_cref(big_data)
+    )
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(feed.data.empty());
+}
+
+
+TYPED_TEST(agent, datagram_send_with_integrity_overflow)
+{
+  typename TestFixture::datagram_client_t client;
+  transport_feed_t feed;
+  auto hmac = TypeParam::message_hmac();
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(Invoke(&feed, &transport_feed_t::send));
+
+  auto big_data = std::string(4000, 'X');
+  std::error_code error;
+  EXPECT_FALSE(
+    client.send(TypeParam::message, hmac, error,
+      TypeParam::username.value_cref(big_data)
+    )
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(feed.data.empty());
+}
+
+
+TYPED_TEST(agent, datagram_send_error)
 {
   typename TestFixture::datagram_client_t client;
 
-  ON_CALL(client.transport_, receive(_, _, _))
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
     .WillByDefault(
       DoAll(
         SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
-        Return(0)
+        Return(false)
       )
     );
 
   std::error_code error;
-  auto message = client.receive(error);
+  EXPECT_FALSE(client.send(TypeParam::message, error));
   EXPECT_EQ(std::errc::not_enough_memory, error);
-  EXPECT_EQ(nullptr, message);
+}
+
+
+TYPED_TEST(agent, datagram_send_with_integrity_error)
+{
+  typename TestFixture::datagram_client_t client;
+  auto hmac = TypeParam::message_hmac();
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(
+      DoAll(
+        SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
+        Return(false)
+      )
+    );
+
+  std::error_code error;
+  EXPECT_FALSE(client.send(TypeParam::message, hmac, error));
+  EXPECT_EQ(std::errc::not_enough_memory, error);
 }
 
 
@@ -537,6 +689,25 @@ TYPED_TEST(agent, stream_receive_invalid_data)
 }
 
 
+TYPED_TEST(agent, stream_receive_error)
+{
+  typename TestFixture::stream_client_t client;
+
+  ON_CALL(client.transport_, receive(_, _, _))
+    .WillByDefault(
+      DoAll(
+        SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
+        Return(0)
+      )
+    );
+
+  std::error_code error;
+  auto message = client.receive(error);
+  EXPECT_EQ(std::errc::not_enough_memory, error);
+  EXPECT_EQ(nullptr, message);
+}
+
+
 inline std::string range_to_string (
   std::chrono::milliseconds a,
   std::chrono::milliseconds b)
@@ -616,25 +787,6 @@ TYPED_TEST(agent, stream_receive_wait_error)
 }
 
 
-TYPED_TEST(agent, stream_receive_error)
-{
-  typename TestFixture::stream_client_t client;
-
-  ON_CALL(client.transport_, receive(_, _, _))
-    .WillByDefault(
-      DoAll(
-        SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
-        Return(0)
-      )
-    );
-
-  std::error_code error;
-  auto message = client.receive(error);
-  EXPECT_EQ(std::errc::not_enough_memory, error);
-  EXPECT_EQ(nullptr, message);
-}
-
-
 TYPED_TEST(agent, stream_receive_buffer_overflow)
 {
   typename TestFixture::stream_client_t client;
@@ -655,6 +807,155 @@ TYPED_TEST(agent, stream_receive_buffer_overflow)
   auto message = client.receive(error);
   EXPECT_EQ(turner::errc::not_enough_room, error);
   EXPECT_EQ(nullptr, message);
+}
+
+
+TYPED_TEST(agent, stream_send)
+{
+  typename TestFixture::stream_client_t client;
+  transport_feed_t feed;
+
+  // send
+  EXPECT_CALL(client.transport_, send(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::send));
+
+  std::error_code error;
+  EXPECT_TRUE(
+    client.send(TypeParam::message, error,
+      TypeParam::username.value_cref(TestFixture::case_name)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(feed.data.empty());
+
+  // receive and check
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::string_view username;
+  EXPECT_TRUE(
+    client.receive(TypeParam::message, error,
+      TypeParam::username.value_ref(username)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  EXPECT_EQ(TestFixture::case_name, username);
+}
+
+
+TYPED_TEST(agent, stream_send_with_integrity)
+{
+  typename TestFixture::stream_client_t client;
+  transport_feed_t feed;
+  auto hmac = TypeParam::message_hmac();
+
+  // send
+  EXPECT_CALL(client.transport_, send(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::send));
+
+  std::error_code error;
+  EXPECT_TRUE(
+    client.send(TypeParam::message, hmac, error,
+      TypeParam::username.value_cref(TestFixture::case_name)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  ASSERT_FALSE(feed.data.empty());
+
+  // receive and check
+  EXPECT_CALL(client.transport_, receive(_, _, _))
+    .WillOnce(Invoke(&feed, &transport_feed_t::receive));
+
+  std::string_view username;
+  EXPECT_TRUE(
+    client.receive(TypeParam::message, hmac, error,
+      TypeParam::username.value_ref(username)
+    )
+  );
+  ASSERT_TRUE(!error) << error.message();
+  EXPECT_EQ(TestFixture::case_name, username);
+}
+
+
+TYPED_TEST(agent, stream_send_overflow)
+{
+  typename TestFixture::stream_client_t client;
+  transport_feed_t feed;
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(Invoke(&feed, &transport_feed_t::send));
+
+  auto big_data = std::string(4000, 'X');
+  std::error_code error;
+  EXPECT_FALSE(
+    client.send(TypeParam::message, error,
+      TypeParam::username.value_cref(big_data)
+    )
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(feed.data.empty());
+}
+
+
+TYPED_TEST(agent, stream_send_with_integrity_overflow)
+{
+  typename TestFixture::stream_client_t client;
+  transport_feed_t feed;
+  auto hmac = TypeParam::message_hmac();
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(Invoke(&feed, &transport_feed_t::send));
+
+  auto big_data = std::string(4000, 'X');
+  std::error_code error;
+  EXPECT_FALSE(
+    client.send(TypeParam::message, hmac, error,
+      TypeParam::username.value_cref(big_data)
+    )
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_TRUE(feed.data.empty());
+}
+
+
+TYPED_TEST(agent, stream_send_error)
+{
+  typename TestFixture::stream_client_t client;
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(
+      DoAll(
+        SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
+        Return(false)
+      )
+    );
+
+  std::error_code error;
+  EXPECT_FALSE(client.send(TypeParam::message, error));
+  EXPECT_EQ(std::errc::not_enough_memory, error);
+}
+
+
+TYPED_TEST(agent, stream_send_with_integrity_error)
+{
+  typename TestFixture::stream_client_t client;
+  auto hmac = TypeParam::message_hmac();
+
+  // send
+  ON_CALL(client.transport_, send(_, _, _))
+    .WillByDefault(
+      DoAll(
+        SetArgReferee<2>(std::make_error_code(std::errc::not_enough_memory)),
+        Return(false)
+      )
+    );
+
+  std::error_code error;
+  EXPECT_FALSE(client.send(TypeParam::message, hmac, error));
+  EXPECT_EQ(std::errc::not_enough_memory, error);
 }
 
 
