@@ -691,6 +691,7 @@ public:
     const std::pair<Attribute, const typename Attribute::value_t &> &...attributes)
       noexcept
   {
+    error.clear();
     size_t n = 0;
     if (((++n, write_one(attributes.first, attributes.second, error)) && ...))
     {

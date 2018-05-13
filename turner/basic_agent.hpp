@@ -103,21 +103,23 @@ protected:
 
 
   /**
+   * Construct and send new \a message with \a attributes.
+   * \returns false on failure and sets \a error. On success returns true.
    */
   template <uint16_t MessageType, typename... Attribute>
-  bool send (message_type_t<protocol_traits_t, MessageType> message_type,
+  bool send (message_type_t<protocol_traits_t, MessageType> message,
     std::error_code &error,
-    std::pair<Attribute, const typename Attribute::value_t &> &&...attribute)
+    std::pair<Attribute, const typename Attribute::value_t &> &&...attributes)
       noexcept
   {
     uint8_t buf[2048];
-    if (auto writer = message_type.make(
+    if (auto writer = message.make(
         after_framing_header(buf),
         buf + sizeof(buf),
         error))
     {
-      auto n = writer.write_many(error, attribute...);
-      if (n == sizeof...(attribute))
+      auto n = writer.write_many(error, attributes...);
+      if (n == sizeof...(attributes))
       {
         auto [first, last] = fill_framing_header(buf, writer.finish());
         return transport_.send(first, last, error);
@@ -129,23 +131,26 @@ protected:
 
 
   /**
+   * Construct and send new authenticated \a message with \a attributes.
+   * Message integrity is calculated using \a integrity_calculator.
+   * \returns false on failure and sets \a error. On success returns true.
    */
   template <uint16_t MessageType, typename Digest, typename... Attribute>
   bool send (
-    message_type_t<protocol_traits_t, MessageType> message_type,
+    message_type_t<protocol_traits_t, MessageType> message,
     sal::crypto::hmac_t<Digest> &integrity_calculator,
     std::error_code &error,
-    std::pair<Attribute, const typename Attribute::value_t &> &&...attribute)
+    std::pair<Attribute, const typename Attribute::value_t &> &&...attributes)
       noexcept
   {
     uint8_t buf[2048];
-    if (auto writer = message_type.make(
+    if (auto writer = message.make(
         after_framing_header(buf),
         buf + sizeof(buf),
         error))
     {
-      auto n = writer.write_many(error, attribute...);
-      if (n == sizeof...(attribute))
+      auto n = writer.write_many(error, attributes...);
+      if (n == sizeof...(attributes))
       {
         auto [first, last] = fill_framing_header(buf,
           writer.finish(integrity_calculator)
@@ -158,19 +163,21 @@ protected:
 
 
   /**
+   * Read next message from transport and extract \a attributes.
+   * \returns false on failure and sets \a error. On success returns true.
    */
   template <uint16_t MessageType, typename... Attribute>
   bool receive (
-    message_type_t<protocol_traits_t, MessageType> expected_type,
+    message_type_t<protocol_traits_t, MessageType> expected,
     std::error_code &error,
-    std::pair<Attribute, typename Attribute::value_t &> &&...attribute)
+    std::pair<Attribute, typename Attribute::value_t &> &&...attributes)
       noexcept
   {
     if (auto message = receive(error))
     {
-      if (auto reader = expected_type(message))
+      if (auto reader = expected(message))
       {
-        if ((reader->read_one(attribute.first, attribute.second, error) && ...))
+        if ((reader->read_one(attributes.first, attributes.second, error) && ...))
         {
           return true;
         }
@@ -185,10 +192,13 @@ protected:
 
 
   /**
+   * Read next message from transport, check it's integrity with
+   * \a integrity_calculator and extract \a attributes.
+   * \returns false on failure and sets \a error. On success returns true.
    */
   template <uint16_t MessageType, typename Digest, typename... Attribute>
   bool receive (
-    message_type_t<protocol_traits_t, MessageType> expected_type,
+    message_type_t<protocol_traits_t, MessageType> expected,
     sal::crypto::hmac_t<Digest> &integrity_calculator,
     std::error_code &error,
     std::pair<Attribute, typename Attribute::value_t &> &&...attribute)
@@ -198,7 +208,7 @@ protected:
     {
       if (message->has_valid_integrity(integrity_calculator, error))
       {
-        if (auto reader = expected_type(message))
+        if (auto reader = expected(message))
         {
           if ((reader->read_one(attribute.first, attribute.second, error) && ...))
           {
@@ -368,7 +378,10 @@ private:
     {
       return buf + protocol_traits_t::stream_framing_header_t::size;
     }
-    return buf;
+    else
+    {
+      return buf;
+    }
   }
 
 

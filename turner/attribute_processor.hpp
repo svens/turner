@@ -54,6 +54,9 @@ struct uint32_attribute_processor_t
 };
 
 
+/**
+ * Time period type attribute reader/writer.
+ */
 template <typename ProtocolTraits>
 struct seconds_attribute_processor_t
 {
@@ -214,8 +217,10 @@ struct address_attribute_processor_t
    */
   struct value_t
   {
+    /// \{
     sal::net::ip::address_t address{};
     uint16_t port{};
+    /// \}
   };
 
 
