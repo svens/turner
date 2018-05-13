@@ -304,6 +304,8 @@ TYPED_TEST(stun_client, server_reflexive_address)
     ASSERT_TRUE(!error) << error.message();
     EXPECT_EQ(address_v4, result_address);
     EXPECT_EQ(port, result_port);
+
+    EXPECT_NO_THROW(client.server_reflexive_address());
   }
 }
 

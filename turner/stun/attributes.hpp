@@ -112,7 +112,7 @@ constexpr realm_t realm;
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
 using nonce_t = protocol_t::attribute_type_t<0x0015,
-  array_attribute_processor_t
+  string_attribute_processor_t
 >;
 
 

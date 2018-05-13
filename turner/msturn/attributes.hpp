@@ -197,7 +197,7 @@ constexpr data_t data;
  * \note It's value is swapped with STUN REALM
  */
 using nonce_t = protocol_t::attribute_type_t<0x0014,
-  array_attribute_processor_t
+  string_attribute_processor_t
 >;
 
 
