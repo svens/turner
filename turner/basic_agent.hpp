@@ -163,69 +163,6 @@ protected:
 
 
   /**
-   * Read next message from transport and extract \a attributes.
-   * \returns false on failure and sets \a error. On success returns true.
-   */
-  template <uint16_t MessageType, typename... Attribute>
-  bool receive (
-    message_type_t<protocol_traits_t, MessageType> expected,
-    std::error_code &error,
-    std::pair<Attribute, typename Attribute::value_t &> &&...attributes)
-      noexcept
-  {
-    if (auto message = receive(error))
-    {
-      if (auto reader = expected(message))
-      {
-        if ((reader->read_one(attributes.first, attributes.second, error) && ...))
-        {
-          return true;
-        }
-      }
-      else
-      {
-        error = make_error_code(errc::unexpected_message_type);
-      }
-    }
-    return false;
-  }
-
-
-  /**
-   * Read next message from transport, check it's integrity with
-   * \a integrity_calculator and extract \a attributes.
-   * \returns false on failure and sets \a error. On success returns true.
-   */
-  template <uint16_t MessageType, typename Digest, typename... Attribute>
-  bool receive (
-    message_type_t<protocol_traits_t, MessageType> expected,
-    sal::crypto::hmac_t<Digest> &integrity_calculator,
-    std::error_code &error,
-    std::pair<Attribute, typename Attribute::value_t &> &&...attribute)
-      noexcept
-  {
-    if (auto message = receive(error))
-    {
-      if (message->has_valid_integrity(integrity_calculator, error))
-      {
-        if (auto reader = expected(message))
-        {
-          if ((reader->read_one(attribute.first, attribute.second, error) && ...))
-          {
-            return true;
-          }
-        }
-        else
-        {
-          error = make_error_code(errc::unexpected_message_type);
-        }
-      }
-    }
-    return false;
-  }
-
-
-  /**
    * Receive next full message from remote side or nullptr on \a error.
    * In case of stream oriented transport, this method can return nullptr
    * without error when buffer has valid partial message.
@@ -273,6 +210,27 @@ protected:
     }
 
     return {};
+  }
+
+
+  template <uint16_t MessageType, typename... Attribute>
+  uint16_t expect (
+    message_type_t<protocol_traits_t, MessageType> expected,
+    const any_message_t<protocol_traits_t> *message,
+    std::error_code &error,
+    std::pair<Attribute, typename Attribute::value_t &> &&...attributes)
+      noexcept
+  {
+    uint16_t failed[] = { 0 };
+    if (auto reader = expected(message))
+    {
+      reader->read_many(error, failed, std::move(attributes)...);
+    }
+    else
+    {
+      error = make_error_code(errc::unexpected_message_type);
+    }
+    return failed[0];
   }
 
 

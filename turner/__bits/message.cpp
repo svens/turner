@@ -23,6 +23,7 @@ constexpr size_t round_up (size_t size, size_t padding_size) noexcept
 const any_attribute_t *find_attribute (
   const uint8_t *first, const uint8_t *last,
   uint16_t attribute_type,
+  uint16_t integrity_attribute_type,
   size_t padding_size,
   std::error_code &error) noexcept
 {
@@ -41,6 +42,10 @@ const any_attribute_t *find_attribute (
         return {};
       }
     }
+    else if (attribute->type() == integrity_attribute_type)
+    {
+      break;
+    }
     first += round_up(attribute->length(), padding_size);
   }
 
@@ -56,6 +61,7 @@ size_t gather_unknown_comprehension_required_or_missing (
   size_t attributes_count,
   uint16_t failed[],
   size_t failed_size,
+  uint16_t integrity_attribute_type,
   size_t padding_size,
   std::error_code &error) noexcept
 {
@@ -83,6 +89,10 @@ size_t gather_unknown_comprehension_required_or_missing (
     if (first + round_up(attribute->length(), padding_size) <= last)
     {
       auto attribute_type = attribute->type();
+      if (attribute_type == integrity_attribute_type)
+      {
+        break;
+      }
       message_attributes[message_attributes_count++] = attribute_type;
 
       if (attribute->is_comprehension_required())

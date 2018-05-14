@@ -282,6 +282,7 @@ public:
   {
     if (auto attribute = __bits::find_attribute(this->payload(), this->end(),
         AttributeType,
+        traits_t::message_integrity,
         traits_t::padding_size,
         error))
     {
@@ -323,6 +324,7 @@ public:
         this->payload(),
         this->end(),
         Attribute::type,
+        traits_t::message_integrity,
         traits_t::padding_size,
         error))
     {
@@ -368,6 +370,7 @@ public:
       this->payload(), this->end(),
       attribute_types, sizeof(attribute_types)/sizeof(attribute_types[0]) - 1,
       failed_attributes, N,
+      traits_t::message_integrity,
       traits_t::padding_size,
       error
     );
@@ -760,6 +763,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
   std::error_code &error) const noexcept
 {
   if (auto integrity = __bits::find_attribute(payload(), end(),
+      traits_t::message_integrity,
       traits_t::message_integrity,
       traits_t::padding_size,
       error))

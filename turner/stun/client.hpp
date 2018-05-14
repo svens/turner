@@ -50,10 +50,12 @@ public:
   {
     if (base_t::send(stun::binding, error))
     {
-      xor_mapped_address_t::value_t result;
-      if (base_t::receive(stun::binding_success, error,
-          xor_mapped_address.value_ref(result)))
+      if (auto message = base_t::receive(error))
       {
+        xor_mapped_address_t::value_t result;
+        base_t::expect(binding_success, message, error,
+          xor_mapped_address.value_ref(result)
+        );
         return result;
       }
     }
