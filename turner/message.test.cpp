@@ -1,4 +1,5 @@
 #include <turner/common.test.hpp>
+#include <sal/buf_ptr.hpp>
 
 
 namespace turner_test { namespace {
@@ -796,6 +797,34 @@ TYPED_TEST(message_reader, read_many_one_failing)
   );
   EXPECT_EQ(turner::errc::insufficient_payload_data, error);
   EXPECT_EQ(0U, failed_count);
+}
+
+
+TYPED_TEST(message_reader, read_past_integrity)
+{
+  std::array<uint8_t, 1024> data;
+
+  auto writer = TypeParam::message.make(data);
+  ASSERT_FALSE(!writer);
+
+  // write attribute, integrity, attribute
+  writer.write(TypeParam::username, "username");
+  auto hmac = TypeParam::message_hmac();
+  writer.finish(hmac);
+  writer.write(TypeParam::software, "software");
+  auto [begin, end] = writer.finish();
+
+  auto &msg = parse(TypeParam(), sal::make_buf(begin, end - begin));
+
+  // attribute before integrity
+  std::error_code error;
+  std::string_view value = msg.read(TypeParam::username, error);
+  EXPECT_TRUE(!error);
+  EXPECT_EQ("username", value);
+
+  // attribute after integrity
+  value = msg.read(TypeParam::software, error);
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
 }
 
 
