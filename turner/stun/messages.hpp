@@ -28,13 +28,13 @@ namespace stun {
 /**
  * Binding message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0001> binding;
+constexpr protocol_t::message_type_t<0x0001> binding;
 
 
 /**
  * Binding success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0101> binding_success;
+constexpr protocol_t::message_type_t<0x0101> binding_success;
 
 
 // \}

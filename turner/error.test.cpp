@@ -34,11 +34,12 @@ INSTANTIATE_TEST_CASE_P(error, errc,
     turner::errc::invalid_message_length,
     turner::errc::invalid_message_cookie,
     turner::errc::unexpected_message_type,
+    turner::errc::unknown_comprehension_required,
     turner::errc::attribute_not_found,
     turner::errc::unexpected_attribute_length,
     turner::errc::unexpected_attribute_value,
     turner::errc::not_enough_room
-  )
+  ),
 );
 
 
@@ -63,10 +64,10 @@ TEST(error, success)
   EXPECT_EQ(0U, turner::success.code);
   EXPECT_EQ("Success", turner::success.message);
 
-  constexpr const turner::error_t ok{0, "Ok"};
+  constexpr turner::error_t ok{0, "Ok"};
   EXPECT_EQ(ok, turner::success);
 
-  constexpr const turner::error_t fail{500, "Fail"};
+  constexpr turner::error_t fail{500, "Fail"};
   EXPECT_NE(fail, turner::success);
 
   std::ostringstream oss;

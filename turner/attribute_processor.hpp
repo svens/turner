@@ -9,6 +9,7 @@
 #include <turner/config.hpp>
 #include <turner/fwd.hpp>
 #include <turner/__bits/attribute_processor.hpp>
+#include <chrono>
 
 
 __turner_begin
@@ -49,6 +50,48 @@ struct uint32_attribute_processor_t
     std::error_code &error) noexcept
   {
     return __bits::write_uint32(first, last, value, error);
+  }
+};
+
+
+/**
+ * Time period type attribute reader/writer.
+ */
+template <typename ProtocolTraits>
+struct seconds_attribute_processor_t
+{
+  /**
+   * Attribute value type
+   */
+  using value_t = std::chrono::seconds;
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::read()
+   */
+  static value_t read (const any_message_t<ProtocolTraits> &,
+    const any_attribute_t &attribute,
+    std::error_code &error) noexcept
+  {
+    return value_t{__bits::read_uint32(attribute, error)};
+  }
+
+
+  /**
+   * \copydoc uint32_attribute_processor_t::write()
+   */
+  template <typename Rep, typename Period>
+  static size_t write (const any_message_t<ProtocolTraits> &,
+    uint8_t *first, uint8_t *last,
+    const std::chrono::duration<Rep, Period> &value,
+    std::error_code &error) noexcept
+  {
+    return __bits::write_uint32(first, last,
+      static_cast<uint32_t>(
+        std::chrono::duration_cast<value_t>(value).count()
+      ),
+      error
+    );
   }
 };
 
@@ -171,10 +214,14 @@ struct address_attribute_processor_t
 {
   /**
    * Attribute value type.
-   * - first: address
-   * - second: port in host byte order
    */
-  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+  struct value_t
+  {
+    /// \{
+    sal::net::ip::address_t address{};
+    uint16_t port{};
+    /// \}
+  };
 
 
   /**
@@ -184,7 +231,9 @@ struct address_attribute_processor_t
     const any_attribute_t &attribute,
     std::error_code &error) noexcept
   {
-    return __bits::read_address(attribute, error);
+    value_t result;
+    __bits::read_address(attribute, &result.address, &result.port, error);
+    return result;
   }
 
 
@@ -196,7 +245,7 @@ struct address_attribute_processor_t
     const value_t &value,
     std::error_code &error) noexcept
   {
-    return __bits::write_address(first, last, value, error);
+    return __bits::write_address(first, last, value.address, value.port, error);
   }
 };
 
@@ -206,8 +255,8 @@ struct address_attribute_processor_t
  */
 enum class address_family_t: uint8_t
 {
-  v4 = 0x01,
-  v6 = 0x02,
+  v4 = 1,
+  v6 = 2,
 };
 
 

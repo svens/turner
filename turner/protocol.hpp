@@ -17,6 +17,17 @@
 __turner_begin
 
 
+namespace __bits {
+
+template <typename T, typename = std::void_t<>>
+constexpr bool has_stream_framing_header = false;
+
+template <typename T>
+constexpr bool has_stream_framing_header<T, std::void_t<typename T::stream_framing_header_t>> = true;
+
+} // namespace __bits
+
+
 /**
  * Generalised protocol description class.
  *
@@ -76,6 +87,15 @@ public:
     Attribute::type,
     Attribute::template rebind_processor_t
   >;
+
+
+  /**
+   * True if ProtocolTraits defines type \c framing_header_t which deals with
+   * stream-based transport framing header. If such type is not defined,
+   * protocol does not use framing header.
+   */
+  static constexpr bool has_stream_framing_header =
+    __bits::has_stream_framing_header<traits_t>;
 
 
   /**

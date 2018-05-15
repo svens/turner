@@ -7,12 +7,15 @@ namespace turner_test { namespace {
 using stun = turner_test::fixture;
 
 
+// XOR-MAPPED-ADDRESS {{{1
+
+
 inline const auto expected_address_v4 = sal::net::ip::make_address("1.2.3.4");
 
 inline const auto expected_address_v6 =
   sal::net::ip::make_address("102:304:506:708:90a:b0c:d0e:f10");
 
-inline constexpr const uint16_t expected_port = 0x1234;
+constexpr uint16_t expected_port = 0x1234;
 
 
 TEST_F(stun, read_xor_address_v4)
@@ -369,6 +372,9 @@ TEST_F(stun, write_xor_address_unexpected_attribute_value)
     std::system_error
   );
 }
+
+
+// }}}1
 
 
 }} // namespace turner_test

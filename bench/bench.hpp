@@ -10,20 +10,23 @@
 namespace turner_bench {
 
 
-template <typename Protocol>
-inline constexpr const auto wire_data = false;
+using namespace std::chrono_literals;
+
 
 template <typename Protocol>
-inline constexpr const auto message_type = false;
+constexpr auto wire_data = false;
 
 template <typename Protocol>
-inline constexpr const auto another_message_type = false;
+constexpr auto message_type = false;
 
 template <typename Protocol>
-inline constexpr const auto attribute_type = false;
+constexpr auto another_message_type = false;
 
 template <typename Protocol>
-inline constexpr const auto another_attribute_type = false;
+constexpr auto attribute_type = false;
+
+template <typename Protocol>
+constexpr auto another_attribute_type = false;
 
 
 // MSTURN {{{1
@@ -59,20 +62,16 @@ inline const std::vector<uint8_t> wire_data<MSTURN> =
 };
 
 template <>
-inline constexpr const auto message_type<MSTURN> =
-  turner::msturn::allocate;
+constexpr auto message_type<MSTURN> = turner::msturn::allocate;
 
 template <>
-inline constexpr const auto another_message_type<MSTURN> =
-  turner::msturn::allocate_success;
+constexpr auto another_message_type<MSTURN> = turner::msturn::allocate_success;
 
 template <>
-inline constexpr const auto attribute_type<MSTURN> =
-  turner::msturn::lifetime;
+constexpr auto attribute_type<MSTURN> = turner::msturn::lifetime;
 
 template <>
-inline constexpr const auto another_attribute_type<MSTURN> =
-  turner::msturn::username;
+constexpr auto another_attribute_type<MSTURN> = turner::msturn::username;
 
 inline auto integrity_calculator (MSTURN)
 {
@@ -109,20 +108,17 @@ inline const std::vector<uint8_t> wire_data<STUN> =
 };
 
 template <>
-inline constexpr const auto message_type<STUN> =
-  turner::stun::binding;
+constexpr auto message_type<STUN> = turner::stun::binding;
 
 template <>
-inline constexpr const auto another_message_type<STUN> =
-  turner::stun::binding_success;
+constexpr auto another_message_type<STUN> = turner::stun::binding_success;
 
 template <>
-inline constexpr const auto attribute_type<STUN> =
+constexpr auto attribute_type<STUN> =
   turner::stun::protocol_t::reuse_attribute_t<turner::turn::lifetime_t>{};
 
 template <>
-inline constexpr const auto another_attribute_type<STUN> =
-  turner::stun::username;
+constexpr auto another_attribute_type<STUN> = turner::stun::username;
 
 inline auto integrity_calculator (STUN)
 {
@@ -160,20 +156,16 @@ inline const std::vector<uint8_t> wire_data<TURN> =
 };
 
 template <>
-inline constexpr const auto message_type<TURN> =
-  turner::turn::allocation;
+constexpr auto message_type<TURN> = turner::turn::allocation;
 
 template <>
-inline constexpr const auto another_message_type<TURN> =
-  turner::turn::allocation_success;
+constexpr auto another_message_type<TURN> = turner::turn::allocation_success;
 
 template <>
-inline constexpr const auto attribute_type<TURN> =
-  turner::turn::lifetime;
+constexpr auto attribute_type<TURN> = turner::turn::lifetime;
 
 template <>
-inline constexpr const auto another_attribute_type<TURN> =
-  turner::turn::username;
+constexpr auto another_attribute_type<TURN> = turner::turn::username;
 
 inline auto integrity_calculator (TURN)
 {

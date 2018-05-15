@@ -1,4 +1,5 @@
 #include <turner/__bits/attribute_processor.hpp>
+#include <turner/attribute_processor.hpp>
 #include <turner/attribute.hpp>
 #include <turner/message.hpp>
 #include <sal/byte_order.hpp>
@@ -140,57 +141,59 @@ size_t write_error (uint8_t *first, uint8_t *last, const error_t &value,
 }
 
 
-std::pair<sal::net::ip::address_t, uint16_t> read_address (
+void read_address (
   const any_attribute_t &attribute,
+  sal::net::ip::address_t *address,
+  uint16_t *port,
   std::error_code &error) noexcept
 {
   if (attribute.length() == 0)
   {
     error = make_error_code(errc::unexpected_attribute_length);
-    return {};
+    return;
   }
 
   // IPv4
-  const auto family = attribute.data()[1];
-  if (family == 0x01)
+  auto family = static_cast<turner::address_family_t>(attribute.data()[1]);
+  if (family == turner::address_family_t::v4)
   {
     if (attribute.length() == 8)
     {
       error.clear();
-      return
-      {
-        sal::net::ip::make_address_v4(
-          *reinterpret_cast<const sal::net::ip::address_v4_t::bytes_t *>(
-            attribute.data() + 4
-          )
-        ),
-        sal::network_to_native_byte_order(
-          reinterpret_cast<const uint16_t *>(attribute.data())[1]
+      *address = sal::net::ip::make_address_v4(
+        *reinterpret_cast<const sal::net::ip::address_v4_t::bytes_t *>(
+          attribute.data() + 4
         )
-      };
+      );
+      *port = sal::network_to_native_byte_order(
+        reinterpret_cast<const uint16_t *>(attribute.data())[1]
+      );
     }
-    error = make_error_code(errc::unexpected_attribute_length);
+    else
+    {
+      error = make_error_code(errc::unexpected_attribute_length);
+    }
   }
 
   // IPv6
-  else if (family == 0x02)
+  else if (family == address_family_t::v6)
   {
     if (attribute.length() == 20)
     {
       error.clear();
-      return
-      {
-        sal::net::ip::make_address_v6(
-          *reinterpret_cast<const sal::net::ip::address_v6_t::bytes_t *>(
-            attribute.data() + 4
-          )
-        ),
-        sal::network_to_native_byte_order(
-          reinterpret_cast<const uint16_t *>(attribute.data())[1]
+      *address = sal::net::ip::make_address_v6(
+        *reinterpret_cast<const sal::net::ip::address_v6_t::bytes_t *>(
+          attribute.data() + 4
         )
-      };
+      );
+      *port = sal::network_to_native_byte_order(
+        reinterpret_cast<const uint16_t *>(attribute.data())[1]
+      );
     }
-    error = make_error_code(errc::unexpected_attribute_length);
+    else
+    {
+      error = make_error_code(errc::unexpected_attribute_length);
+    }
   }
 
   // unknown
@@ -198,26 +201,25 @@ std::pair<sal::net::ip::address_t, uint16_t> read_address (
   {
     error = make_error_code(errc::unexpected_attribute_value);
   }
-
-  return {};
 }
 
 
 size_t write_address (uint8_t *first, uint8_t *last,
-  const std::pair<sal::net::ip::address_t, uint16_t> &value,
+  const sal::net::ip::address_t &address,
+  uint16_t port,
   std::error_code &error) noexcept
 {
   // IPv4
-  if (auto v4 = value.first.as_v4())
+  if (auto v4 = address.as_v4())
   {
-    constexpr const size_t required_size = 8;
+    constexpr size_t required_size = 8;
     if (has_enough_room(first, last, required_size, error))
     {
       *first++ = 0x00;
-      *first++ = 0x01;
+      *first++ = static_cast<uint8_t>(address_family_t::v4);
 
       *reinterpret_cast<uint16_t *>(first) =
-        sal::native_to_network_byte_order(value.second);
+        sal::native_to_network_byte_order(port);
       first += 2;
 
       *reinterpret_cast<uint32_t *>(first) =
@@ -227,16 +229,16 @@ size_t write_address (uint8_t *first, uint8_t *last,
   }
 
   // IPv6
-  else if (auto v6 = value.first.as_v6())
+  else if (auto v6 = address.as_v6())
   {
-    constexpr const size_t required_size = 20;
+    constexpr size_t required_size = 20;
     if (has_enough_room(first, last, required_size, error))
     {
       *first++ = 0x00;
-      *first++ = 0x02;
+      *first++ = static_cast<uint8_t>(address_family_t::v6);
 
       *reinterpret_cast<uint16_t *>(first) =
-        sal::native_to_network_byte_order(value.second);
+        sal::native_to_network_byte_order(port);
       first += 2;
 
       *reinterpret_cast<sal::net::ip::address_v6_t::bytes_t *>(first) =

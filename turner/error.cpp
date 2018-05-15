@@ -7,7 +7,7 @@ __turner_begin
 namespace {
 
 
-inline constexpr const char *to_message (errc e) noexcept
+constexpr const char *to_message (errc e) noexcept
 {
   switch (e)
   {
@@ -23,6 +23,8 @@ inline constexpr const char *to_message (errc e) noexcept
       return "invalid message cookie";
     case errc::unexpected_message_type:
       return "unexpected message type";
+    case errc::unknown_comprehension_required:
+      return "unknown comprehension required";
     case errc::attribute_not_found:
       return "attribute not found";
     case errc::unexpected_attribute_length:

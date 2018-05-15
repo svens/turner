@@ -41,7 +41,7 @@ using mapped_address_t = protocol_t::reuse_attribute_t<stun::mapped_address_t>;
  * MS-TURN Mapped Address attribute
  * \see https://msdn.microsoft.com/en-us/library/dd906841(v=office.12).aspx
  */
-inline constexpr const mapped_address_t mapped_address;
+constexpr mapped_address_t mapped_address;
 
 
 // 0x0006 Username {{{1
@@ -58,7 +58,7 @@ using username_t = protocol_t::reuse_attribute_t<stun::username_t>;
  * MS-TURN Username attribute
  * \see https://msdn.microsoft.com/en-us/library/dd948088(v=office.12).aspx
  */
-inline constexpr const username_t username;
+constexpr username_t username;
 
 
 // 0x0009 Error Code {{{1
@@ -75,7 +75,7 @@ using error_code_t = protocol_t::reuse_attribute_t<stun::error_code_t>;
  * MS-TURN Error Code attribute
  * \see https://msdn.microsoft.com/en-us/library/dd924136(v=office.12).aspx
  */
-inline constexpr const error_code_t error_code;
+constexpr error_code_t error_code;
 
 
 // 0x000d Lifetime {{{1
@@ -92,7 +92,7 @@ using lifetime_t = protocol_t::reuse_attribute_t<turn::lifetime_t>;
  * MS-TURN Lifetime attribute
  * \see https://msdn.microsoft.com/en-us/library/dd922471(v=office.12).aspx
  */
-inline constexpr const lifetime_t lifetime;
+constexpr lifetime_t lifetime;
 
 
 // 0x000e Alternate Server {{{1
@@ -111,7 +111,7 @@ using alternate_server_t = protocol_t::attribute_type_t<0x000e,
  * MS-TURN Alternate Server attribute
  * \see https://msdn.microsoft.com/en-us/library/dd925944(v=office.12).aspx
  */
-inline constexpr const alternate_server_t alternate_server;
+constexpr alternate_server_t alternate_server;
 
 
 // 0x0010 Bandwidth {{{1
@@ -130,7 +130,7 @@ using bandwidth_t = protocol_t::attribute_type_t<0x0010,
  * MS-TURN Bandwidth attribute
  * \see https://msdn.microsoft.com/en-us/library/dd950874(v=office.12).aspx
  */
-inline constexpr const bandwidth_t bandwidth;
+constexpr bandwidth_t bandwidth;
 
 
 // 0x0011 Destination Address {{{1
@@ -149,7 +149,7 @@ using destination_address_t = protocol_t::attribute_type_t<0x0011,
  * MS-TURN Destination Address attribute
  * \see https://msdn.microsoft.com/en-us/library/dd924543(v=office.12).aspx
  */
-inline constexpr const destination_address_t destination_address;
+constexpr destination_address_t destination_address;
 
 
 // 0x0012 Remote Address {{{1
@@ -168,7 +168,7 @@ using remote_address_t = protocol_t::attribute_type_t<0x0012,
  * MS-TURN Remote Address attribute
  * \see https://msdn.microsoft.com/en-us/library/dd948487(v=office.12).aspx
  */
-inline constexpr const remote_address_t remote_address;
+constexpr remote_address_t remote_address;
 
 
 // 0x0013 Data {{{1
@@ -185,7 +185,7 @@ using data_t = protocol_t::reuse_attribute_t<turn::data_t>;
  * MS-TURN Data attribute
  * \see https://msdn.microsoft.com/en-us/library/dd909340(v=office.12).aspx
  */
-inline constexpr const data_t data;
+constexpr data_t data;
 
 
 // 0x0014 Nonce {{{1
@@ -197,7 +197,7 @@ inline constexpr const data_t data;
  * \note It's value is swapped with STUN REALM
  */
 using nonce_t = protocol_t::attribute_type_t<0x0014,
-  array_attribute_processor_t
+  string_attribute_processor_t
 >;
 
 
@@ -206,7 +206,7 @@ using nonce_t = protocol_t::attribute_type_t<0x0014,
  * \see https://msdn.microsoft.com/en-us/library/dd905560(v=office.12).aspx
  * \note It's value is swapped with STUN REALM
  */
-inline constexpr const nonce_t nonce;
+constexpr nonce_t nonce;
 
 
 // 0x0015 Realm {{{1
@@ -227,7 +227,7 @@ using realm_t = protocol_t::attribute_type_t<0x0015,
  * \see https://msdn.microsoft.com/en-us/library/dd905474(v=office.12).aspx
  * \note It's value is swapped with STUN NONCE
  */
-inline constexpr const realm_t realm;
+constexpr realm_t realm;
 
 
 // 0x0017 Requested Address Family {{{1
@@ -237,8 +237,8 @@ inline constexpr const realm_t realm;
  * MS-TURN Requested Address Family attribute type
  * \see https://msdn.microsoft.com/en-us/library/hh643912(v=office.12).aspx
  */
-using requested_address_family_t = protocol_t::attribute_type_t<0x0017,
-  address_family_attribute_processor_t
+using requested_address_family_t = protocol_t::reuse_attribute_t<
+  turn::requested_address_family_t
 >;
 
 
@@ -246,7 +246,7 @@ using requested_address_family_t = protocol_t::attribute_type_t<0x0017,
  * MS-TURN Requested Address Family attribute
  * \see https://msdn.microsoft.com/en-us/library/hh643912(v=office.12).aspx
  */
-inline constexpr const requested_address_family_t requested_address_family;
+constexpr requested_address_family_t requested_address_family;
 
 
 // 0x8008 MS-Version {{{1
@@ -317,7 +317,7 @@ using ms_version_t = protocol_t::attribute_type_t<0x8008,
  * MS-TURN MS-Version attribute
  * \see https://msdn.microsoft.com/en-us/library/dd908334(v=office.12).aspx
  */
-inline constexpr const ms_version_t ms_version;
+constexpr ms_version_t ms_version;
 
 
 // 0x8020 XOR Mapped Address {{{1
@@ -334,7 +334,7 @@ struct xor_address_attribute_processor_t
    * - first: address
    * - second: port in host byte order
    */
-  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+  using value_t = typename address_attribute_processor_t<ProtocolTraits>::value_t;
 
 
   /**
@@ -370,7 +370,7 @@ using xor_mapped_address_t = protocol_t::attribute_type_t<0x8020,
  * MS-TURN XOR Mapped Address attribute
  * \see https://msdn.microsoft.com/en-us/library/dd909268(v=office.12).aspx
  */
-inline constexpr const xor_mapped_address_t xor_mapped_address;
+constexpr xor_mapped_address_t xor_mapped_address;
 
 
 // 0x8022 SOFTWARE {{{1
@@ -387,7 +387,7 @@ using software_t = protocol_t::reuse_attribute_t<stun::software_t>;
  * STUN SOFTWARE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
-inline constexpr const software_t software;
+constexpr software_t software;
 
 
 // 0x8032 MS-Alternate Host Name {{{1
@@ -406,7 +406,7 @@ using ms_alternate_host_name_t = protocol_t::attribute_type_t<0x8032,
  * MS-TURN MS-Alternate Host Name attribute
  * \see https://msdn.microsoft.com/en-us/library/mt842239(v=office.12).aspx
  */
-inline constexpr const ms_alternate_host_name_t ms_alternate_host_name;
+constexpr ms_alternate_host_name_t ms_alternate_host_name;
 
 
 // 0x8050 MS-Sequence Number {{{1
@@ -477,7 +477,7 @@ using ms_sequence_number_t = protocol_t::attribute_type_t<0x8050,
  * MS-TURN MS-Sequence Number attribute
  * \see https://msdn.microsoft.com/en-us/library/dd925584(v=office.12).aspx
  */
-inline constexpr const ms_sequence_number_t ms_sequence_number;
+constexpr ms_sequence_number_t ms_sequence_number;
 
 
 // 0x8055 MS-Service Quality {{{1
@@ -602,7 +602,7 @@ using ms_service_quality_t = protocol_t::attribute_type_t<0x8055,
  * MS-TURN MS-Service Quality attribute
  * \see https://msdn.microsoft.com/en-us/library/dd949836(v=office.12).aspx
  */
-inline constexpr const ms_service_quality_t ms_service_quality;
+constexpr ms_service_quality_t ms_service_quality;
 
 
 // 0x8090 MS-Alternate Mapped Address {{{1
@@ -621,7 +621,7 @@ using ms_alternate_mapped_address_t = protocol_t::attribute_type_t<0x8090,
  * MS-TURN MS-Alternate Mapped Address attribute
  * \see https://msdn.microsoft.com/en-us/library/hh642281(v=office.12).aspx
  */
-inline constexpr const ms_alternate_mapped_address_t ms_alternate_mapped_address;
+constexpr ms_alternate_mapped_address_t ms_alternate_mapped_address;
 
 
 // 0x8095 Multiplexed TURN Session ID {{{1
@@ -687,7 +687,7 @@ using mturn_session_id_t = protocol_t::attribute_type_t<0x8095,
  * MS-TURN Multiplexed TURN Session ID attribute
  * \see https://msdn.microsoft.com/en-us/library/mt757372(v=office.12).aspx
  */
-inline constexpr const mturn_session_id_t mturn_session_id;
+constexpr mturn_session_id_t mturn_session_id;
 
 
 // }}}1
@@ -702,20 +702,20 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
   const any_attribute_t &attribute,
   std::error_code &error) noexcept -> value_t
 {
-  auto [ address, port ] = address_attribute_processor_t<ProtocolTraits>::read(
+  auto result = address_attribute_processor_t<ProtocolTraits>::read(
     message, attribute, error
   );
   if (!error)
   {
     auto &txn_id = message.transaction_id();
-    port ^= sal::network_to_native_byte_order(
+    result.port ^= sal::network_to_native_byte_order(
       *reinterpret_cast<const uint16_t *>(&txn_id[0])
     );
 
     // IPv4
-    if (auto v4 = address.as_v4())
+    if (auto v4 = result.address.as_v4())
     {
-      address = sal::net::ip::make_address_v4(v4->to_uint()
+      result.address = sal::net::ip::make_address_v4(v4->to_uint()
         ^ sal::network_to_native_byte_order(
           *reinterpret_cast<const uint32_t *>(&txn_id[0])
         )
@@ -723,7 +723,7 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
     }
 
     // IPv6
-    else if (auto v6 = address.as_v6())
+    else if (auto v6 = result.address.as_v6())
     {
       auto p = const_cast<uint8_t *>(v6->to_bytes().data());
       for (auto b: txn_id)
@@ -731,10 +731,8 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
         *p++ ^= b;
       }
     }
-
-    return { address, port };
   }
-  return {};
+  return result;
 }
 
 
@@ -746,14 +744,14 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
   std::error_code &error) noexcept
 {
   auto &txn_id = message.transaction_id();
-  value.second ^= sal::native_to_network_byte_order(
+  value.port ^= sal::native_to_network_byte_order(
     *reinterpret_cast<const uint16_t *>(&txn_id[0])
   );
 
   // IPv4
-  if (auto v4 = value.first.as_v4())
+  if (auto v4 = value.address.as_v4())
   {
-    value.first = sal::net::ip::make_address_v4(v4->to_uint()
+    value.address = sal::net::ip::make_address_v4(v4->to_uint()
       ^ sal::native_to_network_byte_order(
         *reinterpret_cast<const uint32_t *>(&txn_id[0])
       )
@@ -761,7 +759,7 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
   }
 
   // IPv6
-  else if (auto v6 = value.first.as_v6())
+  else if (auto v6 = value.address.as_v6())
   {
     auto p = const_cast<uint8_t *>(v6->to_bytes().data());
     for (auto b: txn_id)
@@ -770,7 +768,11 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
     }
   }
 
-  return turner::__bits::write_address(first, last, value, error);
+  return turner::__bits::write_address(first, last,
+    value.address,
+    value.port,
+    error
+  );
 }
 
 

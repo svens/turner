@@ -214,6 +214,145 @@ TEST_F(turn, write_channel_number_too_big)
 }
 
 
+// REQUESTED-ADDRESS-FAMILY {{{1
+
+
+TEST_F(turn, read_requested_address_family)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x17"  // Type
+    "\x00\x04"  // Length
+    "\x01\x00"  // Value (v4)
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  auto value = msg.read(turner::turn::requested_address_family, error);
+  ASSERT_TRUE(!error);
+  EXPECT_EQ(turner::address_family_t::v4, value);
+
+  EXPECT_NO_THROW(
+    msg.read(turner::turn::requested_address_family)
+  );
+}
+
+
+TEST_F(turn, read_requested_address_family_last_attribute)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x21"  // Type (not expected)
+    "\x00\x00"  // Length
+
+    "\x00\x17"  // Type
+    "\x00\x04"  // Length
+    "\x01\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  auto value = msg.read(turner::turn::requested_address_family, error);
+  ASSERT_TRUE(!error);
+  EXPECT_EQ(turner::address_family_t::v4, value);
+
+  EXPECT_NO_THROW(
+    msg.read(turner::turn::requested_address_family)
+  );
+}
+
+
+TEST_F(turn, read_requested_address_family_attribute_not_found)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x21"  // Type
+    "\x00\x04"  // Length
+    "\x01\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  msg.read(turner::turn::requested_address_family, error);
+  EXPECT_EQ(turner::errc::attribute_not_found, error);
+
+  EXPECT_THROW(
+    msg.read(turner::turn::requested_address_family),
+    std::system_error
+  );
+}
+
+
+TEST_F(turn, read_requested_address_family_unexpected_attribute_length)
+{
+  auto data = wire_data(TURN(),
+    "\x00\x17"  // Type
+    "\x00\x03"  // Length
+    "\x01\x00"  // Value
+    "\x00\x00"
+  );
+  auto &msg = parse(TURN(), data);
+
+  std::error_code error;
+  msg.read(turner::turn::requested_address_family, error);
+  EXPECT_EQ(turner::errc::unexpected_attribute_length, error);
+
+  EXPECT_THROW(
+    msg.read(turner::turn::requested_address_family),
+    std::system_error
+  );
+}
+
+
+TEST_F(turn, write_requested_address_family)
+{
+  std::array<uint8_t, TURN::traits_t::header_size + 8> data;
+
+  std::error_code error;
+  auto writer = build(TURN(), data);
+  EXPECT_EQ(8, writer.available());
+
+  writer.write(turner::turn::requested_address_family,
+    turner::address_family_t::v4,
+    error
+  );
+  EXPECT_TRUE(!error);
+  EXPECT_EQ(0, writer.available());
+
+  auto &msg = parse(TURN(), data);
+  EXPECT_EQ(8, msg.length());
+  EXPECT_EQ(
+    turner::address_family_t::v4,
+    msg.read(turner::turn::requested_address_family)
+  );
+}
+
+
+TEST_F(turn, write_requested_address_family_not_enough_room)
+{
+  std::array<uint8_t, TURN::traits_t::header_size + 7> data;
+
+  std::error_code error;
+  auto writer = build(TURN(), data);
+  EXPECT_EQ(7, writer.available());
+
+  writer.write(turner::turn::requested_address_family,
+    turner::address_family_t::v4,
+    error
+  );
+  EXPECT_EQ(turner::errc::not_enough_room, error);
+  EXPECT_EQ(7, writer.available());
+
+  EXPECT_THROW(
+    build(TURN(), data).write(
+      turner::turn::requested_address_family,
+      turner::address_family_t::v4
+    ),
+    std::system_error
+  );
+}
+
+
 // REQUESTED-TRANSPORT {{{1
 
 

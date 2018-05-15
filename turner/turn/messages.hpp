@@ -28,85 +28,85 @@ namespace turn {
 /**
  * Allocation message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0003> allocation;
+constexpr protocol_t::message_type_t<0x0003> allocation;
 
 
 /**
  * Allocation success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0103> allocation_success;
+constexpr protocol_t::message_type_t<0x0103> allocation_success;
 
 
 /**
  * Allocation error message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0113> allocation_error;
+constexpr protocol_t::message_type_t<0x0113> allocation_error;
 
 
 /**
  * Refresh message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0004> refresh;
+constexpr protocol_t::message_type_t<0x0004> refresh;
 
 
 /**
  * Refresh success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0104> refresh_success;
+constexpr protocol_t::message_type_t<0x0104> refresh_success;
 
 
 /**
  * Refresh error message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0114> refresh_error;
+constexpr protocol_t::message_type_t<0x0114> refresh_error;
 
 
 /**
  * Send Indication message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0016> send_indication;
+constexpr protocol_t::message_type_t<0x0016> send_indication;
 
 
 /**
  * Data Indication message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0017> data_indication;
+constexpr protocol_t::message_type_t<0x0017> data_indication;
 
 
 /**
  * Create Permission message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0008> create_permission;
+constexpr protocol_t::message_type_t<0x0008> create_permission;
 
 
 /**
  * Create Permission success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0108> create_permission_success;
+constexpr protocol_t::message_type_t<0x0108> create_permission_success;
 
 
 /**
  * Create Permission error message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0118> create_permission_error;
+constexpr protocol_t::message_type_t<0x0118> create_permission_error;
 
 
 /**
  * Channel Bind message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0009> channel_bind;
+constexpr protocol_t::message_type_t<0x0009> channel_bind;
 
 
 /**
  * Channel Bind success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0109> channel_bind_success;
+constexpr protocol_t::message_type_t<0x0109> channel_bind_success;
 
 
 /**
  * Channel Bind error message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0119> channel_bind_error;
+constexpr protocol_t::message_type_t<0x0119> channel_bind_error;
 
 
 // \}

@@ -26,6 +26,7 @@ enum class errc
   invalid_message_length,
   invalid_message_cookie,
   unexpected_message_type,
+  unknown_comprehension_required,
   attribute_not_found,
   unexpected_attribute_length,
   unexpected_attribute_value,
@@ -66,12 +67,12 @@ struct error_t
   /**
    * Error code (semantic is defined by specific protocol)
    */
-  const uint16_t code{};
+  uint16_t code{};
 
   /**
    * Error phase (recommended content is defined by specific protocol)
    */
-  const std::string_view message{};
+  std::string_view message{};
 
 
   constexpr error_t () = default;
@@ -119,7 +120,7 @@ struct error_t
  * Success code
  * \note This is not part of STUN/TURN/MSTURN protocols. Used only internally
  */
-inline constexpr const error_t success{0, "Success"};
+constexpr error_t success{0, "Success"};
 
 
 /**

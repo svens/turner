@@ -62,15 +62,18 @@ size_t write_error (
   std::error_code &error
 ) noexcept;
 
-std::pair<sal::net::ip::address_t, uint16_t> read_address (
+void read_address (
   const any_attribute_t &attribute,
+  sal::net::ip::address_t *address,
+  uint16_t *port,
   std::error_code &error
 ) noexcept;
 
 size_t write_address (
   uint8_t *first,
   uint8_t *last,
-  const std::pair<sal::net::ip::address_t, uint16_t> &value,
+  const sal::net::ip::address_t &address,
+  uint16_t port,
   std::error_code &error
 ) noexcept;
 
