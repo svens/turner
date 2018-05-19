@@ -5,29 +5,40 @@
  * Turner library building configuration
  */
 
+#include <string_view>
+
 
 #define __turner_begin  namespace turner { inline namespace v0 {
 #define __turner_end    }} // namespace turner::v0
 
 __turner_begin
 
+
+namespace __bits {
+
+using namespace std::string_view_literals;
+constexpr auto version = "@PROJECT_VERSION@"sv;
+
+} // namespace __bits
+
+
 /**
- * Turner library version as string (turner/{VERSION}).
+ * Turner library version as string.
  */
-inline constexpr const char version[] = "turner/@PROJECT_VERSION@";
+constexpr std::string_view version = __bits::version;
 
 #if _MSC_VER
-  inline constexpr const bool is_msvc_compiler = true;
-  inline constexpr const bool is_gnuc_compiler = false;
+  constexpr bool is_msvc_compiler = true;
+  constexpr bool is_gnuc_compiler = false;
 #elif __GNUC__
-  inline constexpr const bool is_msvc_compiler = false;
-  inline constexpr const bool is_gnuc_compiler = true;
+  constexpr bool is_msvc_compiler = false;
+  constexpr bool is_gnuc_compiler = true;
 #endif
 
 #if _DEBUG
-  inline constexpr const bool is_debug_build = true;
+  constexpr bool is_debug_build = true;
 #else
-  inline constexpr const bool is_debug_build = false;
+  constexpr bool is_debug_build = false;
 #endif
 
 __turner_end

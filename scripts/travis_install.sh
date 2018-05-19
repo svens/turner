@@ -24,8 +24,8 @@ case "${TRAVIS_OS_NAME}-${CC}" in
     ;;
 
   osx-gcc)
-    export CC=gcc-7
-    export CXX=g++-7
+    export CC=gcc-8
+    export CXX=g++-8
     brew cask uninstall oclint || true
     brew update
     brew install cmake gcc || true

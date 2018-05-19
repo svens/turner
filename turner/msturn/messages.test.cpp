@@ -86,7 +86,7 @@ TEST_F(msturn, set_active_destination)
 
 TEST_F(msturn, finish_with_integrity)
 {
-  auto expected = MSTURN::msg_data();
+  auto expected = MSTURN::message_data;
 
   // instantiate writer with data area
   std::vector<uint8_t> data(expected.size(), 0);
@@ -104,7 +104,7 @@ TEST_F(msturn, finish_with_integrity)
   EXPECT_EQ(MSTURN::min_payload_length(), writer.length());
 
   // actual testing part: finish with integrity
-  auto integrity_calculator = MSTURN::msg_hmac();
+  auto integrity_calculator = MSTURN::message_hmac();
   auto [ begin, end ] = writer.finish(integrity_calculator);
   EXPECT_EQ(data.data(), begin);
   EXPECT_EQ(data.data() + data.size(), end);

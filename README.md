@@ -16,6 +16,7 @@
 
   * [STUN]
   * [TURN]
+    - [TURN extension for IPv6](https://tools.ietf.org/html/rfc6156)
   * [MS-TURN]
   * [Turner]
 
@@ -32,6 +33,7 @@ The source tree is organised as follows:
 
     .                   root directory
     |-- bench           library micro-benchmarking application
+    |-- client          client application for ad hoc library testing
     |-- cmake           CMake helpers
     |-- docs            additional documentation
     |-- scripts         helper scripts

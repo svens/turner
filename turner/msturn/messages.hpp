@@ -28,49 +28,49 @@ namespace msturn {
 /**
  * Allocate message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0003> allocate;
+constexpr protocol_t::message_type_t<0x0003> allocate;
 
 
 /**
  * Allocate success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0103> allocate_success;
+constexpr protocol_t::message_type_t<0x0103> allocate_success;
 
 
 /**
  * Allocate error message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0113> allocate_error;
+constexpr protocol_t::message_type_t<0x0113> allocate_error;
 
 
 /**
  * Send message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0004> send;
+constexpr protocol_t::message_type_t<0x0004> send;
 
 
 /**
  * Data Indication message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0115> data_indication;
+constexpr protocol_t::message_type_t<0x0115> data_indication;
 
 
 /**
  * Set Active Destination message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0006> set_active_destination;
+constexpr protocol_t::message_type_t<0x0006> set_active_destination;
 
 
 /**
  * Set Active Destination success message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0106> set_active_destination_success;
+constexpr protocol_t::message_type_t<0x0106> set_active_destination_success;
 
 
 /**
  * Set Active Destination error message type.
  */
-inline constexpr const protocol_t::message_type_t<0x0116> set_active_destination_error;
+constexpr protocol_t::message_type_t<0x0116> set_active_destination_error;
 
 
 // \}

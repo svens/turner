@@ -9,7 +9,7 @@ using stun = turner_test::fixture;
 
 TEST_F(stun, parse_range)
 {
-  auto data = STUN::msg_data();
+  auto data = STUN::message_data;
 
   std::error_code error;
   turner::stun::parse(data.begin(), data.end(), error);
@@ -23,7 +23,7 @@ TEST_F(stun, parse_range)
 
 TEST_F(stun, parse_range_with_error)
 {
-  auto data = STUN::msg_data();
+  auto data = STUN::message_data;
   data[0] = 0xff;
 
   std::error_code error;
@@ -39,7 +39,7 @@ TEST_F(stun, parse_range_with_error)
 
 TEST_F(stun, parse_data)
 {
-  auto data = STUN::msg_data();
+  auto data = STUN::message_data;
 
   std::error_code error;
   turner::stun::parse(data, error);
@@ -53,7 +53,7 @@ TEST_F(stun, parse_data)
 
 TEST_F(stun, parse_data_with_error)
 {
-  auto data = STUN::msg_data();
+  auto data = STUN::message_data;
   data[0] = 0xff;
 
   std::error_code error;

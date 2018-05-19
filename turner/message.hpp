@@ -11,6 +11,7 @@
 #include <turner/__bits/message.hpp>
 #include <sal/byte_order.hpp>
 #include <sal/crypto/hmac.hpp>
+#include <cstring>
 
 
 __turner_begin
@@ -108,6 +109,15 @@ public:
 
 
   /**
+   * Return calculated message size: header size + length()
+   */
+  size_t size () const noexcept
+  {
+    return traits_t::header_size + length();
+  }
+
+
+  /**
    * Return pointer to beginning of message.
    */
   const uint8_t *begin () const noexcept
@@ -121,7 +131,7 @@ public:
    */
   const uint8_t *end () const noexcept
   {
-    return as_ptr<uint8_t>() + traits_t::header_size + length();
+    return as_ptr<uint8_t>() + size();
   }
 
 
@@ -255,7 +265,7 @@ public:
   /**
    * Message type.
    */
-  static inline constexpr const message_type_t<traits_t, MessageType> type{};
+  static constexpr message_type_t<traits_t, MessageType> type{};
 
 
   /**
@@ -272,6 +282,7 @@ public:
   {
     if (auto attribute = __bits::find_attribute(this->payload(), this->end(),
         AttributeType,
+        traits_t::message_integrity,
         traits_t::padding_size,
         error))
     {
@@ -294,6 +305,83 @@ public:
     attribute_type_t<traits_t, AttributeType, AttributeProcessor> attribute) const
   {
     return read(attribute, sal::throw_on_error("message_reader::read"));
+  }
+
+
+  /**
+   * Like read(), except value of \a Attribute is read into \a value_ref.
+   *
+   * \returns true if attribute was found and it's value was decoded and
+   * stored into \a value_ref successfuly. On failure, set \a error and return
+   * false.
+   */
+  template <typename Attribute>
+  bool read_one (Attribute,
+    typename Attribute::value_t &value_ref,
+    std::error_code &error) const noexcept
+  {
+    if (auto attribute_p = __bits::find_attribute(
+        this->payload(),
+        this->end(),
+        Attribute::type,
+        traits_t::message_integrity,
+        traits_t::padding_size,
+        error))
+    {
+      value_ref = Attribute::processor_t::read(*this,
+        *attribute_p,
+        error
+      );
+      return !error;
+    }
+    return false;
+  }
+
+
+  /**
+   * Read multiple \a attributes in batch.
+   *
+   * Before reading \a attributes values, this method checks:
+   * 1. if message contains any comprehension required attribute(s) that are
+   *    not planned to be read (i.e. not in \a attributes). In that case, all
+   *    such attributes type values are stored into \a failed_attributes, not
+   *    exceeding \a N and \a error is set to
+   *    \c errc::unknown_comprehension_required
+   * 2. if \a attributes contain attribute(s) that are not found in message,
+   *    these are stored into \a failed_attributes, not exceeding \a N and
+   *    \a error is set to \c errc::attribute_not_found
+   *
+   * If any of checks above fails, no attributes are read and method returns
+   * number of items stored into \a failed_attributes. If checks pass, each
+   * attribute value is read, stopping on first failure. In this case, nothing
+   * is stored into \a failed_attributes but \a error will be set to indicate
+   * what kind of error happened during reading. If all \a attributes are read
+   * successfully, \a error will be cleared.
+   */
+  template <size_t N, typename... Attribute>
+  size_t read_many (
+    std::error_code &error,
+    uint16_t (&failed_attributes)[N],
+    std::pair<Attribute, typename Attribute::value_t &> &&...attributes)
+      const noexcept
+  {
+    uint16_t attribute_types[] = { (attributes.first.type)..., 0 };
+    size_t size = __bits::gather_unknown_comprehension_required_or_missing(
+      this->payload(), this->end(),
+      attribute_types, sizeof(attribute_types)/sizeof(attribute_types[0]) - 1,
+      failed_attributes, N,
+      traits_t::message_integrity,
+      traits_t::padding_size,
+      error
+    );
+    if (!error)
+    {
+      if ((read_one(attributes.first, attributes.second, error) && ...))
+      {
+        return 0;
+      }
+    }
+    return size;
   }
 
 
@@ -497,7 +585,7 @@ public:
   /**
    * Message type.
    */
-  static inline constexpr const message_type_t<traits_t, MessageType> type{};
+  static constexpr message_type_t<traits_t, MessageType> type{};
 
 
   /**
@@ -555,11 +643,11 @@ public:
 
   /**
    * Encode \a value and append to message as \a AttributeType. If there is
-   * no enough room in internal buffer, \a set error to errc::not_enough_room
+   * not enough room in internal buffer, set \a error to errc::not_enough_room
    * and do nothing.
    */
   template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
-  message_writer_t &write (
+  bool write_one (
     attribute_type_t<traits_t, AttributeType, AttributeProcessor>,
     const typename AttributeProcessor<traits_t>::value_t &value,
     std::error_code &error
@@ -567,8 +655,23 @@ public:
 
 
   /**
-   * Encode \a value and append to message as \a AttributeType. If there is
-   * no enough room in internal buffer, throw std::system_error.
+   * \copydoc write_one
+   */
+  template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
+  message_writer_t &write (
+    attribute_type_t<traits_t, AttributeType, AttributeProcessor> attribute,
+    const typename AttributeProcessor<traits_t>::value_t &value,
+    std::error_code &error) noexcept
+  {
+    write_one(attribute, value, error);
+    return *this;
+  }
+
+
+  /**
+   * \copybrief write_one
+   * If there is not enough room in internal buffer, throw std::system_error
+   * with error set to errc::not_enough_room
    */
   template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
   message_writer_t &write (
@@ -578,6 +681,26 @@ public:
     return write(attribute, value,
       sal::throw_on_error("message_writer::write")
     );
+  }
+
+
+  /**
+   * Append multiple \a attributes to message using write_one(). Stops on
+   * first error or completion and returns number of successfully written
+   * \a attributes.
+   */
+  template <typename... Attribute>
+  size_t write_many (std::error_code &error,
+    const std::pair<Attribute, const typename Attribute::value_t &> &...attributes)
+      noexcept
+  {
+    error.clear();
+    size_t n = 0;
+    if (((++n, write_one(attributes.first, attributes.second, error)) && ...))
+    {
+      return n;
+    }
+    return n - 1;
   }
 
 
@@ -641,6 +764,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 {
   if (auto integrity = __bits::find_attribute(payload(), end(),
       traits_t::message_integrity,
+      traits_t::message_integrity,
       traits_t::padding_size,
       error))
   {
@@ -661,7 +785,7 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 
       if constexpr (traits_t::message_integrity_padding > 1)
       {
-        static constexpr const auto r = traits_t::message_integrity_padding - 1;
+        static constexpr auto r = traits_t::message_integrity_padding - 1;
         if (n % traits_t::message_integrity_padding != 0)
         {
           auto new_n = (n + r) & ~r;
@@ -692,17 +816,12 @@ bool any_message_t<ProtocolTraits>::has_valid_integrity (
 }
 
 
-/**
- * Encode \a value and append to message as \a AttributeType. If there is
- * no enough room in internal buffer, \a set error to errc::not_enough_room
- * and do nothing.
- */
 template <typename ProtocolTraits, uint16_t MessageType>
 template <uint16_t AttributeType, template <typename> typename AttributeProcessor>
-auto message_writer_t<ProtocolTraits, MessageType>::write (
+bool message_writer_t<ProtocolTraits, MessageType>::write_one (
   attribute_type_t<ProtocolTraits, AttributeType, AttributeProcessor>,
   const typename AttributeProcessor<ProtocolTraits>::value_t &value,
-  std::error_code &error) noexcept -> message_writer_t &
+  std::error_code &error) noexcept
 {
   auto &message = *reinterpret_cast<any_message_t<traits_t> *>(first_);
   auto message_size = message.length();
@@ -720,12 +839,12 @@ auto message_writer_t<ProtocolTraits, MessageType>::write (
     message_size += static_cast<uint16_t>(2 * sizeof(uint16_t) + attribute_size);
     if constexpr (traits_t::padding_size > 1)
     {
-      constexpr const auto r = traits_t::padding_size - 1;
+      constexpr auto r = traits_t::padding_size - 1;
       message_size = (message_size + r) & ~r;
       if (first_ + traits_t::header_size + message_size > last_)
       {
         error = make_error_code(errc::not_enough_room);
-        return *this;
+        return false;
       }
     }
 
@@ -735,9 +854,11 @@ auto message_writer_t<ProtocolTraits, MessageType>::write (
       sal::native_to_network_byte_order(AttributeType);
     reinterpret_cast<uint16_t *>(attribute)[1] =
       sal::native_to_network_byte_order(static_cast<uint16_t>(attribute_size));
+
+    return true;
   }
 
-  return *this;
+  return false;
 }
 
 
@@ -772,8 +893,7 @@ auto message_writer_t<ProtocolTraits, MessageType>::finish (
     integrity_calculator.update(first_, attribute);
     if constexpr (traits_t::message_integrity_padding > 1)
     {
-      static constexpr const
-        std::array<uint8_t, traits_t::message_integrity_padding> pad{};
+      static constexpr std::array<uint8_t, traits_t::message_integrity_padding> pad{};
       auto size = attribute - first_;
       if (size % pad.size() != 0)
       {

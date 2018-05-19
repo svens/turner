@@ -44,7 +44,7 @@ using mapped_address_t = protocol_t::attribute_type_t<0x0001,
  * STUN MAPPED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.1)
  */
-inline constexpr const mapped_address_t mapped_address;
+constexpr mapped_address_t mapped_address;
 
 
 // 0x0006 USERNAME {{{1
@@ -63,7 +63,7 @@ using username_t = protocol_t::attribute_type_t<0x0006,
  * STUN USERNAME attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.3)
  */
-inline constexpr const username_t username;
+constexpr username_t username;
 
 
 // 0x0009 ERROR-CODE {{{1
@@ -82,7 +82,7 @@ using error_code_t = protocol_t::attribute_type_t<0x0009,
  * STUN ERROR-CODE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.6)
  */
-inline constexpr const error_code_t error_code;
+constexpr error_code_t error_code;
 
 
 // 0x0014 REALM {{{1
@@ -101,7 +101,7 @@ using realm_t = protocol_t::attribute_type_t<0x0014,
  * STUN REALM attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.7)
  */
-inline constexpr const realm_t realm;
+constexpr realm_t realm;
 
 
 // 0x0015 NONCE {{{1
@@ -112,7 +112,7 @@ inline constexpr const realm_t realm;
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
 using nonce_t = protocol_t::attribute_type_t<0x0015,
-  array_attribute_processor_t
+  string_attribute_processor_t
 >;
 
 
@@ -120,7 +120,7 @@ using nonce_t = protocol_t::attribute_type_t<0x0015,
  * STUN NONCE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.8)
  */
-inline constexpr const nonce_t nonce;
+constexpr nonce_t nonce;
 
 
 // 0x0020 XOR-MAPPED-ADDRESS {{{1
@@ -134,10 +134,8 @@ struct xor_address_attribute_processor_t
 {
   /**
    * Attribute value type.
-   * - first: address
-   * - second: port in host byte order
    */
-  using value_t = std::pair<sal::net::ip::address_t, uint16_t>;
+  using value_t = typename address_attribute_processor_t<ProtocolTraits>::value_t;
 
 
   /**
@@ -161,13 +159,13 @@ struct xor_address_attribute_processor_t
 
 private:
 
-  static constexpr const uint16_t xor_cookie_16 =
+  static constexpr uint16_t xor_cookie_16 =
     (ProtocolTraits::cookie & 0xffff'0000) >> 16;
 
-  static constexpr const uint32_t xor_cookie_32 =
+  static constexpr uint32_t xor_cookie_32 =
     ProtocolTraits::cookie;
 
-  static constexpr const std::array<uint8_t, 4> cookie =
+  static constexpr std::array<uint8_t, 4> cookie =
   {{
     0x21, 0x12, 0xa4, 0x42
   }};
@@ -187,7 +185,7 @@ using xor_mapped_address_t = protocol_t::attribute_type_t<0x0020,
  * STUN XOR-MAPPED-ADDRESS attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.2)
  */
-inline constexpr const xor_mapped_address_t xor_mapped_address;
+constexpr xor_mapped_address_t xor_mapped_address;
 
 
 // 0x8022 SOFTWARE {{{1
@@ -206,7 +204,7 @@ using software_t = protocol_t::attribute_type_t<0x8022,
  * STUN SOFTWARE attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.10)
  */
-inline constexpr const software_t software;
+constexpr software_t software;
 
 
 // 0x8023 ALTERNATE-SERVER {{{1
@@ -225,7 +223,7 @@ using alternate_server_t = protocol_t::attribute_type_t<0x8023,
  * STUN ALTERNATE-SERVER attribute
  * (https://tools.ietf.org/html/rfc5389#section-15.11)
  */
-inline constexpr const alternate_server_t alternate_server;
+constexpr alternate_server_t alternate_server;
 
 
 // }}}1
@@ -240,21 +238,23 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
   const any_attribute_t &attribute,
   std::error_code &error) noexcept -> value_t
 {
-  auto [ address, port ] = address_attribute_processor_t<ProtocolTraits>::read(
+  auto result = address_attribute_processor_t<ProtocolTraits>::read(
     message, attribute, error
   );
   if (!error)
   {
-    port ^= xor_cookie_16;
+    result.port ^= xor_cookie_16;
 
     // IPv4
-    if (auto v4 = address.as_v4())
+    if (auto v4 = result.address.as_v4())
     {
-      address = sal::net::ip::make_address_v4(v4->to_uint() ^ xor_cookie_32);
+      result.address = sal::net::ip::make_address_v4(
+        v4->to_uint() ^ xor_cookie_32
+      );
     }
 
     // IPv6
-    else if (auto v6 = address.as_v6())
+    else if (auto v6 = result.address.as_v6())
     {
       auto p = const_cast<uint8_t *>(v6->to_bytes().data());
       for (auto b: cookie)
@@ -266,10 +266,8 @@ auto xor_address_attribute_processor_t<ProtocolTraits>::read (
         *p++ ^= b;
       }
     }
-
-    return { address, port };
   }
-  return {};
+  return result;
 }
 
 
@@ -280,18 +278,18 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
   value_t value,
   std::error_code &error) noexcept
 {
-  value.second ^= xor_cookie_16;
+  value.port ^= xor_cookie_16;
 
   // IPv4
-  if (auto v4 = value.first.as_v4())
+  if (auto v4 = value.address.as_v4())
   {
-    value.first = sal::net::ip::make_address_v4(
+    value.address = sal::net::ip::make_address_v4(
       v4->to_uint() ^ xor_cookie_32
     );
   }
 
   // IPv6
-  else if (auto v6 = value.first.as_v6())
+  else if (auto v6 = value.address.as_v6())
   {
     auto p = const_cast<uint8_t *>(v6->to_bytes().data());
     for (auto b: cookie)
@@ -304,7 +302,11 @@ size_t xor_address_attribute_processor_t<ProtocolTraits>::write (
     }
   }
 
-  return turner::__bits::write_address(first, last, value, error);
+  return turner::__bits::write_address(first, last,
+    value.address,
+    value.port,
+    error
+  );
 }
 
 

@@ -1,4 +1,8 @@
 list(APPEND turner_sources
+  turner/__bits/attribute_processor.hpp
+  turner/__bits/attribute_processor.cpp
+  turner/__bits/message.hpp
+  turner/__bits/message.cpp
   turner/attribute.hpp
   turner/attribute_processor.hpp
   turner/error.hpp
@@ -7,12 +11,6 @@ list(APPEND turner_sources
   turner/message.hpp
   turner/message_type.hpp
   turner/protocol.hpp
-
-  # internals
-  turner/__bits/attribute_processor.hpp
-  turner/__bits/attribute_processor.cpp
-  turner/__bits/message.hpp
-  turner/__bits/message.cpp
 )
 
 list(APPEND turner_unittests_sources
@@ -25,6 +23,7 @@ list(APPEND turner_unittests_sources
   turner/protocol.test.cpp
 )
 
+# protocols
 include(turner/msturn/list.cmake)
 include(turner/stun/list.cmake)
 include(turner/turn/list.cmake)
