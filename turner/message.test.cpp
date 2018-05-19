@@ -826,18 +826,6 @@ TYPED_TEST(message_reader, read_many_past_integrity)
   EXPECT_EQ(turner::errc::attribute_not_found, error);
   ASSERT_EQ(1U, failed_count);
   EXPECT_EQ(TypeParam::software.type, failed[0]);
-
-#if 0
-  // attribute before integrity
-  std::error_code error;
-  std::string_view value = msg.read(TypeParam::username, error);
-  EXPECT_TRUE(!error);
-  EXPECT_EQ("username", value);
-
-  // attribute after integrity
-  value = msg.read(TypeParam::software, error);
-  EXPECT_EQ(turner::errc::attribute_not_found, error);
-#endif
 }
 
 
