@@ -1,0 +1,6 @@
+[submodule "cmake"]
+	path = cmake
+	url = ../cmake
+[submodule "pal"]
+	path = pal
+	url = ../pal
