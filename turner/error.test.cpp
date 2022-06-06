@@ -9,11 +9,11 @@ namespace {
 
 TEST_CASE("error")
 {
-	#define __turner_errc_value(code, message) turner::errc::code,
+	#define __turner_errc_impl(code, message) turner::errc::code,
 
 	SECTION("errc")
 	{
-		std::error_code ec = GENERATE(values({__turner_errc(__turner_errc_value)}));
+		std::error_code ec = GENERATE(values({__turner_errc(__turner_errc_impl)}));
 		CAPTURE(ec);
 
 		SECTION("message")

@@ -22,9 +22,9 @@ __turner_begin
  */
 enum class errc: int
 {
-	#define __turner_errc_list(code, message) code,
-	__turner_errc(__turner_errc_list)
-	#undef __turner_errc_list
+	#define __turner_errc_impl(code, message) code,
+	__turner_errc(__turner_errc_impl)
+	#undef __turner_errc_impl
 };
 
 

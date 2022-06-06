@@ -11,9 +11,9 @@ constexpr std::string_view as_view (errc ec) noexcept
 {
 	switch (ec)
 	{
-		#define __turner_errc_case(code, message) case turner::errc::code: return message;
-		__turner_errc(__turner_errc_case)
-		#undef __turner_errc_case
+		#define __turner_errc_impl(code, message) case turner::errc::code: return message;
+		__turner_errc(__turner_errc_impl)
+		#undef __turner_errc_impl
 	}
 	return "unknown";
 }
