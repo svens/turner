@@ -1,11 +1,11 @@
 #pragma once // -*- C++ -*-
 
 /**
- * \file turner/error.hpp
+ * \file turner/error
  * Turner library error codes
  */
 
-#include <turner/__bits/lib.hpp>
+#include <turner/__bits/lib>
 #include <system_error>
 
 

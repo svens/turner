@@ -1,5 +1,5 @@
-#include <turner/error.hpp>
-#include <turner/test.hpp>
+#include <turner/error>
+#include <turner/test>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <type_traits>
 

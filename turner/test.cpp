@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <turner/test.hpp>
+#include <turner/test>
 #include <catch2/catch_session.hpp>
 #include <cstdlib>
 

@@ -1,11 +1,11 @@
 #pragma once // -*- C++ -*-
 
 /**
- * \file turner/protocol_error.hpp
+ * \file turner/protocol_error
  * STUN family protocols' errors
  */
 
-#include <turner/__bits/lib.hpp>
+#include <turner/__bits/lib>
 #include <system_error>
 
 
