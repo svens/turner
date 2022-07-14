@@ -1,0 +1,72 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/message_type
+ * Generic message type
+ */
+
+#include <turner/__bits/lib>
+
+
+__turner_begin
+
+
+/// Define \a Protocol message type with value \a MessageType.
+template <typename Protocol, uint16_t MessageType>
+struct message_type
+{
+	static_assert((MessageType & 0b1100'0000'0000'0000) == 0,
+		"invalid message type"
+	);
+
+	/// Message type numeric value (in host byte order).
+	static constexpr uint16_t value = MessageType;
+
+	/// Protocol that defines this message type.
+	using protocol_type = Protocol;
+
+	/// Return true if this \a MessageType is same as \a OtherMessageType.
+	template <uint16_t OtherMessageType>
+	constexpr bool operator== (message_type<Protocol, OtherMessageType>) const noexcept
+	{
+		return MessageType == OtherMessageType;
+	}
+
+	/// Return true if this \a MessageType is not same as \a OtherMessageType.
+	template <uint16_t OtherMessageType>
+	constexpr bool operator!= (message_type<Protocol, OtherMessageType>) const noexcept
+	{
+		return MessageType != OtherMessageType;
+	}
+};
+
+/// Return true if \a MessageType is same as numeric \a type.
+template <typename Protocol, uint16_t MessageType>
+constexpr bool operator== (message_type<Protocol, MessageType>, uint16_t type) noexcept
+{
+	return MessageType == type;
+}
+
+/// Return true if \a MessageType is same as numeric \a type.
+template <typename Protocol, uint16_t MessageType>
+constexpr bool operator== (uint16_t type, message_type<Protocol, MessageType>) noexcept
+{
+	return MessageType == type;
+}
+
+/// Return true if \a MessageType is not same as numeric \a type.
+template <typename Protocol, uint16_t MessageType>
+constexpr bool operator!= (message_type<Protocol, MessageType>, uint16_t type) noexcept
+{
+	return MessageType != type;
+}
+
+/// Return true if \a MessageType is not same as numeric \a type.
+template <typename Protocol, uint16_t MessageType>
+constexpr bool operator!= (uint16_t type, message_type<Protocol, MessageType>) noexcept
+{
+	return MessageType != type;
+}
+
+
+__turner_end
