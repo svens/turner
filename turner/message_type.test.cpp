@@ -1,6 +1,5 @@
 #include <turner/message_type>
 #include <turner/test>
-#include <catch2/catch_test_macros.hpp>
 
 
 namespace {
@@ -8,8 +7,8 @@ namespace {
 
 struct P
 {
-	static constexpr turner::message_type<P, 1> m1{};
-	static constexpr turner::message_type<P, 2> m2{};
+	static constexpr auto m1 = turner::message_type<P>::request<1>();
+	static constexpr auto m2 = turner::message_type<P>::request<2>();
 };
 
 

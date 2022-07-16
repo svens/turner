@@ -2,70 +2,101 @@
 
 /**
  * \file turner/message_type
- * Generic message type
+ * Protocol-specific concrete message type
  */
 
 #include <turner/__bits/lib>
+#include <turner/fwd>
 
 
 __turner_begin
 
 
-/// Define \a Protocol message type with value \a MessageType.
-template <typename Protocol, uint16_t MessageType>
-struct message_type
+/// Define \a Protocol message type.
+template <typename Protocol>
+class message_type
 {
-	static_assert((MessageType & 0b1100'0000'0000'0000) == 0,
-		"invalid message type"
-	);
-
-	/// Message type numeric value (in host byte order).
-	static constexpr uint16_t value = MessageType;
+public:
 
 	/// Protocol that defines this message type.
 	using protocol_type = Protocol;
 
-	/// Return true if this \a MessageType is same as \a OtherMessageType.
-	template <uint16_t OtherMessageType>
-	constexpr bool operator== (message_type<Protocol, OtherMessageType>) const noexcept
+	/// Message type numeric value (in host byte order).
+	const uint16_t value;
+
+	/// Returns method type for Protocol of request class.
+	template <uint16_t Method>
+	static constexpr message_type request () noexcept
 	{
-		return MessageType == OtherMessageType;
+		static_assert((Method & 0b1100'0000'0000'0000) == 0,
+			"invalid message type"
+		);
+		return {Method};
 	}
 
-	/// Return true if this \a MessageType is not same as \a OtherMessageType.
-	template <uint16_t OtherMessageType>
-	constexpr bool operator!= (message_type<Protocol, OtherMessageType>) const noexcept
+	/// Returns method type for Protocol of success response class.
+	constexpr message_type success_response () const noexcept
 	{
-		return MessageType != OtherMessageType;
+		const uint16_t v = value | 0b0000'0001'0000'0000;
+		return {v};
 	}
+
+	/// Returns method type for Protocol of success response class.
+	constexpr message_type error_response () const noexcept
+	{
+		const uint16_t v = value | 0b000'0001'0001'0000;
+		return {v};
+	}
+
+	/// Returns true if this message type is same as \a that message type.
+	constexpr bool operator== (message_type that) const noexcept
+	{
+		return value == that.value;
+	}
+
+	/// Returns true if this message type is not same as \a that message type.
+	constexpr bool operator!= (message_type that) const noexcept
+	{
+		return value != that.value;
+	}
+
+private:
+
+	message_type () = delete;
+
+	constexpr message_type (uint16_t value)
+		: value{value}
+	{ }
+
+	friend class basic_message_reader<Protocol>;
 };
 
-/// Return true if \a MessageType is same as numeric \a type.
-template <typename Protocol, uint16_t MessageType>
-constexpr bool operator== (message_type<Protocol, MessageType>, uint16_t type) noexcept
+/// Returns true if message type \a left value is same as \a right.
+template <typename Protocol>
+constexpr bool operator== (message_type<Protocol> left, uint16_t right) noexcept
 {
-	return MessageType == type;
+	return left.value == right;
 }
 
-/// Return true if \a MessageType is same as numeric \a type.
-template <typename Protocol, uint16_t MessageType>
-constexpr bool operator== (uint16_t type, message_type<Protocol, MessageType>) noexcept
+/// Returns true if message type \a right value is same as \a left.
+template <typename Protocol>
+constexpr bool operator== (uint16_t left, message_type<Protocol> right) noexcept
 {
-	return MessageType == type;
+	return left == right.value;
 }
 
-/// Return true if \a MessageType is not same as numeric \a type.
-template <typename Protocol, uint16_t MessageType>
-constexpr bool operator!= (message_type<Protocol, MessageType>, uint16_t type) noexcept
+/// Returns true if message type \a left value is not same as \a right.
+template <typename Protocol>
+constexpr bool operator!= (message_type<Protocol> left, uint16_t right) noexcept
 {
-	return MessageType != type;
+	return left.value != right;
 }
 
-/// Return true if \a MessageType is not same as numeric \a type.
-template <typename Protocol, uint16_t MessageType>
-constexpr bool operator!= (uint16_t type, message_type<Protocol, MessageType>) noexcept
+/// Returns true if message type \a right value is not same as \a left.
+template <typename Protocol>
+constexpr bool operator!= (uint16_t left, message_type<Protocol> right) noexcept
 {
-	return MessageType != type;
+	return left != right.value;
 }
 
 

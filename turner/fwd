@@ -1,0 +1,16 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/fwd
+ * Forward declarations
+ */
+
+#include <turner/__bits/lib>
+
+
+__turner_begin
+
+// turner/basic_message_reader
+template <typename Protocol> class basic_message_reader;
+
+__turner_end

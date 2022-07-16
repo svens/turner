@@ -1,0 +1,58 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/basic_message_reader
+ * Protocol-specific generic message reader
+ */
+
+#include <turner/__bits/lib>
+#include <turner/message_type>
+#include <pal/byte_order>
+#include <span>
+
+
+__turner_begin
+
+template <typename Protocol>
+class basic_message_reader
+{
+public:
+
+	/// Protocol that defines this message type.
+	using protocol_type = Protocol;
+
+	/// Message transaction ID type
+	using transaction_id_type = typename Protocol::transaction_id_type;
+
+	/// \todo
+	constexpr std::span<const std::byte> as_bytes () const noexcept
+	{
+		return span_;
+	}
+
+	/// \todo
+	turner::message_type<Protocol> message_type () const noexcept
+	{
+		return {pal::ntoh(*reinterpret_cast<const uint16_t *>(span_.data()))};
+	}
+
+	/// \todo
+	const transaction_id_type &transaction_id () const noexcept
+	{
+		return *reinterpret_cast<const transaction_id_type *>(
+			span_.data() + Protocol::transaction_id_offset
+		);
+	}
+
+private:
+
+	std::span<const std::byte> span_;
+
+	constexpr basic_message_reader (std::span<const std::byte> span) noexcept
+		: span_{span}
+	{ }
+
+	friend Protocol;
+};
+
+__turner_end
