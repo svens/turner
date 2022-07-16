@@ -1,8 +1,8 @@
 # STUN/TURN/MSTURN
 
-[STUN]: https://tools.ietf.org/html/rfc5389
-[TURN]: https://tools.ietf.org/html/rfc5766
-[MS-TURN]: https://msdn.microsoft.com/en-us/library/cc431507(v=office.12).aspx
+[STUN]: https://tools.ietf.org/html/rfc8489
+[TURN]: https://tools.ietf.org/html/rfc8656
+[MS-TURN]: https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn
 [Turner]: http://turner.alt.ee
 
 [![Build](https://github.com/svens/turner/workflows/Build/badge.svg)](https://github.com/svens/turner/actions?query=workflow:Build)
@@ -16,7 +16,7 @@
   * [STUN]
   * [TURN]
     - [TURN extension for IPv6](https://tools.ietf.org/html/rfc6156)
-  * [MS-TURN]
+  * [MS-TURN], v18.0
   * [Turner]
 
 
