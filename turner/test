@@ -33,4 +33,11 @@ struct bad_alloc_once
 };
 
 
+// for Catch2 using MSVC
+constexpr uint16_t operator"" _u16 (unsigned long long int v)
+{
+	return (uint16_t)v;
+}
+
+
 } // namespace turner_test

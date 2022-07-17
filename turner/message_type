@@ -6,6 +6,7 @@
  */
 
 #include <turner/__bits/lib>
+#include <turner/error>
 #include <turner/fwd>
 
 
@@ -14,35 +15,30 @@ __turner_begin
 
 /// Define \a Protocol message type.
 template <typename Protocol>
-class message_type
+struct message_type
 {
-public:
-
 	/// Protocol that defines this message type.
 	using protocol_type = Protocol;
 
 	/// Message type numeric value (in host byte order).
 	const uint16_t value;
 
-	/// Returns method type for Protocol of request class.
-	template <uint16_t Method>
-	static constexpr message_type request () noexcept
-	{
-		static_assert((Method & 0b1100'0000'0000'0000) == 0,
-			"invalid message type"
-		);
-		return {Method};
-	}
+	message_type () = delete;
+
+	/// Construct new message_type using \a value
+	constexpr message_type (uint16_t value)
+		: value{expect_message_type(value)}
+	{ }
 
 	/// Returns method type for Protocol of success response class.
-	constexpr message_type success_response () const noexcept
+	constexpr message_type success_response () const
 	{
 		const uint16_t v = value | 0b0000'0001'0000'0000;
 		return {v};
 	}
 
 	/// Returns method type for Protocol of success response class.
-	constexpr message_type error_response () const noexcept
+	constexpr message_type error_response () const
 	{
 		const uint16_t v = value | 0b000'0001'0001'0000;
 		return {v};
@@ -62,13 +58,14 @@ public:
 
 private:
 
-	message_type () = delete;
-
-	constexpr message_type (uint16_t value)
-		: value{value}
-	{ }
-
-	friend class basic_message_reader<Protocol>;
+	static constexpr uint16_t expect_message_type (uint16_t method)
+	{
+		if (method & 0b1100'0000'0000'0000)
+		{
+			__bits::unexpected_message_type();
+		}
+		return method;
+	}
 };
 
 /// Returns true if message type \a left value is same as \a right.

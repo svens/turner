@@ -6,15 +6,25 @@
  */
 
 #include <turner/__bits/lib>
+#include <turner/attribute_type>
 #include <turner/basic_message_reader>
 #include <turner/message_type>
 #include <pal/result>
 #include <array>
+#include <span>
 
 
 __turner_begin
 
 
+/**
+ * STUN protocol requests/attributes
+ *
+ * \see https://datatracker.ietf.org/doc/html/rfc8489
+ *
+ * \note Missing features:
+ * - everything
+ */
 class stun
 {
 public:
@@ -22,18 +32,73 @@ public:
 	/// STUN message transaction ID (96 bits)
 	using transaction_id_type = std::array<uint8_t, 12>;
 
-	/// STUN message Magic Cookie
-	static constexpr uint32_t magic_cookie = 0x21'12'a4'42;
-
-	/// \defgroup STUN_Methods STUN Method registry
-	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-18.2
-	/// \{
+	/**
+	 * \defgroup STUN_Methods STUN Method registry
+	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-18.2
+	 * \{
+	 */
 
 	/// STUN Binding request
-	static constexpr auto binding = message_type<stun>::request<0x0001>();
+	static constexpr message_type<stun> binding = 0x001;
 
-	/// STUN Binding success response
-	static constexpr auto binding_success = binding.success_response();
+	/// STUN Binding request success response
+	static constexpr message_type<stun> binding_success = binding.success_response();
+
+	/// \}
+
+	/**
+	 * \defgroup STUN_Attributes STUN Attribute Registry
+	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-18.3
+	 * \{
+	 */
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.1
+	static constexpr attribute_type<stun, uint16_t> mapped_address = 0x0001;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.3
+	static constexpr attribute_type<stun, uint16_t> username = 0x0006;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.5
+	static constexpr attribute_type<stun, uint16_t> message_integrity = 0x0008;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.8
+	static constexpr attribute_type<stun, uint16_t> error_code = 0x0009;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.13
+	static constexpr attribute_type<stun, uint16_t> unknown_attributes = 0x000a;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.9
+	static constexpr attribute_type<stun, uint16_t> realm = 0x0014;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.10
+	static constexpr attribute_type<stun, uint16_t> nonce = 0x0015;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.6
+	static constexpr attribute_type<stun, uint16_t> message_integrity_sha256 = 0x001c;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.12
+	static constexpr attribute_type<stun, uint16_t> password_algorithm = 0x001d;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.4
+	static constexpr attribute_type<stun, uint16_t> userhash = 0x001e;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.2
+	static constexpr attribute_type<stun, uint16_t> xor_mapped_address = 0x0020;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.11
+	static constexpr attribute_type<stun, uint16_t> password_algorithms = 0x8002;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.16
+	static constexpr attribute_type<stun, uint16_t> alternate_domain = 0x8003;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.14
+	static constexpr attribute_type<stun, uint16_t> software = 0x8022;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.15
+	static constexpr attribute_type<stun, uint16_t> alternate_server = 0x8023;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.7
+	static constexpr attribute_type<stun, uint16_t> fingerprint = 0x8028;
 
 	/// \}
 
@@ -43,13 +108,12 @@ public:
 	/**
 	 * Validates \a span contains STUN message and returns generic message reader
 	 *
-	 * \note This method does not check for valid STUN message type, only
-	 * message structure validity
+	 * \note This method does not check for known STUN message/attribute types,
+	 * only message structure validity.
+	 *
+	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-5
 	 */
-	static pal::result<message_reader> read (std::span<const std::byte> span) noexcept
-	{
-		return message_reader{span};
-	}
+	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept;
 
 private:
 

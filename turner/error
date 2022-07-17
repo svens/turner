@@ -6,6 +6,7 @@
  */
 
 #include <turner/__bits/lib>
+#include <pal/result>
 #include <system_error>
 
 
@@ -14,7 +15,12 @@ __turner_begin
 
 #define __turner_errc(Impl) \
 	Impl(__0, "internal placeholder for not an error") \
-	Impl(temporary_error, "temporary error")
+	Impl(invalid_magic_cookie, "invalid magic cookie") \
+	Impl(unexpected_message_type, "unexpected message type") \
+	Impl(unexpected_message_length, "unexpected message length") \
+	Impl(unexpected_attribute_length, "unexpected attribute length") \
+	Impl(fingerprint_not_last, "fingerprint not last") \
+	Impl(fingerprint_mismatch, "fingerprint mismatch")
 
 
 /**
@@ -39,8 +45,34 @@ const std::error_category &error_category () noexcept;
  */
 inline std::error_code make_error_code (errc ec) noexcept
 {
-	return std::error_code(static_cast<int>(ec), error_category());
+	return {static_cast<int>(ec), error_category()};
 }
+
+
+/**
+ * Returns unexpected{make_error_code(ec)}
+ */
+inline pal::unexpected<std::error_code> make_unexpected (errc ec) noexcept
+{
+	return pal::unexpected{make_error_code(ec)};
+}
+
+
+namespace __bits {
+
+inline void unexpected_message_type ()
+{
+	struct unexpected_message_type: std::exception
+	{
+		const char *what () const noexcept override
+		{
+			return "unexpected message type";
+		}
+	};
+	throw unexpected_message_type{};
+}
+
+} // namespace __bits
 
 
 __turner_end

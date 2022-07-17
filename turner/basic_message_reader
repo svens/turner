@@ -13,6 +13,9 @@
 
 __turner_begin
 
+/**
+ * Generic message reader
+ */
 template <typename Protocol>
 class basic_message_reader
 {
@@ -24,19 +27,22 @@ public:
 	/// Message transaction ID type
 	using transaction_id_type = typename Protocol::transaction_id_type;
 
-	/// \todo
+	/// Returns message wire format as byte blob
 	constexpr std::span<const std::byte> as_bytes () const noexcept
 	{
 		return span_;
 	}
 
-	/// \todo
+	/**
+	 * Returns \a Protocol specific message type
+	 * \note There is no validity check for known message types.
+	 */
 	turner::message_type<Protocol> message_type () const noexcept
 	{
 		return {pal::ntoh(*reinterpret_cast<const uint16_t *>(span_.data()))};
 	}
 
-	/// \todo
+	/// Returns \a this message transaction ID
 	const transaction_id_type &transaction_id () const noexcept
 	{
 		return *reinterpret_cast<const transaction_id_type *>(
