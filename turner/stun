@@ -25,11 +25,27 @@ __turner_begin
  * \note Missing features:
  * - everything
  */
-class stun
+struct stun
 {
-public:
+	/// STUN message header size
+	static constexpr size_t header_size_bytes = 20;
 
-	/// STUN message transaction ID (96 bits)
+	/// STUN message attribute padding boundary
+	static constexpr size_t pad_size_bytes = 4;
+
+	/// Magic Cookie offset from beginning of message
+	static constexpr size_t cookie_offset = 4;
+
+	/// STUN message cookie type
+	using cookie_type = std::array<uint8_t, 4>;
+
+	/// STUN message Magic Cookie value
+	static constexpr cookie_type magic_cookie = { 0x21, 0x12, 0xa4, 0x42, };
+
+	/// Transaction ID offset from beginning of message
+	static constexpr size_t transaction_id_offset = 8;
+
+	/// STUN message transaction ID type
 	using transaction_id_type = std::array<uint8_t, 12>;
 
 	/**
@@ -114,11 +130,6 @@ public:
 	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-5
 	 */
 	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept;
-
-private:
-
-	static constexpr size_t transaction_id_offset = 8;
-	friend class basic_message_reader<stun>;
 };
 
 

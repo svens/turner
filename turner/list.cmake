@@ -1,5 +1,6 @@
 list(APPEND turner_sources
 	turner/__bits/lib
+	turner/__bits/view
 	turner/attribute_type
 	turner/basic_message_reader
 	turner/error

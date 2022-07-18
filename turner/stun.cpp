@@ -1,4 +1,5 @@
 #include <turner/stun>
+#include <turner/__bits/view>
 #include <turner/error>
 #include <pal/byte_order>
 
@@ -8,51 +9,8 @@ __turner_begin
 
 namespace {
 
-constexpr size_t header_size = 20, pad_size = 4;
-
-using cookie_type = std::array<uint8_t, 4>;
-constexpr cookie_type magic_cookie = { 0x21, 0x12, 0xa4, 0x42 };
-
-struct header_ptr
-{
-	uint16_t request () const noexcept
-	{
-		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[0]);
-	}
-
-	const cookie_type &cookie () const noexcept
-	{
-		return reinterpret_cast<const cookie_type *>(this)[1];
-	}
-
-	size_t length () const noexcept
-	{
-		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[1]);
-	}
-};
-
-struct attribute_ptr
-{
-	const std::byte *ptr () const noexcept
-	{
-		return reinterpret_cast<const std::byte *>(this);
-	}
-
-	uint16_t type () const noexcept
-	{
-		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[0]);
-	}
-
-	uint16_t value_size () const noexcept
-	{
-		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[1]);
-	}
-
-	size_t size () const noexcept
-	{
-		return 2 * sizeof(uint16_t) + ((value_size() + pad_size - 1) & ~(pad_size - 1));
-	}
-};
+using message_view = __bits::message_view<stun>;
+using attribute_view = __bits::attribute_view<stun>;
 
 template <uint32_t Polynomial>
 struct crc32_lookup
@@ -98,7 +56,7 @@ uint32_t crc32 (const uint32_t *first, const uint32_t *last) noexcept
 		;
 	}
 
-	// STUN messages are padded to 4B bounday, can skip final 0..3
+	// STUN messages are padded to 4B boundary, can skip final 0..3
 
 	return ~crc;
 }
@@ -108,60 +66,62 @@ uint32_t crc32 (const uint32_t *first, const uint32_t *last) noexcept
 
 pal::result<stun::message_reader> stun::read_message (std::span<const std::byte> span) noexcept
 {
-	auto ptr = span.data();
-	auto size = span.size_bytes();
-
-	if (size < header_size || size % 4 != 0)
+	auto message_size = span.size_bytes();
+	if (message_size < header_size_bytes || message_size % 4 != 0)
 	{
 		return make_unexpected(errc::unexpected_message_length);
 	}
 
-	auto &header = *reinterpret_cast<const header_ptr *>(ptr);
-	if (header.cookie() != magic_cookie)
+	auto &message = *reinterpret_cast<const message_view *>(span.data());
+	if (message.cookie() != magic_cookie)
 	{
 		return make_unexpected(errc::invalid_magic_cookie);
 	}
 
-	if (header.length() + header_size != size)
+	if (message.payload_size_bytes() + header_size_bytes != message_size)
 	{
 		return make_unexpected(errc::unexpected_message_length);
 	}
 
-	if (header.request() & 0b1100'0000'0000'0000)
+	if (message.type() & 0b1100'0000'0000'0000)
 	{
 		return make_unexpected(errc::unexpected_message_type);
 	}
-
-	const auto end = ptr + size;
-	ptr += header_size;
 
 	// Iterate attributes:
 	// - validate lengths
 	// - check optional fingerprint attribute is last
 	// - if present, check it matches expected fingerprint
-	while (ptr != end)
-	{
-		auto &attr = *reinterpret_cast<const attribute_ptr *>(ptr);
 
-		ptr += attr.size();
-		if (ptr > end)
+	auto it = message.begin(), end = message.end();
+	while (it != end)
+	{
+		auto &attr = *it;
+
+		it = it->next();
+		if (it > end)
 		{
 			return make_unexpected(errc::unexpected_attribute_length);
 		}
 
 		if (attr.type() == fingerprint)
 		{
-			if (ptr != end)
+			if (it != end)
 			{
 				return make_unexpected(errc::fingerprint_not_last);
 			}
 
-			auto claimed_crc = pal::ntoh(reinterpret_cast<const uint32_t *>(&attr)[1]);
+			auto value = attr.value();
+			if (value.size_bytes() != sizeof(uint32_t))
+			{
+				return make_unexpected(errc::unexpected_attribute_length);
+			}
+
+			auto claimed_crc = pal::ntoh(*reinterpret_cast<const uint32_t *>(value.data()));
 			auto expected_crc = crc32(
 				reinterpret_cast<const uint32_t *>(span.data()),
-				reinterpret_cast<const uint32_t *>(attr.ptr())
+				reinterpret_cast<const uint32_t *>(&attr)
 			);
-
 			if ((expected_crc ^ 0x5354554e) != claimed_crc)
 			{
 				return make_unexpected(errc::fingerprint_mismatch);

@@ -202,6 +202,24 @@ TEST_CASE("stun")
 		REQUIRE(!r);
 		CHECK(r.error() == turner::errc::fingerprint_mismatch);
 	}
+
+	SECTION("read unexpected fingerprint length")
+	{
+		constexpr uint8_t data[] =
+		{
+			0x00, 0x01, 0x00, 0x08, // Message Type, Length
+			0x21, 0x12, 0xa4, 0x42, // Magic Cookie
+			0x00, 0x01, 0x02, 0x03, // Transaction ID
+			0x04, 0x05, 0x06, 0x07,
+			0x08, 0x09, 0x0a, 0x0b,
+
+			0x80, 0x28, 0x00, 0x03, // FINGERPRINT, Length
+			0x5b, 0x0f, 0xf6, 0xfc,
+		};
+		auto r = turner::stun::read_message(std::as_bytes(std::span{data}));
+		REQUIRE(!r);
+		CHECK(r.error() == turner::errc::unexpected_attribute_length);
+	}
 }
 
 

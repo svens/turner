@@ -1,0 +1,87 @@
+#pragma once // -*- C++ -*-
+
+#include <turner/__bits/lib>
+#include <pal/byte_order>
+#include <span>
+
+__turner_begin
+
+namespace __bits {
+
+// non-owning overlayed structure over message attribute
+template <typename Protocol>
+struct attribute_view
+{
+	uint16_t type () const noexcept
+	{
+		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[0]);
+	}
+
+	size_t value_size_bytes () const noexcept
+	{
+		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[1]);
+	}
+
+	size_t padded_value_size_bytes () const noexcept
+	{
+		return (value_size_bytes() + Protocol::pad_size_bytes - 1) & ~(Protocol::pad_size_bytes - 1);
+	}
+
+	std::span<const std::byte> value () const noexcept
+	{
+		return {
+			&reinterpret_cast<const std::byte *>(this)[4],
+			value_size_bytes()
+		};
+	}
+
+	const attribute_view *next () const noexcept
+	{
+		return reinterpret_cast<const attribute_view *>(
+			reinterpret_cast<const std::byte *>(this)
+			+ padded_value_size_bytes()
+			+ 2 * sizeof(uint16_t)
+		);
+	}
+};
+
+// non-owning overlayed structure over message header
+template <typename Protocol>
+struct message_view
+{
+	uint16_t type () const noexcept
+	{
+		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[0]);
+	}
+
+	size_t payload_size_bytes () const noexcept
+	{
+		return pal::ntoh(reinterpret_cast<const uint16_t *>(this)[1]);
+	}
+
+	const typename Protocol::cookie_type &cookie () const noexcept
+	{
+		return reinterpret_cast<const typename Protocol::cookie_type *>(this)[1];
+	}
+
+	const attribute_view<Protocol> *begin () const noexcept
+	{
+		return reinterpret_cast<const attribute_view<Protocol> *>(
+			reinterpret_cast<const std::byte *>(this)
+			+ Protocol::header_size_bytes
+		);
+	}
+
+	const attribute_view<Protocol> *end () const noexcept
+	{
+		return reinterpret_cast<const attribute_view<Protocol> *>(
+			reinterpret_cast<const std::byte *>(this)
+			+ Protocol::header_size_bytes
+			+ payload_size_bytes()
+		);
+	}
+};
+
+} // namespace __bits
+
+__turner_end
