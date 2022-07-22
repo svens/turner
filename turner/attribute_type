@@ -12,14 +12,11 @@ __turner_begin
 
 
 /// Define \a Protocol message type.
-template <typename Protocol, typename ValueProcessor>
+template <typename Protocol, typename AttributeValueType>
 struct attribute_type
 {
 	/// Protocol that defines this message type.
 	using protocol_type = Protocol;
-
-	/// Attribute value processor for attribute_type
-	using value_processor_type = ValueProcessor;
 
 	/// Attribute type numeric value (in host byte order)
 	const uint16_t value;
@@ -59,29 +56,29 @@ struct attribute_type
 };
 
 /// Returns true if message type \a left value is same as \a right.
-template <typename Protocol, typename ValueProcessor>
-constexpr bool operator== (attribute_type<Protocol, ValueProcessor> left, uint16_t right) noexcept
+template <typename Protocol, typename AttributeValueType>
+constexpr bool operator== (attribute_type<Protocol, AttributeValueType> left, uint16_t right) noexcept
 {
 	return left.value == right;
 }
 
 /// Returns true if message type \a right value is same as \a left.
-template <typename Protocol, typename ValueProcessor>
-constexpr bool operator== (uint16_t left, attribute_type<Protocol, ValueProcessor> right) noexcept
+template <typename Protocol, typename AttributeValueType>
+constexpr bool operator== (uint16_t left, attribute_type<Protocol, AttributeValueType> right) noexcept
 {
 	return left == right.value;
 }
 
 /// Returns true if message type \a left value is not same as \a right.
-template <typename Protocol, typename ValueProcessor>
-constexpr bool operator!= (attribute_type<Protocol, ValueProcessor> left, uint16_t right) noexcept
+template <typename Protocol, typename AttributeValueType>
+constexpr bool operator!= (attribute_type<Protocol, AttributeValueType> left, uint16_t right) noexcept
 {
 	return left.value != right;
 }
 
 /// Returns true if message type \a right value is not same as \a left.
-template <typename Protocol, typename ValueProcessor>
-constexpr bool operator!= (uint16_t left, attribute_type<Protocol, ValueProcessor> right) noexcept
+template <typename Protocol, typename AttributeValueType>
+constexpr bool operator!= (uint16_t left, attribute_type<Protocol, AttributeValueType> right) noexcept
 {
 	return left != right.value;
 }

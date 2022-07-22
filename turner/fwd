@@ -11,7 +11,7 @@
 __turner_begin
 
 // turner/attribute_type
-template <typename Protocol, typename ValueProcessor> struct attribute_type;
+template <typename Protocol, typename AttributeValueType> struct attribute_type;
 
 // turner/message_type
 template <typename Protocol> struct message_type;
