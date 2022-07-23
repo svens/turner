@@ -61,7 +61,10 @@ struct message_view
 
 	const typename Protocol::cookie_type &cookie () const noexcept
 	{
-		return reinterpret_cast<const typename Protocol::cookie_type *>(this)[1];
+		return *reinterpret_cast<const typename Protocol::cookie_type *>(
+			reinterpret_cast<const std::byte *>(this)
+			+ Protocol::cookie_offset
+		);
 	}
 
 	const attribute_view<Protocol> *begin () const noexcept
@@ -80,7 +83,28 @@ struct message_view
 			+ payload_size_bytes()
 		);
 	}
+
+	const attribute_view<Protocol> *find (uint16_t attribute_type) const noexcept
+	{
+		for (auto it = begin(), e = end();  it != e;  it = it->next())
+		{
+			if (it->type() == attribute_type)
+			{
+				return it;
+			}
+		}
+		return nullptr;
+	}
 };
+
+
+// cast pre-validated span to message_view
+template <typename Protocol>
+const message_view<Protocol> *as_message_view (std::span<const std::byte> span) noexcept
+{
+	return reinterpret_cast<const message_view<Protocol> *>(span.data());
+}
+
 
 } // namespace __bits
 

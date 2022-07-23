@@ -66,8 +66,10 @@ uint32_t crc32 (const uint32_t *first, const uint32_t *last) noexcept
 
 pal::result<stun::message_reader> stun::read_message (std::span<const std::byte> span) noexcept
 {
-	auto message_size = span.size_bytes();
-	if (message_size < header_size_bytes || message_size % 4 != 0)
+	constexpr auto min_span_size_bytes = header_size_bytes;
+
+	auto span_size_bytes = span.size_bytes();
+	if (span_size_bytes < min_span_size_bytes || span_size_bytes % pad_size_bytes != 0)
 	{
 		return make_unexpected(errc::unexpected_message_length);
 	}
@@ -78,7 +80,7 @@ pal::result<stun::message_reader> stun::read_message (std::span<const std::byte>
 		return make_unexpected(errc::invalid_magic_cookie);
 	}
 
-	if (message.payload_size_bytes() + header_size_bytes != message_size)
+	if (message.payload_size_bytes() + header_size_bytes != span_size_bytes)
 	{
 		return make_unexpected(errc::unexpected_message_length);
 	}
@@ -97,8 +99,8 @@ pal::result<stun::message_reader> stun::read_message (std::span<const std::byte>
 	while (it != end)
 	{
 		auto &attr = *it;
-
 		it = it->next();
+
 		if (it > end)
 		{
 			return make_unexpected(errc::unexpected_attribute_length);
@@ -118,11 +120,12 @@ pal::result<stun::message_reader> stun::read_message (std::span<const std::byte>
 			}
 
 			auto claimed_crc = pal::ntoh(*reinterpret_cast<const uint32_t *>(value.data()));
-			auto expected_crc = crc32(
+			auto expected_crc = 0x5354554e ^ crc32(
 				reinterpret_cast<const uint32_t *>(span.data()),
 				reinterpret_cast<const uint32_t *>(&attr)
 			);
-			if ((expected_crc ^ 0x5354554e) != claimed_crc)
+
+			if (expected_crc != claimed_crc)
 			{
 				return make_unexpected(errc::fingerprint_mismatch);
 			}
