@@ -1,0 +1,141 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/turn
+ * TURN protocol
+ */
+
+#include <turner/__bits/lib>
+#include <turner/stun>
+
+
+__turner_begin
+
+
+/**
+ * TURN protocol requests/attributes
+ *
+ * \see https://datatracker.ietf.org/doc/html/rfc8656
+ */
+struct turn: stun
+{
+	/**
+	 * \defgroup TURN_Methods TURN Method registry
+	 * \see https://datatracker.ietf.org/doc/html/rfc8656#section-17
+	 * \{
+	 */
+
+	/// TURN Binding request
+	static constexpr message_type<turn> allocate = 0x0003;
+
+	/// TURN Binding success response
+	static constexpr auto allocate_success = allocate.success_response();
+
+	/// TURN Binding error response
+	static constexpr auto allocate_error = allocate.error_response();
+
+	/// TURN Refresh request
+	static constexpr message_type<turn> refresh = 0x0004;
+
+	/// TURN Refresh success response
+	static constexpr auto refresh_success = refresh.success_response();
+
+	/// TURN Refresh error response
+	static constexpr auto refresh_error = refresh.error_response();
+
+	/// TURN Send indication
+	static constexpr message_type<turn> send_indication = 0x0006;
+
+	/// TURN Data indication
+	static constexpr message_type<turn> data_indication = 0x0007;
+
+	/// TURN CreatePermission request
+	static constexpr message_type<turn> create_permission = 0x0008;
+
+	/// TURN CreatePermission success response
+	static constexpr auto create_permission_success = create_permission.success_response();
+
+	/// TURN CreatePermission error response
+	static constexpr auto create_permission_error = create_permission.error_response();
+
+	/// TURN ChannelBind request
+	static constexpr message_type<turn> channel_bind = 0x0009;
+
+	/// TURN ChannelBind success response
+	static constexpr auto channel_bind_success = channel_bind.success_response();
+
+	/// TURN ChannelBind error response
+	static constexpr auto channel_bind_error = channel_bind.error_response();
+
+	/// \}
+
+	/**
+	 * \defgroup TURN_Attributes TURN Attribute Registry
+	 * \see https://datatracker.ietf.org/doc/html/rfc8656#section-18
+	 * \{
+	 */
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.1
+	static constexpr attribute_type<turn, uint16_t> channel_number = 0x000c;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.2
+	static constexpr attribute_type<turn, uint16_t> lifetime = 0x000d;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.3
+	static constexpr attribute_type<turn, uint16_t> xor_peer_address = 0x0012;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.4
+	static constexpr attribute_type<turn, uint16_t> data = 0x0013;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.5
+	static constexpr attribute_type<turn, uint16_t> xor_relayed_address = 0x0016;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.6
+	static constexpr attribute_type<turn, uint16_t> requested_address_family = 0x0017;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.7
+	static constexpr attribute_type<turn, uint16_t> even_port = 0x0018;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.8
+	static constexpr attribute_type<turn, uint16_t> requested_transport = 0x0019;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.9
+	static constexpr attribute_type<turn, uint16_t> dont_fragment = 0x001a;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.10
+	static constexpr attribute_type<turn, uint16_t> reservation_token = 0x0022;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.11
+	static constexpr attribute_type<turn, uint16_t> additional_address_family = 0x8000;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.12
+	static constexpr attribute_type<turn, uint16_t> address_error_code = 0x8001;
+
+	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.13
+	static constexpr attribute_type<turn, uint16_t> icmp = 0x8004;
+
+	/// \}
+
+	/// Generic TURN message reader
+	using message_reader = basic_message_reader<turn>;
+
+	/**
+	 * Validates \a span contains TURN message and returns generic message reader
+	 *
+	 * \note This method does not check for known TURN message/attribute types,
+	 * only message structure validity (i.e. STUN message structure).
+	 *
+	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-5
+	 */
+	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept
+	{
+		return stun::read_message(span).map([](auto stun_reader)
+		{
+			// on success map to TURN-specific reader
+			return message_reader{stun_reader.as_bytes()};
+		});
+	}
+};
+
+
+__turner_end

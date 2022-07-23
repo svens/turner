@@ -22,8 +22,11 @@ __turner_begin
  *
  * \see https://datatracker.ietf.org/doc/html/rfc8489
  *
- * \note Missing features:
- * - everything
+ * \note Missing attribute types:
+ * - static constexpr attribute_type<stun, T> message_integrity_sha256 = 0x001c;
+ * - static constexpr attribute_type<stun, T> password_algorithm = 0x001d;
+ * - static constexpr attribute_type<stun, T> userhash = 0x001e;
+ * - static constexpr attribute_type<stun, T> password_algorithms = 0x8002;
  */
 struct stun
 {
@@ -55,10 +58,10 @@ struct stun
 	 */
 
 	/// STUN Binding request
-	static constexpr message_type<stun> binding = 0x001;
+	static constexpr message_type<stun> binding = 0x0001;
 
 	/// STUN Binding request success response
-	static constexpr message_type<stun> binding_success = binding.success_response();
+	static constexpr auto binding_success = binding.success_response();
 
 	/// \}
 
@@ -89,20 +92,8 @@ struct stun
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.10
 	static constexpr attribute_type<stun, uint16_t> nonce = 0x0015;
 
-	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.6
-	static constexpr attribute_type<stun, uint16_t> message_integrity_sha256 = 0x001c;
-
-	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.12
-	static constexpr attribute_type<stun, uint16_t> password_algorithm = 0x001d;
-
-	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.4
-	static constexpr attribute_type<stun, uint16_t> userhash = 0x001e;
-
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.2
 	static constexpr attribute_type<stun, uint16_t> xor_mapped_address = 0x0020;
-
-	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.11
-	static constexpr attribute_type<stun, uint16_t> password_algorithms = 0x8002;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.16
 	static constexpr attribute_type<stun, uint16_t> alternate_domain = 0x8003;

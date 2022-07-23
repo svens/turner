@@ -1,7 +1,6 @@
 #include <turner/stun>
 #include <turner/test>
 #include <turner/error>
-#include <catch2/generators/catch_generators.hpp>
 
 
 namespace {

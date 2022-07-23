@@ -13,6 +13,7 @@ list(APPEND turner_sources
 	turner/protocol_error.cpp
 	turner/stun
 	turner/stun.cpp
+	turner/turn
 )
 
 list(APPEND turner_test_sources
@@ -25,4 +26,5 @@ list(APPEND turner_test_sources
 	turner/msturn.test.cpp
 	turner/protocol_error.test.cpp
 	turner/stun.test.cpp
+	turner/turn.test.cpp
 )

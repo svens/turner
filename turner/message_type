@@ -7,7 +7,7 @@
 
 #include <turner/__bits/lib>
 #include <turner/error>
-#include <turner/fwd>
+#include <type_traits>
 
 
 __turner_begin
@@ -52,6 +52,24 @@ struct message_type
 
 	/// Returns true if this message type is not same as \a that message type.
 	constexpr bool operator!= (message_type that) const noexcept
+	{
+		return value != that.value;
+	}
+
+	/// Returns true if this message type is same as \a that message type.
+	/// \remark Protocol must be convertible to OtherProtocol (e.g. TURN -> STUN)
+	template <typename OtherProtocol>
+	requires(std::is_convertible_v<Protocol, OtherProtocol>)
+	constexpr bool operator== (message_type<OtherProtocol> that) const noexcept
+	{
+		return value == that.value;
+	}
+
+	/// Returns true if this message type is not same as \a that message type.
+	/// \remark Protocol must be convertible to OtherProtocol (e.g. TURN -> STUN)
+	template <typename OtherProtocol>
+	requires(std::is_convertible_v<Protocol, OtherProtocol>)
+	constexpr bool operator!= (message_type<OtherProtocol> that) const noexcept
 	{
 		return value != that.value;
 	}

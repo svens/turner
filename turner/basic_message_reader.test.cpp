@@ -1,6 +1,7 @@
 #include <turner/basic_message_reader>
 #include <turner/msturn>
 #include <turner/stun>
+#include <turner/turn>
 #include <turner/test>
 #include <catch2/catch_template_test_macros.hpp>
 
@@ -84,12 +85,50 @@ struct stun //{{{1
 	};
 };
 
+
+struct turn //{{{1
+{
+	using protocol_type = turner::turn;
+
+	static constexpr uint8_t valid_message[] =
+	{
+		0x00, 0x03, 0x00, 0x08, // TURN Allocate
+		0x21, 0x12, 0xa4, 0x42, // Magic Cookie
+		0x00, 0x01, 0x02, 0x03, // Transaction ID
+		0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b,
+		0x80, 0x28, 0x00, 0x04, // Fingerprint
+		0x2f, 0xbb, 0xf0, 0x0d,
+	};
+
+	static constexpr auto expected_message_type = turner::turn::allocate;
+
+	static constexpr turner::turn::transaction_id_type expected_transaction_id =
+	{
+		0x00, 0x01, 0x02, 0x03,
+		0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b,
+	};
+
+	static constexpr uint8_t invalid_cookie_message[] =
+	{
+		0x00, 0x03, 0x00, 0x08, // TURN Allocate
+		0xff, 0xff, 0xff, 0xff, // Magic Cookie (invalid)
+		0x00, 0x01, 0x02, 0x03, // Transaction ID
+		0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b,
+		0x80, 0x28, 0x00, 0x04, // Fingerprint
+		0x2f, 0xbb, 0xf0, 0x0d,
+	};
+};
+
 //}}}1
 
 
 TEMPLATE_TEST_CASE("basic_message_reader", "",
 	msturn,
-	stun)
+	stun,
+	turn)
 {
 	using Protocol = typename TestType::protocol_type;
 

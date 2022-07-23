@@ -62,13 +62,13 @@ struct msturn
 	static constexpr message_type<msturn> allocate = 0x0003;
 
 	/// MS-TURN Allocate request success response
-	static constexpr message_type<msturn> allocate_success = allocate.success_response();
+	static constexpr auto allocate_success = allocate.success_response();
 
 	/// MS-TURN Allocate request error response
-	static constexpr message_type<msturn> allocate_error = allocate.error_response();
+	static constexpr auto allocate_error = allocate.error_response();
 
 	/// MS-TURN Send Request
-	static constexpr message_type<msturn> send_request = 0x0004;
+	static constexpr message_type<msturn> send_indication = 0x0004;
 
 	/// MS-TURN Data Indication
 	static constexpr message_type<msturn> data_indication = 0x0115;
@@ -77,10 +77,10 @@ struct msturn
 	static constexpr message_type<msturn> set_active_destination = 0x0006;
 
 	/// MS-TURN Set Active Destination request success response
-	static constexpr message_type<msturn> set_active_destination_success = set_active_destination.success_response();
+	static constexpr auto set_active_destination_success = set_active_destination.success_response();
 
 	/// MS-TURN Set Active Destination request error response
-	static constexpr message_type<msturn> set_active_destination_error = set_active_destination.error_response();
+	static constexpr auto set_active_destination_error = set_active_destination.error_response();
 
 	/// \}
 
