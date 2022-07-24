@@ -95,7 +95,7 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> mapped_address = 0x0001;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/bbf7bc45-93b6-495e-adcc-685d270a2eae
-	static constexpr attribute_type<msturn, uint16_t> username = 0x0006;
+	static constexpr attribute_type<msturn, string_value_type<>> username = 0x0006;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/dfa0f83e-8c18-468c-a183-baa534a7f54c
 	static constexpr attribute_type<msturn, uint16_t> message_integrity = 0x0008;
@@ -125,10 +125,10 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> data = 0x0013;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/129e9c99-7d4b-4c8c-abd0-8d7a5874d73d
-	static constexpr attribute_type<msturn, uint16_t> nonce = 0x0014;
+	static constexpr attribute_type<msturn, string_value_type<128>> nonce = 0x0014;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/108c58d4-129d-4ba5-b12b-fc6c1a54e7b3
-	static constexpr attribute_type<msturn, uint16_t> realm = 0x0015;
+	static constexpr attribute_type<msturn, string_value_type<128>> realm = 0x0015;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/e7efc457-9312-4a6b-8089-94032a599198
 	static constexpr attribute_type<msturn, uint16_t> requested_address_family = 0x0017;
@@ -140,7 +140,7 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> xor_mapped_address = 0x8020;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/69ca1e1a-7423-4a3a-8618-f0bf76383cdc
-	static constexpr attribute_type<msturn, uint16_t> ms_alternate_host_name = 0x8032;
+	static constexpr attribute_type<msturn, string_value_type<128>> ms_alternate_host_name = 0x8032;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/0a4bffc9-6cdc-4525-b76d-34a3606a7603
 	static constexpr attribute_type<msturn, uint32_value_type> app_id = 0x8037;

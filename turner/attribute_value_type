@@ -12,6 +12,7 @@
 #include <pal/result>
 #include <chrono>
 #include <span>
+#include <string_view>
 
 
 __turner_begin
@@ -54,6 +55,39 @@ struct seconds_value_type
 		{
 			return value_type{value};
 		});
+	}
+};
+
+
+/// Generic std::string_view type attribute reader/writer
+template <size_t MaxSizeBytes = std::dynamic_extent>
+struct string_value_type
+{
+	/// Native value type
+	using value_type = std::string_view;
+
+	/**
+	 * Reade attribute value from \a span
+	 *
+	 * \note returned std::string_view does not own specified range, it
+	 * points into \a span. Caller should copy value if needed.
+	 */
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if constexpr (MaxSizeBytes != std::dynamic_extent)
+		{
+			if (span.size_bytes() > MaxSizeBytes)
+			{
+				return make_unexpected(errc::unexpected_attribute_length);
+			}
+		}
+		return value_type{
+			reinterpret_cast<const char *>(span.data()),
+			span.size_bytes()
+		};
 	}
 };
 

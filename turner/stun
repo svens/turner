@@ -76,7 +76,7 @@ struct stun
 	static constexpr attribute_type<stun, uint16_t> mapped_address = 0x0001;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.3
-	static constexpr attribute_type<stun, uint16_t> username = 0x0006;
+	static constexpr attribute_type<stun, string_value_type<513>> username = 0x0006;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.5
 	static constexpr attribute_type<stun, uint16_t> message_integrity = 0x0008;
@@ -88,19 +88,19 @@ struct stun
 	static constexpr attribute_type<stun, uint16_t> unknown_attributes = 0x000a;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.9
-	static constexpr attribute_type<stun, uint16_t> realm = 0x0014;
+	static constexpr attribute_type<stun, string_value_type<763>> realm = 0x0014;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.10
-	static constexpr attribute_type<stun, uint16_t> nonce = 0x0015;
+	static constexpr attribute_type<stun, string_value_type<763>> nonce = 0x0015;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.2
 	static constexpr attribute_type<stun, uint16_t> xor_mapped_address = 0x0020;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.16
-	static constexpr attribute_type<stun, uint16_t> alternate_domain = 0x8003;
+	static constexpr attribute_type<stun, string_value_type<255>> alternate_domain = 0x8003;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.14
-	static constexpr attribute_type<stun, uint16_t> software = 0x8022;
+	static constexpr attribute_type<stun, string_value_type<763>> software = 0x8022;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.15
 	static constexpr attribute_type<stun, uint16_t> alternate_server = 0x8023;
