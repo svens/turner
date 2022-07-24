@@ -1,0 +1,40 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/attribute_value_type
+ * Attribute value reader/writer
+ */
+
+#include <turner/__bits/lib>
+#include <turner/error>
+#include <turner/fwd>
+#include <pal/byte_order>
+#include <pal/result>
+#include <span>
+
+
+__turner_begin
+
+
+/// Generic uint32_t type attribute reader/writer
+struct uint32_value_type
+{
+	/// Native value type
+	using value_type = uint32_t;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == sizeof(value_type))
+		{
+			return pal::ntoh(*reinterpret_cast<const value_type *>(span.data()));
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
+__turner_end

@@ -5,10 +5,12 @@
 #include <turner/test>
 #include <catch2/catch_template_test_macros.hpp>
 
+// FYI:
+// - STUN Fingerprint tests are in turner/stun.test.cpp
+// - basic_message_reader::read() tests are in turner/attribute_value_type.test.cpp
+
 
 namespace {
-
-// FYI: STUN Fingerprint tests are in TEST_CASE("stun")
 
 
 struct msturn //{{{1
@@ -244,6 +246,16 @@ TEMPLATE_TEST_CASE("basic_message_reader", "",
 		auto reader = Protocol::read_message(std::as_bytes(std::span{data}));
 		REQUIRE(!reader);
 		CHECK(reader.error() == turner::errc::unexpected_attribute_length);
+	}
+
+	SECTION("attribute not found")
+	{
+		auto span = std::as_bytes(std::span{TestType::valid_message});
+		auto reader = pal_try(Protocol::read_message(span));
+		constexpr turner::attribute_type<Protocol, turner::uint32_value_type> not_found_attribute = 0x80ff;
+		auto value = reader.read(not_found_attribute);
+		REQUIRE(!value);
+		CHECK(value.error() == turner::errc::attribute_not_found);
 	}
 }
 

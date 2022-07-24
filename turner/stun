@@ -7,6 +7,7 @@
 
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
+#include <turner/attribute_value_type>
 #include <turner/basic_message_reader>
 #include <turner/message_type>
 #include <pal/result>
@@ -105,7 +106,7 @@ struct stun
 	static constexpr attribute_type<stun, uint16_t> alternate_server = 0x8023;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.7
-	static constexpr attribute_type<stun, uint16_t> fingerprint = 0x8028;
+	static constexpr attribute_type<stun, uint32_value_type> fingerprint = 0x8028;
 
 	/// \}
 

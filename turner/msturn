@@ -7,6 +7,7 @@
 
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
+#include <turner/attribute_value_type>
 #include <turner/basic_message_reader>
 #include <turner/message_type>
 #include <pal/result>

@@ -20,7 +20,8 @@ __turner_begin
 	Impl(unexpected_message_length, "unexpected message length") \
 	Impl(unexpected_attribute_length, "unexpected attribute length") \
 	Impl(fingerprint_not_last, "fingerprint not last") \
-	Impl(fingerprint_mismatch, "fingerprint mismatch")
+	Impl(fingerprint_mismatch, "fingerprint mismatch") \
+	Impl(attribute_not_found, "attribute not found")
 
 
 /**
