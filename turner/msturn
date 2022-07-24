@@ -101,7 +101,7 @@ struct msturn
 	static constexpr attribute_type<msturn, bytes_value_type<>> message_integrity = 0x0008;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/91972889-8dfd-43d1-885e-7d135bd91c2d
-	static constexpr attribute_type<msturn, uint16_t> error_code = 0x0009;
+	static constexpr attribute_type<msturn, error_code_value_type> error_code = 0x0009;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/2b097c56-f250-43fe-970e-66ca08b2dfcd
 	static constexpr attribute_type<msturn, uint16_t> unknown_attributes = 0x000a;

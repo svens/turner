@@ -8,6 +8,7 @@
 #include <turner/__bits/lib>
 #include <turner/error>
 #include <turner/fwd>
+#include <turner/protocol_error>
 #include <pal/byte_order>
 #include <pal/result>
 #include <chrono>
@@ -118,6 +119,39 @@ struct bytes_value_type
 			}
 		}
 		return value_type{span};
+	}
+};
+
+
+/// Generic protocol error type attribute value reader/writer
+struct error_code_value_type
+{
+	using value_type = std::tuple<protocol_errc, std::string_view>;
+
+	/**
+	 * Read attribute value from \a span
+	 *
+	 * \note returned tuple 2nd field does not own specified range, it
+	 * points into \a span. Caller should copy value if needed.
+	 */
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		static constexpr auto code_size_bytes = 4 * sizeof(uint8_t);
+		if (span.size_bytes() >= code_size_bytes)
+		{
+			auto code = reinterpret_cast<const uint8_t *>(span.data());
+			return value_type{
+				(protocol_errc)((code[2] & 0b0000'0111) * 100 + code[3]),
+				std::string_view{
+					reinterpret_cast<const char *>(span.data() + code_size_bytes),
+					span.size_bytes() - code_size_bytes
+				}
+			};
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
 

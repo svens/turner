@@ -18,7 +18,7 @@ struct msturn //{{{1
 
 	static constexpr uint8_t message[] =
 	{
-		0x00, 0x03, 0x00, 0x48, // MS-TURN Allocation
+		0x00, 0x03, 0x00, 0x64, // MS-TURN Allocation
 		0x00, 0x01, 0x02, 0x03, // Transaction ID
 		0x04, 0x05, 0x06, 0x07,
 		0x08, 0x09, 0x0a, 0x0b,
@@ -50,6 +50,16 @@ struct msturn //{{{1
 		't',  0x00, 0x00, 0x00,
 
 		0x80, 0x87, 0x00, 0x00, // 0x8087, string_value_type<4>
+
+		0x80, 0x88, 0x00, 0x03, // 0x8088, error_code_value_type
+		0x00, 0x00, 0x04, 0x01, // less
+
+		0x80, 0x89, 0x00, 0x04, // 0x8089, error_code_value_type
+		0x00, 0x00, 0x04, 0x01, // exact size, empty reason
+
+		0x80, 0x8a, 0x00, 0x08, // 0x8089, error_code_value_type
+		0x00, 0x00, 0x04, 0x01,
+		'T',  'e',  's',  't',
 	};
 };
 
@@ -60,7 +70,7 @@ struct stun //{{{1
 
 	static constexpr uint8_t message[] =
 	{
-		0x00, 0x01, 0x00, 0x40, // STUN Binding
+		0x00, 0x01, 0x00, 0x5c, // STUN Binding
 		0x21, 0x12, 0xa4, 0x42, // Magic Cookie
 		0x00, 0x01, 0x02, 0x03, // Transaction ID
 		0x04, 0x05, 0x06, 0x07,
@@ -89,6 +99,16 @@ struct stun //{{{1
 		't',  0x00, 0x00, 0x00,
 
 		0x80, 0x87, 0x00, 0x00, // 0x8087, string_value_type<4>
+
+		0x80, 0x88, 0x00, 0x03, // 0x8088, error_code_value_type
+		0x00, 0x00, 0x04, 0x01, // less
+
+		0x80, 0x89, 0x00, 0x04, // 0x8089, error_code_value_type
+		0x00, 0x00, 0x04, 0x01, // exact size, empty reason
+
+		0x80, 0x8a, 0x00, 0x08, // 0x8089, error_code_value_type
+		0x00, 0x00, 0x04, 0x01,
+		'T',  'e',  's',  't',
 	};
 };
 
@@ -99,7 +119,7 @@ struct turn //{{{1
 
 	static constexpr uint8_t message[] =
 	{
-		0x00, 0x03, 0x00, 0x40, // TURN Allocate
+		0x00, 0x03, 0x00, 0x5c, // TURN Allocate
 		0x21, 0x12, 0xa4, 0x42, // Magic Cookie
 		0x00, 0x01, 0x02, 0x03, // Transaction ID
 		0x04, 0x05, 0x06, 0x07,
@@ -128,6 +148,16 @@ struct turn //{{{1
 		't',  0x00, 0x00, 0x00,
 
 		0x80, 0x87, 0x00, 0x00, // 0x8087, string_value_type<4> || bytes_value_type<>
+
+		0x80, 0x88, 0x00, 0x03, // 0x8088, error_code_value_type
+		0x00, 0x00, 0x04, 0x01, // less
+
+		0x80, 0x89, 0x00, 0x04, // 0x8089, error_code_value_type
+		0x00, 0x00, 0x04, 0x01, // exact size, empty reason
+
+		0x80, 0x8a, 0x00, 0x08, // 0x8089, error_code_value_type
+		0x00, 0x00, 0x04, 0x01,
+		'T',  'e',  's',  't',
 	};
 };
 
@@ -140,11 +170,10 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 	turn)
 {
 	using Protocol = typename TestType::protocol_type;
-
 	auto span = std::as_bytes(std::span{TestType::message});
 	auto reader = pal_try(Protocol::read_message(span));
 
-	SECTION("uint32_value_type")
+	SECTION("uint32_value_type") //{{{1
 	{
 		using attribute_type = turner::attribute_type<Protocol, turner::uint32_value_type>;
 
@@ -163,7 +192,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
-	SECTION("seconds_value_type")
+	SECTION("seconds_value_type") //{{{1
 	{
 		using namespace std::chrono_literals;
 		using attribute_type = turner::attribute_type<Protocol, turner::seconds_value_type>;
@@ -183,7 +212,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
-	SECTION("string_value_type")
+	SECTION("string_value_type") //{{{1
 	{
 		using attribute_type = turner::attribute_type<Protocol, turner::string_value_type<4>>;
 
@@ -214,7 +243,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
-	SECTION("bytes_value_type<std::dynamic_extent>")
+	SECTION("bytes_value_type<std::dynamic_extent>") //{{{1
 	{
 		using attribute_type = turner::attribute_type<Protocol, turner::bytes_value_type<>>;
 
@@ -249,7 +278,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
-	SECTION("bytes_value_type<4>")
+	SECTION("bytes_value_type<4>") //{{{1
 	{
 		using attribute_type = turner::attribute_type<Protocol, turner::bytes_value_type<4>>;
 
@@ -285,6 +314,37 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 			CHECK(value.error() == turner::errc::unexpected_attribute_length);
 		}
 	}
+
+	SECTION("error_code_value_type") //{{{1
+	{
+		using attribute_type = turner::attribute_type<Protocol, turner::error_code_value_type>;
+
+		SECTION("less")
+		{
+			static constexpr attribute_type attribute = 0x8088;
+			auto value = reader.read(attribute);
+			REQUIRE(!value);
+			CHECK(value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("empty reason")
+		{
+			static constexpr attribute_type attribute = 0x8089;
+			auto [code, reason] = pal_try(reader.read(attribute));
+			CHECK(code == turner::protocol_errc::unauthorized);
+			CHECK(reason.empty());
+		}
+
+		SECTION("with reason")
+		{
+			static constexpr attribute_type attribute = 0x808a;
+			auto [code, reason] = pal_try(reader.read(attribute));
+			CHECK(code == turner::protocol_errc::unauthorized);
+			CHECK(reason == "Test");
+		}
+	}
+
+	//}}}1
 }
 
 

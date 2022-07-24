@@ -36,7 +36,7 @@ __turner_begin
 /**
  * STUN family protocols' error codes
  */
-enum class protocol_errc: int
+enum class protocol_errc: uint16_t
 {
 	#define __turner_errc_impl(value, symbol, message) symbol = value,
 	__turner_protocol_errc(__turner_errc_impl)
