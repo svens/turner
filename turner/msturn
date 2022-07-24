@@ -107,13 +107,13 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> unknown_attributes = 0x000a;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/46555d94-a165-40c9-a5ff-4d841d4d012a
-	static constexpr attribute_type<msturn, uint16_t> lifetime = 0x000d;
+	static constexpr attribute_type<msturn, seconds_value_type> lifetime = 0x000d;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/c8ebc611-c0c4-48c4-b7da-47e57b3f96c3
 	static constexpr attribute_type<msturn, uint16_t> alternate_server = 0x000e;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/f98b6d22-e8e2-4817-b936-5904402d1788
-	static constexpr attribute_type<msturn, uint16_t> bandwidth = 0x0010;
+	static constexpr attribute_type<msturn, uint32_value_type> bandwidth = 0x0010;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/9cd7e664-7c19-4464-ab05-761b4ca39372
 	static constexpr attribute_type<msturn, uint16_t> destination_address = 0x0011;
@@ -143,7 +143,7 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> ms_alternate_host_name = 0x8032;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/0a4bffc9-6cdc-4525-b76d-34a3606a7603
-	static constexpr attribute_type<msturn, uint16_t> app_id = 0x8037;
+	static constexpr attribute_type<msturn, uint32_value_type> app_id = 0x8037;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/571bc09c-81b7-4e53-a64b-1b1c2278b7cb
 	static constexpr attribute_type<msturn, uint16_t> secure_tag = 0x8039;

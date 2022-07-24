@@ -79,7 +79,7 @@ struct turn: stun
 	static constexpr attribute_type<turn, uint16_t> channel_number = 0x000c;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.2
-	static constexpr attribute_type<turn, uint16_t> lifetime = 0x000d;
+	static constexpr attribute_type<turn, seconds_value_type> lifetime = 0x000d;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.3
 	static constexpr attribute_type<turn, uint16_t> xor_peer_address = 0x0012;

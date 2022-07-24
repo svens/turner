@@ -10,6 +10,7 @@
 #include <turner/fwd>
 #include <pal/byte_order>
 #include <pal/result>
+#include <chrono>
 #include <span>
 
 
@@ -33,6 +34,26 @@ struct uint32_value_type
 			return pal::ntoh(*reinterpret_cast<const value_type *>(span.data()));
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
+/// Generic std::chrono::seconds type attribute reader/writer
+struct seconds_value_type
+{
+	/// Native value type
+	using value_type = std::chrono::seconds;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &message,
+		std::span<const std::byte> span) noexcept
+	{
+		return uint32_value_type::read(message, span).map([](auto value)
+		{
+			return value_type{value};
+		});
 	}
 };
 
