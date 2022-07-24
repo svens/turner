@@ -9,6 +9,9 @@
 namespace {
 
 
+using namespace turner_test;
+
+
 struct msturn //{{{1
 {
 	using protocol_type = turner::msturn;
@@ -114,17 +117,17 @@ struct turn //{{{1
 		0x80, 0x83, 0x00, 0x03, // 0x8083, seconds_value_type
 		0x00, 0x00, 0x00, 0x01, // unexpected attribute length
 
-		0x80, 0x84, 0x00, 0x03, // 0x8084, string_value_type<4>
+		0x80, 0x84, 0x00, 0x03, // 0x8084, string_value_type<4> || bytes_value_type<>
 		't',  'e',  's',  0x00, // less
 
-		0x80, 0x85, 0x00, 0x04, // 0x8085, string_value_type<4>
+		0x80, 0x85, 0x00, 0x04, // 0x8085, string_value_type<4> || bytes_value_type<>
 		't',  'e',  's',  't',  // exact
 
-		0x80, 0x86, 0x00, 0x05, // 0x8086, string_value_type<4>
+		0x80, 0x86, 0x00, 0x05, // 0x8086, string_value_type<4> || bytes_value_type<>
 		't',  'e',  's',  't',  // exceed
 		't',  0x00, 0x00, 0x00,
 
-		0x80, 0x87, 0x00, 0x00, // 0x8087, string_value_type<4>
+		0x80, 0x87, 0x00, 0x00, // 0x8087, string_value_type<4> || bytes_value_type<>
 	};
 };
 
@@ -208,6 +211,78 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		{
 			static constexpr attribute_type attribute = 0x8087;
 			CHECK(pal_try(reader.read(attribute)).empty());
+		}
+	}
+
+	SECTION("bytes_value_type<std::dynamic_extent>")
+	{
+		using attribute_type = turner::attribute_type<Protocol, turner::bytes_value_type<>>;
+
+		SECTION("less")
+		{
+			static constexpr attribute_type attribute = 0x8084;
+			static const auto expected_value = "tes"_b;
+			auto value = pal_try(reader.read(attribute));
+			CHECK(std::equal(value.begin(), value.end(), expected_value.begin(), expected_value.end()));
+		}
+
+		SECTION("exact")
+		{
+			static constexpr attribute_type attribute = 0x8085;
+			static const auto expected_value = "test"_b;
+			auto value = pal_try(reader.read(attribute));
+			CHECK(std::equal(value.begin(), value.end(), expected_value.begin(), expected_value.end()));
+		}
+
+		SECTION("exceed")
+		{
+			static constexpr attribute_type attribute = 0x8086;
+			static const auto expected_value = "testt"_b;
+			auto value = pal_try(reader.read(attribute));
+			CHECK(std::equal(value.begin(), value.end(), expected_value.begin(), expected_value.end()));
+		}
+
+		SECTION("empty")
+		{
+			static constexpr attribute_type attribute = 0x8087;
+			CHECK(pal_try(reader.read(attribute)).empty());
+		}
+	}
+
+	SECTION("bytes_value_type<4>")
+	{
+		using attribute_type = turner::attribute_type<Protocol, turner::bytes_value_type<4>>;
+
+		SECTION("less")
+		{
+			static constexpr attribute_type attribute = 0x8084;
+			auto value = reader.read(attribute);
+			REQUIRE(!value);
+			CHECK(value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("exact")
+		{
+			static constexpr attribute_type attribute = 0x8085;
+			static const auto expected_value = "test"_b;
+			auto value = pal_try(reader.read(attribute));
+			CHECK(std::equal(value.begin(), value.end(), expected_value.begin(), expected_value.end()));
+		}
+
+		SECTION("exceed")
+		{
+			static constexpr attribute_type attribute = 0x8086;
+			auto value = reader.read(attribute);
+			REQUIRE(!value);
+			CHECK(value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("empty")
+		{
+			static constexpr attribute_type attribute = 0x8087;
+			auto value = reader.read(attribute);
+			REQUIRE(!value);
+			CHECK(value.error() == turner::errc::unexpected_attribute_length);
 		}
 	}
 }

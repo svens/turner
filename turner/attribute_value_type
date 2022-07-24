@@ -18,7 +18,7 @@
 __turner_begin
 
 
-/// Generic uint32_t type attribute reader/writer
+/// Generic uint32_t type attribute value reader/writer
 struct uint32_value_type
 {
 	/// Native value type
@@ -39,7 +39,7 @@ struct uint32_value_type
 };
 
 
-/// Generic std::chrono::seconds type attribute reader/writer
+/// Generic std::chrono::seconds type attribute value reader/writer
 struct seconds_value_type
 {
 	/// Native value type
@@ -59,7 +59,7 @@ struct seconds_value_type
 };
 
 
-/// Generic std::string_view type attribute reader/writer
+/// Generic std::string_view type attribute value reader/writer
 template <size_t MaxSizeBytes = std::dynamic_extent>
 struct string_value_type
 {
@@ -67,7 +67,7 @@ struct string_value_type
 	using value_type = std::string_view;
 
 	/**
-	 * Reade attribute value from \a span
+	 * Read attribute value from \a span
 	 *
 	 * \note returned std::string_view does not own specified range, it
 	 * points into \a span. Caller should copy value if needed.
@@ -88,6 +88,36 @@ struct string_value_type
 			reinterpret_cast<const char *>(span.data()),
 			span.size_bytes()
 		};
+	}
+};
+
+
+/// Generic std::span<std::byte, Extent> type attribute value reader/writer
+template <size_t Extent = std::dynamic_extent>
+struct bytes_value_type
+{
+	/// Native value type
+	using value_type = std::span<const std::byte, Extent>;
+
+	/**
+	 * Read attribute value from \a span
+	 *
+	 * \note returned std::span does not own specified range, it
+	 * points into \a span. Caller should copy value if needed.
+	 */
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if constexpr (Extent != std::dynamic_extent)
+		{
+			if (span.size_bytes() != Extent)
+			{
+				return make_unexpected(errc::unexpected_attribute_length);
+			}
+		}
+		return value_type{span};
 	}
 };
 

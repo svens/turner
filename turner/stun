@@ -79,7 +79,7 @@ struct stun
 	static constexpr attribute_type<stun, string_value_type<513>> username = 0x0006;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.5
-	static constexpr attribute_type<stun, uint16_t> message_integrity = 0x0008;
+	static constexpr attribute_type<stun, bytes_value_type<20>> message_integrity = 0x0008;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.8
 	static constexpr attribute_type<stun, uint16_t> error_code = 0x0009;

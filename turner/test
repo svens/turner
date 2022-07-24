@@ -1,6 +1,7 @@
 #pragma once // -*- C++ -*-
 
 #include <catch2/catch_test_macros.hpp>
+#include <span>
 #include <string>
 
 
@@ -33,10 +34,14 @@ struct bad_alloc_once
 };
 
 
-// for Catch2 using MSVC
 constexpr uint16_t operator"" _u16 (unsigned long long int v)
 {
 	return (uint16_t)v;
+}
+
+inline std::span<const std::byte> operator"" _b (const char *v, size_t n)
+{
+	return std::as_bytes(std::span{v, n});
 }
 
 
