@@ -8,7 +8,31 @@
 [![Build](https://github.com/svens/turner/workflows/Build/badge.svg)](https://github.com/svens/turner/actions?query=workflow:Build)
 [![Coverage](https://coveralls.io/repos/github/svens/turner/badge.svg)](https://coveralls.io/github/svens/turner)
 
-[STUN]/[TURN]/[MS-TURN] parser/generator library
+[STUN]/[TURN]/[MS-TURN] library
+
+## Goals
+
+  * STUN/TURN/MS-TURN protocol reader/writer (in progress)
+    + Type-safe:
+      - different protocol messages should be distinct types, cross-protocol
+        mixups prevented at compile-time
+      - attributes should be distinct types e.g. compiler should prevent
+        application developer treating LIFETIME attribute as string but
+        enforce std::chrono::seconds, etc.
+    + No allocations:
+      - extracting protocol level information from incoming networking
+        datagram should not do any allocations
+    + Zero-copy:
+      - querying memory blob kind of attributes from messages should return
+        std::span into original networking datagram
+  * Client & server as library (TODO)
+    + Implement OS independent pure business logic layer that provides
+      hooks/callbacks for applications that implement actual syscalls
+      (networking I/O, logging, monitoring, etc.)
+    + Provide hooks to introduce artificial delays within business logic to
+      support testing/debugging threading issues
+  * Cross-platform relay (TODO)
+    + Create actual application providing syscalls for relay implemented in library scope
 
 
 ## Documentation
