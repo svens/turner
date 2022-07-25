@@ -104,7 +104,7 @@ struct msturn
 	static constexpr attribute_type<msturn, error_code_value_type> error_code = 0x0009;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/2b097c56-f250-43fe-970e-66ca08b2dfcd
-	static constexpr attribute_type<msturn, uint16_t> unknown_attributes = 0x000a;
+	static constexpr attribute_type<msturn, attribute_list_value_type> unknown_attributes = 0x000a;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/46555d94-a165-40c9-a5ff-4d841d4d012a
 	static constexpr attribute_type<msturn, seconds_value_type> lifetime = 0x000d;

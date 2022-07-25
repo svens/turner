@@ -85,7 +85,7 @@ struct stun
 	static constexpr attribute_type<stun, error_code_value_type> error_code = 0x0009;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.13
-	static constexpr attribute_type<stun, uint16_t> unknown_attributes = 0x000a;
+	static constexpr attribute_type<stun, attribute_list_value_type> unknown_attributes = 0x000a;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.9
 	static constexpr attribute_type<stun, string_value_type<763>> realm = 0x0014;

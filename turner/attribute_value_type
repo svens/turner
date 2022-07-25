@@ -11,6 +11,7 @@
 #include <turner/protocol_error>
 #include <pal/byte_order>
 #include <pal/result>
+#include <array>
 #include <chrono>
 #include <span>
 #include <string_view>
@@ -126,6 +127,7 @@ struct bytes_value_type
 /// Generic protocol error type attribute value reader/writer
 struct error_code_value_type
 {
+	/// Native value type
 	using value_type = std::tuple<protocol_errc, std::string_view>;
 
 	/**
@@ -153,6 +155,54 @@ struct error_code_value_type
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
+};
+
+
+/**
+ * Generic attribute type values list reader/writer.
+ *
+ * \note value_type supports up to 4 elements even though underlying Protocol
+ * does not limit this number. If attribute in \a span contains more elements,
+ * only up to 4 are copied but returned tuple<0> field reflects actual number.
+ */
+struct attribute_list_value_type
+{
+	/// Native value type
+	using value_type = std::tuple<size_t, std::array<uint16_t, 4>>;
+
+	/**
+	 * Read attribute value from \a span.
+	 *
+	 * \note returned std::span does not own specified range, it points
+	 * into \a span. Caller should copy value if needed. Values are in
+	 * network byte order.
+	 */
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		auto size = span.size_bytes() / sizeof(uint16_t);
+		if (size * sizeof(uint16_t) == span.size_bytes())
+		{
+			value_type result{size, {}};
+			auto &dest = std::get<1>(result);
+			size = (std::min)(size, dest.max_size());
+			auto *src = reinterpret_cast<const uint16_t *>(span.data());
+			std::transform(src, src + size, dest.begin(), ntoh);
+			return result;
+		}
+
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+
+
+private:
+
+	static constexpr auto ntoh = [](uint16_t v)
+	{
+		return pal::ntoh(v);
+	};
 };
 
 
