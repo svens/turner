@@ -53,6 +53,9 @@ struct msturn
 	/// MS-TURN message transaction ID type
 	using transaction_id_type = std::array<uint8_t, 16>;
 
+	/// Generic MS-TURN message reader
+	using message_reader = basic_message_reader<msturn>;
+
 	/**
 	 * \defgroup MSTURN_Methods MS-TURN Method registry
 	 * \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/8177788b-1f38-47a5-8a6f-348e89717922
@@ -85,6 +88,32 @@ struct msturn
 
 	/// \}
 
+	/// \cond
+	struct no_endpoint_map
+	{
+		static void transform (
+			const message_reader &,
+			pal::net::ip::address &,
+			pal::net::ip::port_type &) noexcept
+		{ }
+	};
+	using endpoint_value_type = turner::endpoint_value_type<no_endpoint_map>;
+
+	struct xor_endpoint_map
+	{
+		static void transform (
+			const message_reader &message,
+			pal::net::ip::address &address,
+			pal::net::ip::port_type &port) noexcept
+		{
+			(void)message;
+			(void)address;
+			(void)port;
+		}
+	};
+	using xor_endpoint_value_type = turner::endpoint_value_type<xor_endpoint_map>;
+	/// \endcond
+
 	/**
 	 * \defgroup MSTURN_Attributes MS-TURN Attribute Registry
 	 * \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/0e0491de-b648-4347-bae4-503c7347abbe
@@ -92,7 +121,7 @@ struct msturn
 	 */
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/735464a2-28e3-423f-8b65-19dd4b4dbc52
-	static constexpr attribute_type<msturn, uint16_t> mapped_address = 0x0001;
+	static constexpr attribute_type<msturn, endpoint_value_type> mapped_address = 0x0001;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/bbf7bc45-93b6-495e-adcc-685d270a2eae
 	static constexpr attribute_type<msturn, string_value_type<>> username = 0x0006;
@@ -110,16 +139,16 @@ struct msturn
 	static constexpr attribute_type<msturn, seconds_value_type> lifetime = 0x000d;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/c8ebc611-c0c4-48c4-b7da-47e57b3f96c3
-	static constexpr attribute_type<msturn, uint16_t> alternate_server = 0x000e;
+	static constexpr attribute_type<msturn, endpoint_value_type> alternate_server = 0x000e;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/f98b6d22-e8e2-4817-b936-5904402d1788
 	static constexpr attribute_type<msturn, uint32_value_type> bandwidth = 0x0010;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/9cd7e664-7c19-4464-ab05-761b4ca39372
-	static constexpr attribute_type<msturn, uint16_t> destination_address = 0x0011;
+	static constexpr attribute_type<msturn, endpoint_value_type> destination_address = 0x0011;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/cf5c3756-d0a7-414e-8a14-c54786e34dbc
-	static constexpr attribute_type<msturn, uint16_t> remote_address = 0x0012;
+	static constexpr attribute_type<msturn, endpoint_value_type> remote_address = 0x0012;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/d9dd90bc-5bd3-4daa-89ac-0d70c5a1cb81
 	static constexpr attribute_type<msturn, bytes_value_type<>> data = 0x0013;
@@ -137,7 +166,7 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> ms_version = 0x8008;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/d6f3f10a-b5f2-423a-af1d-a1d69b09ddab
-	static constexpr attribute_type<msturn, uint16_t> xor_mapped_address = 0x8020;
+	static constexpr attribute_type<msturn, xor_endpoint_value_type> xor_mapped_address = 0x8020;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/69ca1e1a-7423-4a3a-8618-f0bf76383cdc
 	static constexpr attribute_type<msturn, string_value_type<128>> ms_alternate_host_name = 0x8032;
@@ -155,15 +184,12 @@ struct msturn
 	static constexpr attribute_type<msturn, uint16_t> ms_service_quality = 0x8055;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/3a99a9cf-7757-4d9a-87b6-688bcfe15f10
-	static constexpr attribute_type<msturn, uint16_t> ms_alternate_mapped_address = 0x8090;
+	static constexpr attribute_type<msturn, endpoint_value_type> ms_alternate_mapped_address = 0x8090;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/8192de42-81aa-453b-b4f4-77d4889da70e
 	static constexpr attribute_type<msturn, bytes_value_type<8>> multiplexed_session_id = 0x8095;
 
 	/// \}
-
-	/// Generic MS-TURN message reader
-	using message_reader = basic_message_reader<msturn>;
 
 	/**
 	 * Validates \a span contains MS-TURN message and returns generic message reader

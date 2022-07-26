@@ -59,22 +59,22 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("valid")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x04,
 				0x00, 0x00, 0x00, 0x01,
-			});
+			};
 			REQUIRE(message.value);
 			CHECK(*message.value == 1u);
 		}
 
 		SECTION("unexpected attribute length")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				0x00, 0x00, 0x00, 0x01,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
@@ -87,22 +87,22 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("valid")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x04,
 				0x00, 0x00, 0x00, 0x78,
-			});
+			};
 			REQUIRE(message.value);
 			CHECK(*message.value == 2min);
 		}
 
 		SECTION("unexpected attribute length")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				0x00, 0x00, 0x00, 0x78,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
@@ -114,44 +114,44 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("less")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				't',  'e',  's',  0x00,
-			});
+			};
 			REQUIRE(message.value);
 			CHECK(*message.value == "tes");
 		}
 
 		SECTION("exact")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x04,
 				't',  'e',  's',  't',
-			});
+			};
 			REQUIRE(message.value);
 			CHECK(*message.value == "test");
 		}
 
 		SECTION("exceed")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x05,
 				't',  'e',  's',  't',
 				't',  0x00, 0x00, 0x00,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
 
 		SECTION("empty")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x00,
-			});
+			};
 			REQUIRE(message.value);
 			CHECK(message.value->empty());
 		}
@@ -163,11 +163,11 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("less")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				't',  'e',  's',  0x00,
-			});
+			};
 			static const auto expected_value = "tes"_b;
 			REQUIRE(message.value);
 			auto &value = *message.value;
@@ -176,11 +176,11 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("exact")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x04,
 				't',  'e',  's',  't',
-			});
+			};
 			REQUIRE(message.value);
 			auto &value = *message.value;
 			static const auto expected_value = "test"_b;
@@ -189,12 +189,12 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("exceed")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x05,
 				't',  'e',  's',  't',
 				't',  0x00, 0x00, 0x00,
-			});
+			};
 			REQUIRE(message.value);
 			auto &value = *message.value;
 			static const auto expected_value = "testt"_b;
@@ -203,10 +203,10 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("empty")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x00,
-			});
+			};
 			REQUIRE(message.value);
 			CHECK(message.value->empty());
 		}
@@ -218,22 +218,22 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("less")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				't',  'e',  's',  0x00,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
 
 		SECTION("exact")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x04,
 				't',  'e',  's',  't',
-			});
+			};
 			REQUIRE(message.value);
 			auto &value = *message.value;
 			static const auto expected_value = "test"_b;
@@ -242,22 +242,22 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("exceed")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x05,
 				't',  'e',  's',  't',
 				't',  0x00, 0x00, 0x00,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
 
 		SECTION("empty")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x00,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
@@ -269,22 +269,22 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("less")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				0x00, 0x00, 0x04, 0x01,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
 
 		SECTION("empty reason")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x04,
 				0x00, 0x00, 0x04, 0x01,
-			});
+			};
 			REQUIRE(message.value);
 			auto [code, reason] = *message.value;
 			CHECK(code == turner::protocol_errc::unauthorized);
@@ -293,12 +293,12 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("with reason")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x08,
 				0x00, 0x00, 0x04, 0x01,
 				'T',  'e',  's',  't',
-			});
+			};
 			REQUIRE(message.value);
 			auto [code, reason] = *message.value;
 			CHECK(code == turner::protocol_errc::unauthorized);
@@ -312,23 +312,23 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("less")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x03,
 				0x80, 0x8b, 0x10, 0x01,
-			});
+			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
 
 		SECTION("exact")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x06,
 				0x80, 0x8b, 0x80, 0x8c,
 				0x80, 0x8d, 0x00, 0x00,
-			});
+			};
 			REQUIRE(message.value);
 			auto [size, value] = *message.value;
 			REQUIRE(size == 3);
@@ -338,13 +338,13 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("exceed")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x0a,
 				0x80, 0x8b, 0x80, 0x8c,
 				0x80, 0x8d, 0x80, 0x8e,
 				0x80, 0x8f, 0x00, 0x00,
-			});
+			};
 			REQUIRE(message.value);
 			auto [size, value] = *message.value;
 			REQUIRE(size == 5);
@@ -354,15 +354,88 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 		SECTION("empty")
 		{
-			message_type message(
+			message_type message
 			{
 				0x80, 0x80, 0x00, 0x00,
-			});
+			};
 			REQUIRE(message.value);
 			auto [size, value] = *message.value;
 			REQUIRE(size == 0);
 			static const std::array<uint16_t, 4> expected_value = {};
 			CHECK(value == expected_value);
+		}
+	}
+
+	SECTION("endpoint_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, typename TestType::endpoint_value_type>;
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("IPv4 unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x08,
+				0x00, 0xff, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+
+		SECTION("IPv6 unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x14,
+				0x00, 0xff, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+
+		SECTION("IPv4 success")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x08,
+				0x00, 0x01, 0x12, 0x34,
+				0x7f, 0x00, 0x00, 0x01,
+			};
+			REQUIRE(message.value);
+			auto [address, port] = *message.value;
+			CHECK(address == pal::net::ip::address_v4::loopback());
+			CHECK(port == 0x1234);
+		}
+
+		SECTION("IPv6 success")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x14,
+				0x00, 0x02, 0x23, 0x45,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x01,
+			};
+			REQUIRE(message.value);
+			auto [address, port] = *message.value;
+			CHECK(address == pal::net::ip::address_v6::loopback());
+			CHECK(port == 0x2345);
 		}
 	}
 

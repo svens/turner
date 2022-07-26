@@ -10,6 +10,8 @@
 #include <turner/fwd>
 #include <turner/protocol_error>
 #include <pal/byte_order>
+#include <pal/net/ip/address>
+#include <pal/net/ip/basic_endpoint>
 #include <pal/result>
 #include <array>
 #include <chrono>
@@ -203,6 +205,87 @@ private:
 	{
 		return pal::ntoh(v);
 	};
+};
+
+
+/**
+ * Internet address/port pair type value reader/writer.
+ *
+ * Template argument Map is protocol-specific endpoint transformer before
+ * returning value to caller. STUN/TURN/MS-TURN currently support XOR
+ * transformation (XOR-ing value is protocol-specific). For simple endpoints,
+ * protocols use no-op handler.
+ */
+template <typename Map>
+struct endpoint_value_type
+{
+	/// Native value type
+	using value_type = std::tuple<pal::net::ip::address, pal::net::ip::port_type>;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &message,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == 8)
+		{
+			return read_ipv4(span).and_then(map_with(message));
+		}
+		else if (span.size_bytes() == 20)
+		{
+			return read_ipv6(span).and_then(map_with(message));
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+
+private:
+
+	static uint8_t family (const std::span<const std::byte> &span) noexcept
+	{
+		return reinterpret_cast<const uint8_t *>(span.data())[1];
+	}
+
+	static pal::net::ip::port_type port (const std::span<const std::byte> &span) noexcept
+	{
+		return reinterpret_cast<const uint16_t *>(span.data())[1];
+	}
+
+	template <typename Address>
+	static pal::net::ip::address address (const std::span<const std::byte> &span) noexcept
+	{
+		return Address{*reinterpret_cast<const typename Address::bytes_type *>(span.data() + 4)};
+	}
+
+	static pal::result<value_type> read_ipv4 (const std::span<const std::byte> &span) noexcept
+	{
+		if (family(span) == 0x01)
+		{
+			return value_type{address<pal::net::ip::address_v4>(span), port(span)};
+		}
+		return make_unexpected(errc::unexpected_attribute_value);
+	}
+
+	static pal::result<value_type> read_ipv6 (const std::span<const std::byte> &span) noexcept
+	{
+		if (family(span) == 0x02)
+		{
+			return value_type{address<pal::net::ip::address_v6>(span), port(span)};
+		}
+		return make_unexpected(errc::unexpected_attribute_value);
+	}
+
+	template <typename Protocol>
+	static auto map_with (const basic_message_reader<Protocol> &message) noexcept
+	{
+		return [&](value_type &&endpoint) -> pal::result<value_type>
+		{
+			auto &port = std::get<1>(endpoint);
+			Map::transform(message, std::get<0>(endpoint), port);
+			port = pal::ntoh(port);
+			return std::move(endpoint);
+		};
+	}
 };
 
 

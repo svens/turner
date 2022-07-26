@@ -52,6 +52,9 @@ struct stun
 	/// STUN message transaction ID type
 	using transaction_id_type = std::array<uint8_t, 12>;
 
+	/// Generic STUN message reader
+	using message_reader = basic_message_reader<stun>;
+
 	/**
 	 * \defgroup STUN_Methods STUN Method registry
 	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-18.2
@@ -66,6 +69,36 @@ struct stun
 
 	/// \}
 
+	/// \cond
+	struct no_endpoint_map
+	{
+		template <typename OtherProtocol>
+		requires(std::is_convertible_v<OtherProtocol, stun>)
+		static void transform (
+			const basic_message_reader<OtherProtocol> &,
+			pal::net::ip::address &,
+			pal::net::ip::port_type &) noexcept
+		{ }
+	};
+	using endpoint_value_type = turner::endpoint_value_type<no_endpoint_map>;
+
+	struct xor_endpoint_map
+	{
+		template <typename OtherProtocol>
+		requires(std::is_convertible_v<OtherProtocol, stun>)
+		static void transform (
+			const basic_message_reader<OtherProtocol> &message,
+			pal::net::ip::address &address,
+			pal::net::ip::port_type &port) noexcept
+		{
+			(void)message;
+			(void)address;
+			(void)port;
+		}
+	};
+	using xor_endpoint_value_type = turner::endpoint_value_type<xor_endpoint_map>;
+	/// \endcond
+
 	/**
 	 * \defgroup STUN_Attributes STUN Attribute Registry
 	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-18.3
@@ -73,7 +106,7 @@ struct stun
 	 */
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.1
-	static constexpr attribute_type<stun, uint16_t> mapped_address = 0x0001;
+	static constexpr attribute_type<stun, endpoint_value_type> mapped_address = 0x0001;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.3
 	static constexpr attribute_type<stun, string_value_type<513>> username = 0x0006;
@@ -94,7 +127,7 @@ struct stun
 	static constexpr attribute_type<stun, string_value_type<763>> nonce = 0x0015;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.2
-	static constexpr attribute_type<stun, uint16_t> xor_mapped_address = 0x0020;
+	static constexpr attribute_type<stun, xor_endpoint_value_type> xor_mapped_address = 0x0020;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.16
 	static constexpr attribute_type<stun, string_value_type<255>> alternate_domain = 0x8003;
@@ -103,15 +136,12 @@ struct stun
 	static constexpr attribute_type<stun, string_value_type<763>> software = 0x8022;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.15
-	static constexpr attribute_type<stun, uint16_t> alternate_server = 0x8023;
+	static constexpr attribute_type<stun, endpoint_value_type> alternate_server = 0x8023;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.7
 	static constexpr attribute_type<stun, uint32_value_type> fingerprint = 0x8028;
 
 	/// \}
-
-	/// Generic STUN message reader
-	using message_reader = basic_message_reader<stun>;
 
 	/**
 	 * Validates \a span contains STUN message and returns generic message reader

@@ -18,6 +18,7 @@ __turner_begin
 	Impl(invalid_magic_cookie, "invalid magic cookie") \
 	Impl(unexpected_message_type, "unexpected message type") \
 	Impl(unexpected_message_length, "unexpected message length") \
+	Impl(unexpected_attribute_value, "unexpected attribute value") \
 	Impl(unexpected_attribute_length, "unexpected attribute length") \
 	Impl(fingerprint_not_last, "fingerprint not last") \
 	Impl(fingerprint_mismatch, "fingerprint mismatch") \
