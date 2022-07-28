@@ -439,6 +439,79 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
+	SECTION("xor_endpoint_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, typename TestType::xor_endpoint_value_type>;
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("IPv4 unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x08,
+				0x00, 0xff, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+
+		SECTION("IPv6 unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x14,
+				0x00, 0xff, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+
+		SECTION("IPv4 success")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x08,
+				0x00, 0x01, 0x33, 0x26,
+				0x5e, 0x12, 0xa4, 0x43,
+			};
+			REQUIRE(message.value);
+			auto [address, port] = *message.value;
+			CHECK(address == pal::net::ip::address_v4::loopback());
+			CHECK(port == 0x1234);
+		}
+
+		SECTION("IPv6 success")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x14,
+				0x00, 0x02, 0x02, 0x57,
+				0x21, 0x12, 0xa4, 0x42,
+				0x00, 0x01, 0x02, 0x03,
+				0x04, 0x05, 0x06, 0x07,
+				0x08, 0x09, 0x0a, 0x0a,
+			};
+			REQUIRE(message.value);
+			auto [address, port] = *message.value;
+			CHECK(address == pal::net::ip::address_v6::loopback());
+			CHECK(port == 0x2345);
+		}
+	}
+
 	//}}}1
 }
 

@@ -91,9 +91,27 @@ struct stun
 			pal::net::ip::address &address,
 			pal::net::ip::port_type &port) noexcept
 		{
-			(void)message;
-			(void)address;
-			(void)port;
+			port ^= *reinterpret_cast<const uint16_t *>(magic_cookie.data());
+			if (address.is_v4())
+			{
+				auto &in = *const_cast<in_addr *>(
+					reinterpret_cast<const in_addr *>(address.v4().to_bytes().data())
+				);
+				in.s_addr ^= *reinterpret_cast<const uint32_t *>(magic_cookie.data());
+			}
+			else
+			{
+				auto &in = *const_cast<in6_addr *>(
+					reinterpret_cast<const in6_addr *>(address.v6().to_bytes().data())
+				);
+				auto &xor_value = *reinterpret_cast<const std::array<uint8_t, 16> *>(
+					message.as_bytes().data() + 4
+				);
+				for (auto i = 0u;  i < xor_value.max_size();  ++i)
+				{
+					in.s6_addr[i] ^= xor_value[i];
+				}
+			}
 		}
 	};
 	using xor_endpoint_value_type = turner::endpoint_value_type<xor_endpoint_map>;
