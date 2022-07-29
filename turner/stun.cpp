@@ -41,6 +41,7 @@ struct crc32_lookup
 uint32_t crc32 (const uint32_t *first, const uint32_t *last) noexcept
 {
 	// Intel 32bit CRC using Slice-by-4 method
+	// See ThirdPartySources.txt for copyright notices
 
 	static constexpr crc32_lookup<0xedb88320> lookup{};
 
