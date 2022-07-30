@@ -211,13 +211,12 @@ private:
 /**
  * Internet address/port pair type value reader/writer.
  *
- * Template argument Map is protocol-specific endpoint transformer before
- * returning value to caller. STUN/TURN/MS-TURN currently support XOR
- * transformation (XOR-ing value is protocol-specific). For simple endpoints,
- * protocols use no-op handler.
+ * Template argument Map is endpoint transformer before returning value to
+ * caller. STUN/TURN/MS-TURN currently support XOR transformation. For simple
+ * endpoints, protocols use no-op handler.
  */
 template <typename Map>
-struct endpoint_value_type
+struct basic_endpoint_value_type
 {
 	/// Native value type
 	using value_type = std::tuple<pal::net::ip::address, pal::net::ip::port_type>;
@@ -287,6 +286,83 @@ private:
 		};
 	}
 };
+
+
+namespace __bits {
+
+// below, Protocol vs OtherProtocol is for STUN <- TURN inheritance
+
+template <typename Protocol>
+struct no_endpoint_map
+{
+	template <typename OtherProtocol>
+	requires(std::is_convertible_v<OtherProtocol, Protocol>)
+	static void transform (
+		const basic_message_reader<OtherProtocol> &,
+		pal::net::ip::address &,
+		pal::net::ip::port_type &) noexcept
+	{ }
+};
+
+template <typename Protocol>
+struct xor_endpoint_map
+{
+	template <typename OtherProtocol>
+	requires(std::is_convertible_v<OtherProtocol, Protocol>)
+	static void transform (
+		const basic_message_reader<OtherProtocol> &message,
+		pal::net::ip::address &address,
+		pal::net::ip::port_type &port) noexcept
+	{
+		// - MS-TURN: 16B Transaction ID
+		// - TURN: 4B Magic Cookie + 12B Transaction ID
+		auto &xor_value = *reinterpret_cast<const std::array<uint8_t, 16> *>(
+			message.as_bytes().data() + 4
+		);
+
+		port ^= *reinterpret_cast<const uint16_t *>(xor_value.data());
+		if (address.is_v4())
+		{
+			auto &in = *const_cast<in_addr *>(
+				reinterpret_cast<const in_addr *>(address.v4().to_bytes().data())
+			);
+			in.s_addr ^= *reinterpret_cast<const uint32_t *>(xor_value.data());
+		}
+		else
+		{
+			auto &in = *const_cast<in6_addr *>(
+				reinterpret_cast<const in6_addr *>(address.v6().to_bytes().data())
+			);
+			for (auto i = 0u;  i < xor_value.max_size();  ++i)
+			{
+				in.s6_addr[i] ^= xor_value[i];
+			}
+		}
+	}
+};
+
+} // namespace __bits
+
+
+/**
+ * Internet address/port pair type value reader/writer.
+ *
+ * \see basic_endpoint_value_type<>
+ */
+template <typename Protocol>
+using endpoint_value_type = basic_endpoint_value_type<__bits::no_endpoint_map<Protocol>>;
+
+/**
+ * Internet address/port pair type value reader/writer.
+ *
+ * Value is obfuscated using XOR operation. While STUN and MS-TURN document
+ * different values for XORing, in practise both refer to same region in
+ * message. This allows to have single implementation for both protocols.
+ *
+ * \see basic_endpoint_value_type<>
+ */
+template <typename Protocol>
+using xor_endpoint_value_type = basic_endpoint_value_type<__bits::xor_endpoint_map<Protocol>>;
 
 
 __turner_end

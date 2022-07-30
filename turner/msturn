@@ -89,45 +89,8 @@ struct msturn
 	/// \}
 
 	/// \cond
-	struct no_endpoint_map
-	{
-		static void transform (
-			const message_reader &,
-			pal::net::ip::address &,
-			pal::net::ip::port_type &) noexcept
-		{ }
-	};
-	using endpoint_value_type = turner::endpoint_value_type<no_endpoint_map>;
-
-	struct xor_endpoint_map
-	{
-		static void transform (
-			const message_reader &message,
-			pal::net::ip::address &address,
-			pal::net::ip::port_type &port) noexcept
-		{
-			auto &txn_id = message.transaction_id();
-			port ^= *reinterpret_cast<const uint16_t *>(txn_id.data());
-			if (address.is_v4())
-			{
-				auto &in = *const_cast<in_addr *>(
-					reinterpret_cast<const in_addr *>(address.v4().to_bytes().data())
-				);
-				in.s_addr ^= *reinterpret_cast<const uint32_t *>(txn_id.data());
-			}
-			else
-			{
-				auto &in = *const_cast<in6_addr *>(
-					reinterpret_cast<const in6_addr *>(address.v6().to_bytes().data())
-				);
-				for (auto i = 0u;  i < txn_id.max_size();  ++i)
-				{
-					in.s6_addr[i] ^= txn_id[i];
-				}
-			}
-		}
-	};
-	using xor_endpoint_value_type = turner::endpoint_value_type<xor_endpoint_map>;
+	using endpoint_value_type = turner::endpoint_value_type<msturn>;
+	using xor_endpoint_value_type = turner::xor_endpoint_value_type<msturn>;
 	/// \endcond
 
 	/**
