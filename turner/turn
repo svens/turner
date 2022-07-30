@@ -93,7 +93,7 @@ struct turn: stun
 	static constexpr attribute_type<turn, xor_endpoint_value_type> xor_relayed_address = 0x0016;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.6
-	static constexpr attribute_type<turn, uint16_t> requested_address_family = 0x0017;
+	static constexpr attribute_type<turn, address_family_value_type> requested_address_family = 0x0017;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.7
 	static constexpr attribute_type<turn, uint16_t> even_port = 0x0018;
@@ -108,7 +108,7 @@ struct turn: stun
 	static constexpr attribute_type<turn, bytes_value_type<8>> reservation_token = 0x0022;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.11
-	static constexpr attribute_type<turn, uint16_t> additional_address_family = 0x8000;
+	static constexpr attribute_type<turn, address_family_value_type> additional_address_family = 0x8000;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.12
 	static constexpr attribute_type<turn, uint16_t> address_error_code = 0x8001;

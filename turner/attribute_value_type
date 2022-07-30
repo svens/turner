@@ -63,6 +63,40 @@ struct seconds_value_type
 };
 
 
+/// Address family values for STUN/TURN/MS-TURN protocols
+enum class address_family: uint8_t
+{
+	v4 = 0x01, ///< IPv4
+	v6 = 0x02, ///< IPv6
+};
+
+
+/// Address family attribute value reader/writer
+struct address_family_value_type
+{
+	/// Native value type
+	using value_type = address_family;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == sizeof(uint32_t))
+		{
+			auto v = *reinterpret_cast<const value_type *>(span.data());
+			if (v == address_family::v4 || v == address_family::v6)
+			{
+				return v;
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
 /// Generic std::string_view type attribute value reader/writer
 template <size_t MaxSizeBytes = std::dynamic_extent>
 struct string_value_type

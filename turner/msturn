@@ -139,7 +139,7 @@ struct msturn
 	static constexpr attribute_type<msturn, string_value_type<128>> realm = 0x0015;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/e7efc457-9312-4a6b-8089-94032a599198
-	static constexpr attribute_type<msturn, uint16_t> requested_address_family = 0x0017;
+	static constexpr attribute_type<msturn, address_family_value_type> requested_address_family = 0x0017;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/a972c937-780a-476a-915a-b81869428342
 	static constexpr attribute_type<msturn, uint16_t> ms_version = 0x8008;
