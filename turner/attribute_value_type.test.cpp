@@ -368,7 +368,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	SECTION("endpoint_value_type") //{{{1
 	{
-		using message_type = test_message<TestType, typename TestType::endpoint_value_type>;
+		using message_type = test_message<TestType, turner::endpoint_value_type<TestType>>;
 
 		SECTION("unexpected attribute length")
 		{
@@ -441,7 +441,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	SECTION("xor_endpoint_value_type") //{{{1
 	{
-		using message_type = test_message<TestType, typename TestType::xor_endpoint_value_type>;
+		using message_type = test_message<TestType, turner::xor_endpoint_value_type<TestType>>;
 
 		SECTION("unexpected attribute length")
 		{
@@ -509,6 +509,58 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 			auto [address, port] = *message.value;
 			CHECK(address == pal::net::ip::address_v6::loopback());
 			CHECK(port == 0x2345);
+		}
+	}
+
+	SECTION("channel_number_value_type") //{{{1
+	{
+		if constexpr (std::is_same_v<TestType, turn>)
+		{
+			using message_type = test_message<TestType, turner::turn::channel_number_value_type>;
+
+			SECTION("valid")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+					0x40, 0x01, 0x00, 0x00,
+				};
+				REQUIRE(message.value);
+				CHECK(*message.value == 0x4001);
+			}
+
+			SECTION("unexpected attribute length")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x03,
+					0x40, 0x01, 0x00, 0x00,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+			}
+
+			SECTION("below valid range")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+					0x3f, 0xff, 0x00, 0x00,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+			}
+
+			SECTION("above valid range")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+					0x80, 0x00, 0x00, 0x00,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+			}
 		}
 	}
 

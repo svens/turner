@@ -69,6 +69,8 @@ struct turn: stun
 
 	/// \}
 
+	struct channel_number_value_type;
+
 	/**
 	 * \defgroup TURN_Attributes TURN Attribute Registry
 	 * \see https://datatracker.ietf.org/doc/html/rfc8656#section-18
@@ -76,7 +78,7 @@ struct turn: stun
 	 */
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.1
-	static constexpr attribute_type<turn, uint16_t> channel_number = 0x000c;
+	static constexpr attribute_type<turn, channel_number_value_type> channel_number = 0x000c;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.2
 	static constexpr attribute_type<turn, seconds_value_type> lifetime = 0x000d;
@@ -134,6 +136,31 @@ struct turn: stun
 			// on success map to TURN-specific reader
 			return message_reader{stun_reader.as_bytes()};
 		});
+	}
+};
+
+
+/// TURN channel number value attribute value type reader/writer
+struct turn::channel_number_value_type
+{
+	/// Native value type
+	using value_type = uint16_t;
+
+	/// Read attribute value from \a span
+	static pal::result<value_type> read (
+		const basic_message_reader<turn> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == sizeof(uint32_t))
+		{
+			auto channel = pal::ntoh(*reinterpret_cast<const uint16_t *>(span.data()));
+			if (0x3fff < channel && channel < 0x8000)
+			{
+				return channel;
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
 
