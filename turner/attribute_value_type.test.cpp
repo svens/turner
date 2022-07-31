@@ -255,6 +255,37 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
+	SECTION("dont_fragment_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, turner::dont_fragment_value_type>;
+
+		SECTION("on")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == true);
+		}
+
+		SECTION("off")
+		{
+			// attribute but found means client did not request this feature
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+	}
+
 	SECTION("string_value_type") //{{{1
 	{
 		using message_type = test_message<TestType, turner::string_value_type<4>>;

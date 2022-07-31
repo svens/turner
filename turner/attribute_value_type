@@ -155,6 +155,28 @@ struct transport_protocol_value_type
 };
 
 
+/// DONT-FRAGMENT attribute value reader/writer
+struct dont_fragment_value_type
+{
+	/// Native value type
+	using value_type = bool;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == 0)
+		{
+			// simply attribute existence -> true
+			return true;
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
 /// Generic std::string_view type attribute value reader/writer
 template <size_t MaxSizeBytes = std::dynamic_extent>
 struct string_value_type
