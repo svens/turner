@@ -157,6 +157,55 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
+	SECTION("transport_protocol_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, turner::transport_protocol_value_type>;
+
+		SECTION("UDP valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x11, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == turner::transport_protocol::udp);
+		}
+
+		SECTION("TCP valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x06, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == turner::transport_protocol::tcp);
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x03,
+				0x11, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x01, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+	}
+
 	SECTION("string_value_type") //{{{1
 	{
 		using message_type = test_message<TestType, turner::string_value_type<4>>;

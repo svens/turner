@@ -99,7 +99,7 @@ struct turn: stun
 	static constexpr attribute_type<turn, uint16_t> even_port = 0x0018;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.8
-	static constexpr attribute_type<turn, uint16_t> requested_transport = 0x0019;
+	static constexpr attribute_type<turn, transport_protocol_value_type> requested_transport = 0x0019;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.9
 	static constexpr attribute_type<turn, uint16_t> dont_fragment = 0x001a;

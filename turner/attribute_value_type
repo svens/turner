@@ -97,6 +97,41 @@ struct address_family_value_type
 };
 
 
+/// Transport protocol for allocated transport address
+/// \see https://www.iana.org/assignments/protocol-numbers
+enum class transport_protocol: uint8_t
+{
+	tcp = 6,
+	udp = 17,
+};
+
+
+/// Transport protocol attribute value reader/writer
+struct transport_protocol_value_type
+{
+	/// Native value type
+	using value_type = transport_protocol;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == sizeof(uint32_t))
+		{
+			auto v = *reinterpret_cast<const value_type *>(span.data());
+			if (v == transport_protocol::udp || v == transport_protocol::tcp)
+			{
+				return v;
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
 /// Generic std::string_view type attribute value reader/writer
 template <size_t MaxSizeBytes = std::dynamic_extent>
 struct string_value_type
