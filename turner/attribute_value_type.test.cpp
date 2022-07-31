@@ -159,50 +159,53 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	SECTION("even_port_value_type") //{{{1
 	{
-		using message_type = test_message<TestType, turner::even_port_value_type>;
-
-		SECTION("on")
+		if constexpr (std::is_same_v<TestType, turn>)
 		{
-			message_type message
-			{
-				0x80, 0x80, 0x00, 0x01,
-				0x80, 0x00, 0x00, 0x00,
-			};
-			REQUIRE(message.value);
-			CHECK(*message.value == true);
-		}
+			using message_type = test_message<TestType, turner::turn::even_port_value_type>;
 
-		SECTION("off")
-		{
-			message_type message
+			SECTION("on")
 			{
-				0x80, 0x80, 0x00, 0x01,
-				0x00, 0x00, 0x00, 0x00,
-			};
-			REQUIRE(message.value);
-			CHECK(*message.value == false);
-		}
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x01,
+						0x80, 0x00, 0x00, 0x00,
+				};
+				REQUIRE(message.value);
+				CHECK(*message.value == true);
+			}
 
-		SECTION("accept invalid value")
-		{
-			message_type message
+			SECTION("off")
 			{
-				0x80, 0x80, 0x00, 0x01,
-				0xff, 0x00, 0x00, 0x00,
-			};
-			REQUIRE(message.value);
-			CHECK(*message.value == true);
-		}
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x01,
+						0x00, 0x00, 0x00, 0x00,
+				};
+				REQUIRE(message.value);
+				CHECK(*message.value == false);
+			}
 
-		SECTION("unexpected attribute length")
-		{
-			message_type message
+			SECTION("accept invalid value")
 			{
-				0x80, 0x80, 0x00, 0x02,
-				0x80, 0x00, 0x00, 0x00,
-			};
-			REQUIRE(!message.value);
-			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x01,
+						0xff, 0x00, 0x00, 0x00,
+				};
+				REQUIRE(message.value);
+				CHECK(*message.value == true);
+			}
+
+			SECTION("unexpected attribute length")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x02,
+						0x80, 0x00, 0x00, 0x00,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+			}
 		}
 	}
 
@@ -257,32 +260,35 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	SECTION("dont_fragment_value_type") //{{{1
 	{
-		using message_type = test_message<TestType, turner::dont_fragment_value_type>;
-
-		SECTION("on")
+		if constexpr (std::is_same_v<TestType, turn>)
 		{
-			message_type message
+			using message_type = test_message<TestType, turner::turn::dont_fragment_value_type>;
+
+			SECTION("on")
 			{
-				0x80, 0x80, 0x00, 0x00,
-			};
-			REQUIRE(message.value);
-			CHECK(*message.value == true);
-		}
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x00,
+				};
+				REQUIRE(message.value);
+				CHECK(*message.value == true);
+			}
 
-		SECTION("off")
-		{
-			// attribute but found means client did not request this feature
-		}
-
-		SECTION("unexpected attribute length")
-		{
-			message_type message
+			SECTION("off")
 			{
-				0x80, 0x80, 0x00, 0x04,
-				0x00, 0x00, 0x00, 0x00,
-			};
-			REQUIRE(!message.value);
-			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+				// attribute but found means client did not request this feature
+			}
+
+			SECTION("unexpected attribute length")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+						0x00, 0x00, 0x00, 0x00,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+			}
 		}
 	}
 
