@@ -97,6 +97,29 @@ struct address_family_value_type
 };
 
 
+/// EVEN-PORT attribute value reader/writer
+struct even_port_value_type
+{
+	/// Native value type
+	using value_type = bool;
+
+	/// Read attribute value from \a span
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == 1)
+		{
+			static constexpr uint8_t r = 0b1000'0000;
+			auto v = *reinterpret_cast<const uint8_t *>(span.data());
+			return (v & r) == r;
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
 /// Transport protocol for allocated transport address
 /// \see https://www.iana.org/assignments/protocol-numbers
 enum class transport_protocol: uint8_t

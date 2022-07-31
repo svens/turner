@@ -157,6 +157,55 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
+	SECTION("even_port_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, turner::even_port_value_type>;
+
+		SECTION("on")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x01,
+				0x80, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == true);
+		}
+
+		SECTION("off")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x01,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == false);
+		}
+
+		SECTION("accept invalid value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x01,
+				0xff, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == true);
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x02,
+				0x80, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+	}
+
 	SECTION("transport_protocol_value_type") //{{{1
 	{
 		using message_type = test_message<TestType, turner::transport_protocol_value_type>;
