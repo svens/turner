@@ -199,28 +199,33 @@ struct bytes_value_type
 struct error_code_value_type
 {
 	/// Native value type
-	using value_type = std::tuple<protocol_errc, std::string_view>;
+	struct value_type
+	{
+		protocol_errc code;
+		std::string_view reason;
+	};
 
 	/**
 	 * Read attribute value from \a span
 	 *
-	 * \note returned tuple 2nd field does not own specified range, it
-	 * points into \a span. Caller should copy value if needed.
+	 * \note returned value_type reason field does not own specified
+	 * range, it points into \a span. Caller should copy value if needed.
 	 */
 	template <typename Protocol>
 	static pal::result<value_type> read (
 		const basic_message_reader<Protocol> &,
 		std::span<const std::byte> span) noexcept
 	{
-		static constexpr auto code_size_bytes = 4 * sizeof(uint8_t);
-		if (span.size_bytes() >= code_size_bytes)
+		static constexpr auto min_size_bytes = 4 * sizeof(uint8_t);
+		if (span.size_bytes() >= min_size_bytes)
 		{
-			auto code = reinterpret_cast<const uint8_t *>(span.data());
-			return value_type{
-				(protocol_errc)((code[2] & 0b0000'0111) * 100 + code[3]),
-				std::string_view{
-					reinterpret_cast<const char *>(span.data() + code_size_bytes),
-					span.size_bytes() - code_size_bytes
+			auto data = reinterpret_cast<const char *>(span.data());
+			return value_type
+			{
+				.code = (protocol_errc)((data[2] & 0b0000'0111) * 100 + data[3]),
+				.reason = std::string_view{
+					data + min_size_bytes,
+					span.size_bytes() - min_size_bytes
 				}
 			};
 		}
@@ -230,16 +235,21 @@ struct error_code_value_type
 
 
 /**
- * Generic attribute type values list reader/writer.
+ * Attribute list type value reader/writer.
  *
- * \note value_type supports up to 4 elements even though underlying Protocol
- * does not limit this number. If attribute in \a span contains more elements,
- * only up to 4 are copied but returned tuple<0> field reflects actual number.
+ * \note value_type::list supports up to 4 elements, even though underlying
+ * Protocol does not limit this number. If attribute in \a span contains more
+ * elements, only up to 4 are copied but returned value_type::size field
+ * reflects actual number.
  */
 struct attribute_list_value_type
 {
 	/// Native value type
-	using value_type = std::tuple<size_t, std::array<uint16_t, 4>>;
+	struct value_type
+	{
+		size_t size;
+		std::array<uint16_t, 4> list;
+	};
 
 	/**
 	 * Read attribute value from \a span.
@@ -257,10 +267,9 @@ struct attribute_list_value_type
 		if (size * sizeof(uint16_t) == span.size_bytes())
 		{
 			value_type result{size, {}};
-			auto &dest = std::get<1>(result);
-			size = (std::min)(size, dest.max_size());
+			size = (std::min)(size, result.list.max_size());
 			auto *src = reinterpret_cast<const uint16_t *>(span.data());
-			std::transform(src, src + size, dest.begin(), ntoh);
+			std::transform(src, src + size, result.list.begin(), ntoh);
 			return result;
 		}
 
@@ -288,7 +297,11 @@ template <typename Map>
 struct basic_endpoint_value_type
 {
 	/// Native value type
-	using value_type = std::tuple<pal::net::ip::address, pal::net::ip::port_type>;
+	struct value_type
+	{
+		pal::net::ip::address address;
+		pal::net::ip::port_type port;
+	};
 
 	/// Read attribute value from \a span
 	template <typename Protocol>
@@ -309,9 +322,9 @@ struct basic_endpoint_value_type
 
 private:
 
-	static uint8_t family (const std::span<const std::byte> &span) noexcept
+	static address_family family (const std::span<const std::byte> &span) noexcept
 	{
-		return reinterpret_cast<const uint8_t *>(span.data())[1];
+		return reinterpret_cast<const address_family *>(span.data())[1];
 	}
 
 	static pal::net::ip::port_type port (const std::span<const std::byte> &span) noexcept
@@ -322,23 +335,38 @@ private:
 	template <typename Address>
 	static pal::net::ip::address address (const std::span<const std::byte> &span) noexcept
 	{
-		return Address{*reinterpret_cast<const typename Address::bytes_type *>(span.data() + 4)};
+		#if defined(__GNUC__) && !defined(__clang__) && defined(NDEBUG)
+			// TODO: g++ claims 'else' part has unininitialized bytes
+			pal::net::ip::address result{};
+			result = Address{*reinterpret_cast<const typename Address::bytes_type *>(span.data() + 4)};
+			return result;
+		#else
+			return Address{*reinterpret_cast<const typename Address::bytes_type *>(span.data() + 4)};
+		#endif
 	}
 
 	static pal::result<value_type> read_ipv4 (const std::span<const std::byte> &span) noexcept
 	{
-		if (family(span) == 0x01)
+		if (family(span) == address_family::v4)
 		{
-			return value_type{address<pal::net::ip::address_v4>(span), port(span)};
+			return value_type
+			{
+				.address = address<pal::net::ip::address_v4>(span),
+				.port = port(span)
+			};
 		}
 		return make_unexpected(errc::unexpected_attribute_value);
 	}
 
 	static pal::result<value_type> read_ipv6 (const std::span<const std::byte> &span) noexcept
 	{
-		if (family(span) == 0x02)
+		if (family(span) == address_family::v6)
 		{
-			return value_type{address<pal::net::ip::address_v6>(span), port(span)};
+			return value_type
+			{
+				.address = address<pal::net::ip::address_v6>(span),
+				.port = port(span)
+			};
 		}
 		return make_unexpected(errc::unexpected_attribute_value);
 	}
@@ -348,9 +376,8 @@ private:
 	{
 		return [&](value_type &&endpoint) -> pal::result<value_type>
 		{
-			auto &port = std::get<1>(endpoint);
-			Map::transform(message, std::get<0>(endpoint), port);
-			port = pal::ntoh(port);
+			Map::transform(message, endpoint.address, endpoint.port);
+			endpoint.port = pal::ntoh(endpoint.port);
 			return std::move(endpoint);
 		};
 	}

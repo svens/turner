@@ -38,7 +38,7 @@ struct test_message
 		: value{read(payload)}
 	{ }
 
-	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload) noexcept
+	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload)
 	{
 		data.insert(data.end(), payload.begin(), payload.end());
 		auto new_size = (uint16_t)(data.size() - Protocol::header_size_bytes);
