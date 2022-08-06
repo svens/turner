@@ -72,6 +72,7 @@ struct turn: stun
 	struct channel_number_value_type;
 	struct even_port_value_type;
 	struct dont_fragment_value_type;
+	struct address_error_code_value_type;
 
 	/**
 	 * \defgroup TURN_Attributes TURN Attribute Registry
@@ -113,7 +114,7 @@ struct turn: stun
 	static constexpr attribute_type<turn, address_family_value_type> additional_address_family = 0x8000;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.12
-	static constexpr attribute_type<turn, uint16_t> address_error_code = 0x8001;
+	static constexpr attribute_type<turn, address_error_code_value_type> address_error_code = 0x8001;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.13
 	static constexpr attribute_type<turn, uint16_t> icmp = 0x8004;
@@ -206,6 +207,52 @@ struct turn::dont_fragment_value_type
 		{
 			// simply attribute existence -> true
 			return true;
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+
+/// TURN ADDRESS-ERROR-CODE attribute value reader/writer
+struct turn::address_error_code_value_type
+{
+	/// Native value type
+	struct value_type
+	{
+		address_family family;
+		protocol_errc code;
+		std::string_view reason;
+	};
+
+	/**
+	 * Read attribute value from \a span
+	 *
+	 * \note returned value_type reason field does not own specified
+	 * range, it points into \a span. Caller should copy value if needed.
+	 */
+	template <typename Protocol>
+	static pal::result<value_type> read (
+		const basic_message_reader<Protocol> &,
+		std::span<const std::byte> span) noexcept
+	{
+		static constexpr auto min_size_bytes = 4 * sizeof(uint8_t);
+		if (span.size_bytes() >= min_size_bytes)
+		{
+			auto v = reinterpret_cast<const char *>(span.data());
+			auto family = static_cast<address_family>(v[0]);
+			if (family == address_family::v4 || family == address_family::v6)
+			{
+				return value_type
+				{
+					.family = family,
+					.code = (protocol_errc)((v[2] & 0b0000'0111) * 100 + v[3]),
+					.reason = std::string_view{
+						v + min_size_bytes,
+						span.size_bytes() - min_size_bytes
+					}
+				};
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
 	}

@@ -748,6 +748,94 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
+	SECTION("address_error_code_value_type") //{{{1
+	{
+		if constexpr (std::is_same_v<TestType, turn>)
+		{
+			using message_type = test_message<TestType, turner::turn::address_error_code_value_type>;
+
+			SECTION("less")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x03,
+					0x00, 0x00, 0x04, 0x01,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+			}
+
+			SECTION("unexpected family value")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+					0x03, 0x00, 0x04, 0x01,
+				};
+				REQUIRE(!message.value);
+				CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+			}
+
+			SECTION("IPv4 empty reason")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+					0x01, 0x00, 0x04, 0x01,
+				};
+				REQUIRE(message.value);
+				auto [family, code, reason] = *message.value;
+				CHECK(family == turner::address_family::v4);
+				CHECK(code == turner::protocol_errc::unauthorized);
+				CHECK(reason.empty());
+			}
+
+			SECTION("IPv4 with reason")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x08,
+					0x01, 0x00, 0x04, 0x01,
+					'T',  'e',  's',  't',
+				};
+				REQUIRE(message.value);
+				auto [family, code, reason] = *message.value;
+				CHECK(family == turner::address_family::v4);
+				CHECK(code == turner::protocol_errc::unauthorized);
+				CHECK(reason == "Test");
+			}
+
+			SECTION("IPv6 empty reason")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x04,
+					0x02, 0x00, 0x04, 0x01,
+				};
+				REQUIRE(message.value);
+				auto [family, code, reason] = *message.value;
+				CHECK(family == turner::address_family::v6);
+				CHECK(code == turner::protocol_errc::unauthorized);
+				CHECK(reason.empty());
+			}
+
+			SECTION("IPv6 with reason")
+			{
+				message_type message
+				{
+					0x80, 0x80, 0x00, 0x08,
+					0x02, 0x00, 0x04, 0x01,
+					'T',  'e',  's',  't',
+				};
+				REQUIRE(message.value);
+				auto [family, code, reason] = *message.value;
+				CHECK(family == turner::address_family::v6);
+				CHECK(code == turner::protocol_errc::unauthorized);
+				CHECK(reason == "Test");
+			}
+		}
+	}
+
 	//}}}1
 }
 
