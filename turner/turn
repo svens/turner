@@ -16,6 +16,9 @@ __turner_begin
  * TURN protocol requests/attributes
  *
  * \see https://datatracker.ietf.org/doc/html/rfc8656
+ *
+ * \note Missing attribute types:
+ * - static constexpr attribute_type<turn, T> icmp = 0x8004;
  */
 struct turn: stun
 {
@@ -115,9 +118,6 @@ struct turn: stun
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.12
 	static constexpr attribute_type<turn, address_error_code_value_type> address_error_code = 0x8001;
-
-	/// \see https://datatracker.ietf.org/doc/html/rfc8656#section-18.13
-	static constexpr attribute_type<turn, uint16_t> icmp = 0x8004;
 
 	/// \}
 

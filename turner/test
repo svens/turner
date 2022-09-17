@@ -1,8 +1,12 @@
 #pragma once // -*- C++ -*-
 
 #include <catch2/catch_test_macros.hpp>
+#include <turner/attribute_type>
+#include <pal/byte_order>
+#include <pal/result>
 #include <span>
 #include <string>
+#include <vector>
 
 
 namespace turner_test {
@@ -43,6 +47,42 @@ inline std::span<const std::byte> operator"" _b (const char *v, size_t n)
 {
 	return std::as_bytes(std::span{v, n});
 }
+
+
+template <typename Protocol, typename ValueType>
+struct test_message
+{
+	std::vector<uint8_t> data =
+	{
+		0x00, 0x01, 0xff, 0xff, // message type = 0x0001, length = 0xffff
+
+		0x21, 0x12, 0xa4, 0x42, // STUN/TURN: Magic Cookie
+					// MSTURN: head of transaction ID
+
+		0x00, 0x01, 0x02, 0x03, // STUN/TURN: transaction ID
+		0x04, 0x05, 0x06, 0x07, // MSTURN: rest of transaction ID
+		0x08, 0x09, 0x0a, 0x0b,
+
+		0x00, 0x0f, 0x00, 0x04, // STUN/TURN: unknown attribute
+		0x72, 0xc6, 0x4b, 0xc6, // MSTURN: Magic Cookie
+	};
+
+	pal::result<typename ValueType::value_type> value;
+
+	test_message (std::initializer_list<uint8_t> payload)
+		: value{read(payload)}
+	{ }
+
+	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload)
+	{
+		data.reserve(data.size() + payload.size());
+		data.insert(data.end(), payload);
+		auto new_size = (uint16_t)(data.size() - Protocol::header_size_bytes);
+		reinterpret_cast<uint16_t *>(data.data())[1] = pal::hton(new_size);
+		auto reader = pal_try(Protocol::read_message(std::as_bytes(std::span{data})));
+		return reader.read(turner::attribute_type<Protocol, ValueType>{0x8080});
+	}
+};
 
 
 } // namespace turner_test

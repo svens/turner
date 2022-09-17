@@ -93,6 +93,31 @@ struct msturn
 	using xor_endpoint_value_type = turner::xor_endpoint_value_type<msturn>;
 	/// \endcond
 
+
+	/// MS-Version attribute values
+	enum class protocol_version: uint32_t
+	{
+		v1 = 0x00000001,
+		with_ice = v1,
+
+		v2 = 0x00000002,
+		with_ice2 = v2,
+
+		v3 = 0x00000003,
+		with_sha256 = v3,
+
+		v4 = 0x00000004,
+		with_ipv6 = v4,
+
+		v5 = 0x00000005,
+		with_udp_mturn = v5,
+
+		v6 = 0x00000006,
+		with_mturn = v6,
+	};
+
+	struct protocol_version_value_type;
+
 	/**
 	 * \defgroup MSTURN_Attributes MS-TURN Attribute Registry
 	 * \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/0e0491de-b648-4347-bae4-503c7347abbe
@@ -142,7 +167,7 @@ struct msturn
 	static constexpr attribute_type<msturn, address_family_value_type> requested_address_family = 0x0017;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/a972c937-780a-476a-915a-b81869428342
-	static constexpr attribute_type<msturn, uint16_t> ms_version = 0x8008;
+	static constexpr attribute_type<msturn, protocol_version_value_type> ms_version = 0x8008;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/d6f3f10a-b5f2-423a-af1d-a1d69b09ddab
 	static constexpr attribute_type<msturn, xor_endpoint_value_type> xor_mapped_address = 0x8020;
@@ -177,6 +202,33 @@ struct msturn
 	 * only message structure validity.
 	 */
 	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept;
+};
+
+
+/// MS-TURN MS-Version attribute value reader/writer
+struct msturn::protocol_version_value_type
+{
+	/// Native value type
+	using value_type = protocol_version;
+
+	/// Read attribute value from \a span
+	static pal::result<value_type> read (
+		const basic_message_reader<msturn> &,
+		std::span<const std::byte> span) noexcept
+	{
+		if (span.size_bytes() == sizeof(uint32_t))
+		{
+			auto v = (protocol_version)pal::ntoh(
+				*reinterpret_cast<const uint32_t *>(span.data())
+			);
+			if (protocol_version::v1 <= v && v <= protocol_version::v6)
+			{
+				return v;
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
 };
 
 

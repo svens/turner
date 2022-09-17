@@ -8,45 +8,11 @@
 
 namespace {
 
+using namespace turner_test;
+
 using turner::msturn;
 using turner::stun;
 using turner::turn;
-
-using namespace turner_test;
-
-template <typename Protocol, typename ValueType>
-struct test_message
-{
-	std::vector<uint8_t> data =
-	{
-		0x00, 0x01, 0xff, 0xff, // message type = 0x0001, length = 0xffff
-
-		0x21, 0x12, 0xa4, 0x42, // STUN/TURN: Magic Cookie
-					// MSTURN: head of transaction ID
-
-		0x00, 0x01, 0x02, 0x03, // STUN/TURN: transaction ID
-		0x04, 0x05, 0x06, 0x07, // MSTURN: rest of transaction ID
-		0x08, 0x09, 0x0a, 0x0b,
-
-		0x00, 0x0f, 0x00, 0x04, // STUN/TURN: unknown attribute
-		0x72, 0xc6, 0x4b, 0xc6, // MSTURN: Magic Cookie
-	};
-
-	pal::result<typename ValueType::value_type> value;
-
-	test_message (std::initializer_list<uint8_t> payload)
-		: value{read(payload)}
-	{ }
-
-	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload)
-	{
-		data.insert(data.end(), payload.begin(), payload.end());
-		auto new_size = (uint16_t)(data.size() - Protocol::header_size_bytes);
-		reinterpret_cast<uint16_t *>(data.data())[1] = pal::hton(new_size);
-		auto reader = pal_try(Protocol::read_message(std::as_bytes(std::span{data})));
-		return reader.read(turner::attribute_type<Protocol, ValueType>{0x8080});
-	}
-};
 
 TEMPLATE_TEST_CASE("attribute_value_type", "",
 	msturn,
@@ -157,58 +123,6 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 		}
 	}
 
-	SECTION("even_port_value_type") //{{{1
-	{
-		if constexpr (std::is_same_v<TestType, turn>)
-		{
-			using message_type = test_message<TestType, turner::turn::even_port_value_type>;
-
-			SECTION("on")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x01,
-						0x80, 0x00, 0x00, 0x00,
-				};
-				REQUIRE(message.value);
-				CHECK(*message.value == true);
-			}
-
-			SECTION("off")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x01,
-						0x00, 0x00, 0x00, 0x00,
-				};
-				REQUIRE(message.value);
-				CHECK(*message.value == false);
-			}
-
-			SECTION("accept invalid value")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x01,
-						0xff, 0x00, 0x00, 0x00,
-				};
-				REQUIRE(message.value);
-				CHECK(*message.value == true);
-			}
-
-			SECTION("unexpected attribute length")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x02,
-						0x80, 0x00, 0x00, 0x00,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
-			}
-		}
-	}
-
 	SECTION("transport_protocol_value_type") //{{{1
 	{
 		using message_type = test_message<TestType, turner::transport_protocol_value_type>;
@@ -255,40 +169,6 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
-		}
-	}
-
-	SECTION("dont_fragment_value_type") //{{{1
-	{
-		if constexpr (std::is_same_v<TestType, turn>)
-		{
-			using message_type = test_message<TestType, turner::turn::dont_fragment_value_type>;
-
-			SECTION("on")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x00,
-				};
-				REQUIRE(message.value);
-				CHECK(*message.value == true);
-			}
-
-			SECTION("off")
-			{
-				// attribute but found means client did not request this feature
-			}
-
-			SECTION("unexpected attribute length")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-						0x00, 0x00, 0x00, 0x00,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
-			}
 		}
 	}
 
@@ -693,146 +573,6 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 			auto [address, port] = *message.value;
 			CHECK(address == pal::net::ip::address_v6::loopback());
 			CHECK(port == 0x2345);
-		}
-	}
-
-	SECTION("channel_number_value_type") //{{{1
-	{
-		if constexpr (std::is_same_v<TestType, turn>)
-		{
-			using message_type = test_message<TestType, turner::turn::channel_number_value_type>;
-
-			SECTION("valid")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-					0x40, 0x01, 0x00, 0x00,
-				};
-				REQUIRE(message.value);
-				CHECK(*message.value == 0x4001);
-			}
-
-			SECTION("unexpected attribute length")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x03,
-					0x40, 0x01, 0x00, 0x00,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
-			}
-
-			SECTION("below valid range")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-					0x3f, 0xff, 0x00, 0x00,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
-			}
-
-			SECTION("above valid range")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-					0x80, 0x00, 0x00, 0x00,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
-			}
-		}
-	}
-
-	SECTION("address_error_code_value_type") //{{{1
-	{
-		if constexpr (std::is_same_v<TestType, turn>)
-		{
-			using message_type = test_message<TestType, turner::turn::address_error_code_value_type>;
-
-			SECTION("less")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x03,
-					0x00, 0x00, 0x04, 0x01,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
-			}
-
-			SECTION("unexpected family value")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-					0x03, 0x00, 0x04, 0x01,
-				};
-				REQUIRE(!message.value);
-				CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
-			}
-
-			SECTION("IPv4 empty reason")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-					0x01, 0x00, 0x04, 0x01,
-				};
-				REQUIRE(message.value);
-				auto [family, code, reason] = *message.value;
-				CHECK(family == turner::address_family::v4);
-				CHECK(code == turner::protocol_errc::unauthorized);
-				CHECK(reason.empty());
-			}
-
-			SECTION("IPv4 with reason")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x08,
-					0x01, 0x00, 0x04, 0x01,
-					'T',  'e',  's',  't',
-				};
-				REQUIRE(message.value);
-				auto [family, code, reason] = *message.value;
-				CHECK(family == turner::address_family::v4);
-				CHECK(code == turner::protocol_errc::unauthorized);
-				CHECK(reason == "Test");
-			}
-
-			SECTION("IPv6 empty reason")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x04,
-					0x02, 0x00, 0x04, 0x01,
-				};
-				REQUIRE(message.value);
-				auto [family, code, reason] = *message.value;
-				CHECK(family == turner::address_family::v6);
-				CHECK(code == turner::protocol_errc::unauthorized);
-				CHECK(reason.empty());
-			}
-
-			SECTION("IPv6 with reason")
-			{
-				message_type message
-				{
-					0x80, 0x80, 0x00, 0x08,
-					0x02, 0x00, 0x04, 0x01,
-					'T',  'e',  's',  't',
-				};
-				REQUIRE(message.value);
-				auto [family, code, reason] = *message.value;
-				CHECK(family == turner::address_family::v6);
-				CHECK(code == turner::protocol_errc::unauthorized);
-				CHECK(reason == "Test");
-			}
 		}
 	}
 
