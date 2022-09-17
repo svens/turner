@@ -48,7 +48,7 @@
 ## Compiling and installing
 
     $ mkdir build && cd build
-    $ cmake .. [-Dturner_test=yes|no] [-Dturner_bench=yes|no] [-Dturner_doc=yes|no]
+    $ cmake .. [-Dturner_test=yes|no] [-Dturner_doc=yes|no] [-Dturner_samples=yes|no]
     $ make && make test && make install
 
 
@@ -59,7 +59,6 @@ The source tree is organised as follows:
     .               Root of source tree
     |- turner       Library ...
     |  `- module    ... per module headers/sources/tests
-    |- bench        Benchmarks
     |- cmake        CMake modules
     |- pal          OS abstraction helper library
     `- samples      Sample applications using Turner library
