@@ -8,45 +8,11 @@
 
 namespace {
 
+using namespace turner_test;
+
 using turner::msturn;
 using turner::stun;
 using turner::turn;
-
-using namespace turner_test;
-
-template <typename Protocol, typename ValueType>
-struct test_message
-{
-	std::vector<uint8_t> data =
-	{
-		0x00, 0x01, 0xff, 0xff, // message type = 0x0001, length = 0xffff
-
-		0x21, 0x12, 0xa4, 0x42, // STUN/TURN: Magic Cookie
-					// MSTURN: head of transaction ID
-
-		0x00, 0x01, 0x02, 0x03, // STUN/TURN: transaction ID
-		0x04, 0x05, 0x06, 0x07, // MSTURN: rest of transaction ID
-		0x08, 0x09, 0x0a, 0x0b,
-
-		0x00, 0x0f, 0x00, 0x04, // STUN/TURN: unknown attribute
-		0x72, 0xc6, 0x4b, 0xc6, // MSTURN: Magic Cookie
-	};
-
-	pal::result<typename ValueType::value_type> value;
-
-	test_message (std::initializer_list<uint8_t> payload)
-		: value{read(payload)}
-	{ }
-
-	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload) noexcept
-	{
-		data.insert(data.end(), payload.begin(), payload.end());
-		auto new_size = (uint16_t)(data.size() - Protocol::header_size_bytes);
-		reinterpret_cast<uint16_t *>(data.data())[1] = pal::hton(new_size);
-		auto reader = pal_try(Protocol::read_message(std::as_bytes(std::span{data})));
-		return reader.read(turner::attribute_type<Protocol, ValueType>{0x8080});
-	}
-};
 
 TEMPLATE_TEST_CASE("attribute_value_type", "",
 	msturn,
@@ -105,6 +71,104 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+	}
+
+	SECTION("address_family_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, turner::address_family_value_type>;
+
+		SECTION("IPv4 valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x01, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == turner::address_family::v4);
+		}
+
+		SECTION("IPv6 valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x02, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == turner::address_family::v6);
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x03,
+				0x02, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0xff, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+	}
+
+	SECTION("transport_protocol_value_type") //{{{1
+	{
+		using message_type = test_message<TestType, turner::transport_protocol_value_type>;
+
+		SECTION("UDP valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x11, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == turner::transport_protocol::udp);
+		}
+
+		SECTION("TCP valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x06, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(message.value);
+			CHECK(*message.value == turner::transport_protocol::tcp);
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x03,
+				0x11, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("unexpected attribute value")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x01, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
 		}
 	}
 
@@ -368,7 +432,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	SECTION("endpoint_value_type") //{{{1
 	{
-		using message_type = test_message<TestType, typename TestType::endpoint_value_type>;
+		using message_type = test_message<TestType, turner::endpoint_value_type<TestType>>;
 
 		SECTION("unexpected attribute length")
 		{
@@ -441,7 +505,7 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	SECTION("xor_endpoint_value_type") //{{{1
 	{
-		using message_type = test_message<TestType, typename TestType::xor_endpoint_value_type>;
+		using message_type = test_message<TestType, turner::xor_endpoint_value_type<TestType>>;
 
 		SECTION("unexpected attribute length")
 		{

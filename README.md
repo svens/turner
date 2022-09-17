@@ -40,6 +40,7 @@
   * [STUN]
   * [TURN]
     - [TURN extension for IPv6](https://tools.ietf.org/html/rfc6156)
+    - [TURN extension for TCP Allocations](https://tools.ietf.org/html/rfc6062)
   * [MS-TURN], v18.0
   * [Turner]
 
