@@ -132,7 +132,7 @@ struct turn: stun
 	 *
 	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-5
 	 */
-	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept
+	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept
 	{
 		return stun::read_message(span).map([](auto stun_reader)
 		{
@@ -152,7 +152,7 @@ struct turn::channel_number_value_type
 	/// Read attribute value from \a span
 	static pal::result<value_type> read (
 		const basic_message_reader<turn> &,
-		std::span<const std::byte> span) noexcept
+		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
 		{
@@ -178,7 +178,7 @@ struct turn::even_port_value_type
 	template <typename Protocol>
 	static pal::result<value_type> read (
 		const basic_message_reader<Protocol> &,
-		std::span<const std::byte> span) noexcept
+		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 1)
 		{
@@ -201,7 +201,7 @@ struct turn::dont_fragment_value_type
 	template <typename Protocol>
 	static pal::result<value_type> read (
 		const basic_message_reader<Protocol> &,
-		std::span<const std::byte> span) noexcept
+		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 0)
 		{
@@ -233,7 +233,7 @@ struct turn::address_error_code_value_type
 	template <typename Protocol>
 	static pal::result<value_type> read (
 		const basic_message_reader<Protocol> &,
-		std::span<const std::byte> span) noexcept
+		const std::span<const std::byte> &span) noexcept
 	{
 		static constexpr auto min_size_bytes = 4 * sizeof(uint8_t);
 		if (span.size_bytes() >= min_size_bytes)

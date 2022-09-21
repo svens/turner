@@ -126,7 +126,7 @@ struct stun
 	 *
 	 * \see https://datatracker.ietf.org/doc/html/rfc8489#section-5
 	 */
-	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept;
+	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept;
 };
 
 

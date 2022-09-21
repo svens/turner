@@ -57,7 +57,7 @@ public:
 	template <typename OtherProtocol, typename AttributeValueType>
 	requires(std::is_convertible_v<Protocol, OtherProtocol>)
 	pal::result<typename AttributeValueType::value_type> read (
-		attribute_type<OtherProtocol, AttributeValueType> type) const noexcept
+		const attribute_type<OtherProtocol, AttributeValueType> &type) const noexcept
 	{
 		auto message = __bits::as_message_view<Protocol>(span_);
 		if (auto attribute = message->find(type.value))
@@ -71,7 +71,7 @@ private:
 
 	std::span<const std::byte> span_;
 
-	constexpr basic_message_reader (std::span<const std::byte> span) noexcept
+	constexpr basic_message_reader (const std::span<const std::byte> &span) noexcept
 		: span_{span}
 	{ }
 

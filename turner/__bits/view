@@ -100,7 +100,7 @@ struct message_view
 
 // cast pre-validated span to message_view
 template <typename Protocol>
-const message_view<Protocol> *as_message_view (std::span<const std::byte> span) noexcept
+const message_view<Protocol> *as_message_view (const std::span<const std::byte> &span) noexcept
 {
 	return reinterpret_cast<const message_view<Protocol> *>(span.data());
 }

@@ -65,7 +65,7 @@ uint32_t crc32 (const uint32_t *first, const uint32_t *last) noexcept
 } // namespace
 
 
-pal::result<stun::message_reader> stun::read_message (std::span<const std::byte> span) noexcept
+pal::result<stun::message_reader> stun::read_message (const std::span<const std::byte> &span) noexcept
 {
 	constexpr auto min_span_size_bytes = header_size_bytes;
 

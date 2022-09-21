@@ -51,7 +51,7 @@ struct message_type
 	}
 
 	/// Returns true if this message type is not same as \a that message type.
-	constexpr bool operator!= (message_type that) const noexcept
+	constexpr bool operator!= (const message_type &that) const noexcept
 	{
 		return value != that.value;
 	}
@@ -60,7 +60,7 @@ struct message_type
 	/// \remark Protocol must be convertible to OtherProtocol (e.g. TURN -> STUN)
 	template <typename OtherProtocol>
 	requires(std::is_convertible_v<Protocol, OtherProtocol>)
-	constexpr bool operator== (message_type<OtherProtocol> that) const noexcept
+	constexpr bool operator== (const message_type<OtherProtocol> &that) const noexcept
 	{
 		return value == that.value;
 	}
@@ -69,7 +69,7 @@ struct message_type
 	/// \remark Protocol must be convertible to OtherProtocol (e.g. TURN -> STUN)
 	template <typename OtherProtocol>
 	requires(std::is_convertible_v<Protocol, OtherProtocol>)
-	constexpr bool operator!= (message_type<OtherProtocol> that) const noexcept
+	constexpr bool operator!= (const message_type<OtherProtocol> &that) const noexcept
 	{
 		return value != that.value;
 	}
@@ -88,28 +88,28 @@ private:
 
 /// Returns true if message type \a left value is same as \a right.
 template <typename Protocol>
-constexpr bool operator== (message_type<Protocol> left, uint16_t right) noexcept
+constexpr bool operator== (const message_type<Protocol> &left, uint16_t right) noexcept
 {
 	return left.value == right;
 }
 
 /// Returns true if message type \a right value is same as \a left.
 template <typename Protocol>
-constexpr bool operator== (uint16_t left, message_type<Protocol> right) noexcept
+constexpr bool operator== (uint16_t left, const message_type<Protocol> &right) noexcept
 {
 	return left == right.value;
 }
 
 /// Returns true if message type \a left value is not same as \a right.
 template <typename Protocol>
-constexpr bool operator!= (message_type<Protocol> left, uint16_t right) noexcept
+constexpr bool operator!= (const message_type<Protocol> &left, uint16_t right) noexcept
 {
 	return left.value != right;
 }
 
 /// Returns true if message type \a right value is not same as \a left.
 template <typename Protocol>
-constexpr bool operator!= (uint16_t left, message_type<Protocol> right) noexcept
+constexpr bool operator!= (uint16_t left, const message_type<Protocol> &right) noexcept
 {
 	return left != right.value;
 }

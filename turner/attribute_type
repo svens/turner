@@ -42,14 +42,14 @@ struct attribute_type
 
 	/// Returns true if this message type is same as \a that message type.
 	template <typename OtherAttributeValueType>
-	constexpr bool operator== (attribute_type<Protocol, OtherAttributeValueType> that) const noexcept
+	constexpr bool operator== (const attribute_type<Protocol, OtherAttributeValueType> &that) const noexcept
 	{
 		return value == that.value;
 	}
 
 	/// Returns true if this message type is not same as \a that message type.
 	template <typename OtherAttributeValueType>
-	constexpr bool operator!= (attribute_type<Protocol, OtherAttributeValueType> that) const noexcept
+	constexpr bool operator!= (const attribute_type<Protocol, OtherAttributeValueType> &that) const noexcept
 	{
 		return value != that.value;
 	}
@@ -57,28 +57,28 @@ struct attribute_type
 
 /// Returns true if message type \a left value is same as \a right.
 template <typename Protocol, typename AttributeValueType>
-constexpr bool operator== (attribute_type<Protocol, AttributeValueType> left, uint16_t right) noexcept
+constexpr bool operator== (const attribute_type<Protocol, AttributeValueType> &left, uint16_t right) noexcept
 {
 	return left.value == right;
 }
 
 /// Returns true if message type \a right value is same as \a left.
 template <typename Protocol, typename AttributeValueType>
-constexpr bool operator== (uint16_t left, attribute_type<Protocol, AttributeValueType> right) noexcept
+constexpr bool operator== (uint16_t left, const attribute_type<Protocol, AttributeValueType> &right) noexcept
 {
 	return left == right.value;
 }
 
 /// Returns true if message type \a left value is not same as \a right.
 template <typename Protocol, typename AttributeValueType>
-constexpr bool operator!= (attribute_type<Protocol, AttributeValueType> left, uint16_t right) noexcept
+constexpr bool operator!= (const attribute_type<Protocol, AttributeValueType> &left, uint16_t right) noexcept
 {
 	return left.value != right;
 }
 
 /// Returns true if message type \a right value is not same as \a left.
 template <typename Protocol, typename AttributeValueType>
-constexpr bool operator!= (uint16_t left, attribute_type<Protocol, AttributeValueType> right) noexcept
+constexpr bool operator!= (uint16_t left, const attribute_type<Protocol, AttributeValueType> &right) noexcept
 {
 	return left != right.value;
 }

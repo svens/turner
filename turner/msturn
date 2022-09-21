@@ -201,7 +201,7 @@ struct msturn
 	 * \note This method does not check for known MS-TURN message/attribute types,
 	 * only message structure validity.
 	 */
-	static pal::result<message_reader> read_message (std::span<const std::byte> span) noexcept;
+	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept;
 };
 
 
@@ -214,7 +214,7 @@ struct msturn::protocol_version_value_type
 	/// Read attribute value from \a span
 	static pal::result<value_type> read (
 		const basic_message_reader<msturn> &,
-		std::span<const std::byte> span) noexcept
+		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
 		{

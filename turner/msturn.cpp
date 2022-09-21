@@ -15,7 +15,7 @@ using attribute_view = __bits::attribute_view<msturn>;
 } // namespace
 
 
-pal::result<msturn::message_reader> msturn::read_message (std::span<const std::byte> span) noexcept
+pal::result<msturn::message_reader> msturn::read_message (const std::span<const std::byte> &span) noexcept
 {
 	constexpr auto min_span_size_bytes = header_size_bytes + magic_cookie.size();
 
