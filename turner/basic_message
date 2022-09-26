@@ -1,0 +1,91 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/basic_message
+ * Generic message and related subtypes (request, response, indicaton)
+ */
+
+#include <turner/__bits/lib>
+
+
+__turner_begin
+
+
+namespace __bits {
+
+static constexpr uint16_t class_mask = 0b0000'0001'0001'0000;
+static constexpr uint16_t request_class = 0b0000'0000'0000'0000;
+static constexpr uint16_t success_response_class = 0b0000'0001'0000'0000;
+static constexpr uint16_t error_response_class = 0b0000'0001'0001'0000;
+static constexpr uint16_t indication_class = 0b0000'0000'0001'0000;
+
+} // namespace __bits
+
+
+/// Generic protocol message type
+template <typename Protocol, uint16_t Method, uint16_t Class>
+struct basic_message
+{
+	static_assert(((Method | Class) & 0b1100'0000'0000'0000) == 0,
+		"The most significant 2 bits must be zeroes"
+	);
+	static_assert((Method & Class) == 0,
+		"Method value should not contain Class bits"
+	);
+
+	/// Protocol type
+	using protocol_type = Protocol;
+
+	/// Message method
+	static constexpr uint16_t method = Method;
+
+	/// Message type numeric value (in host byte order)
+	static constexpr uint16_t type = Method | Class;
+
+	/// True if this message is request
+	static constexpr bool is_request = Class == __bits::request_class;
+
+	/// True if this message is success response
+	static constexpr bool is_success_response = Class == __bits::success_response_class;
+
+	/// True if this message is error response
+	static constexpr bool is_error_response = Class == __bits::error_response_class;
+
+	/// True if this message is indication
+	static constexpr bool is_indication = Class == __bits::indication_class;
+};
+
+/// Request message
+template <typename Protocol, uint16_t Method>
+using basic_request = basic_message<
+	Protocol,
+	Method,
+	__bits::request_class
+>;
+
+/// Success response message
+template <typename Request>
+using basic_success_response = basic_message<
+	typename Request::protocol_type,
+	Request::method,
+	__bits::success_response_class
+>;
+
+/// Failure response message
+template <typename Request>
+using basic_error_response = basic_message<
+	typename Request::protocol_type,
+	Request::method,
+	__bits::error_response_class
+>;
+
+/// Message that does not receive response
+template <typename Protocol, uint16_t Method>
+using basic_indication = basic_message<
+	Protocol,
+	Method,
+	__bits::indication_class
+>;
+
+
+__turner_end
