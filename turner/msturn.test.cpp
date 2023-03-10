@@ -14,14 +14,21 @@ TEST_CASE("msturn")
 {
 	SECTION("method registry") //{{{1
 	{
-		CHECK(turner::msturn::allocate == 0x0003_u16);
-		CHECK(turner::msturn::allocate_success == 0x0103_u16);
-		CHECK(turner::msturn::allocate_error == 0x0113_u16);
-		CHECK(turner::msturn::send_indication == 0x0004_u16);
-		CHECK(turner::msturn::data_indication == 0x0115_u16);
-		CHECK(turner::msturn::set_active_destination == 0x0006_u16);
-		CHECK(turner::msturn::set_active_destination_success == 0x0106_u16);
-		CHECK(turner::msturn::set_active_destination_error == 0x0116_u16);
+		CHECK(turner::msturn::allocate.method == 0x0003_u16);
+		CHECK(turner::msturn::allocate.type == 0x0003_u16);
+		CHECK(turner::msturn::allocate.success.type == 0x0103_u16);
+		CHECK(turner::msturn::allocate.error.type == 0x0113_u16);
+
+		CHECK(turner::msturn::send_request.method == 0x0004_u16);
+		CHECK(turner::msturn::send_request.type == 0x0004_u16);
+
+		CHECK(turner::msturn::data_indication.method == 0x0115_u16);
+		CHECK(turner::msturn::data_indication.type == 0x0115_u16);
+
+		CHECK(turner::msturn::set_active_destination.method == 0x0006_u16);
+		CHECK(turner::msturn::set_active_destination.type == 0x0006_u16);
+		CHECK(turner::msturn::set_active_destination.success.type == 0x0106_u16);
+		CHECK(turner::msturn::set_active_destination.error.type == 0x0116_u16);
 	}
 
 	SECTION("attribute registry") //{{{1

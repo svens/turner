@@ -8,7 +8,6 @@ list(APPEND turner_sources
 	turner/error
 	turner/error.cpp
 	turner/fwd
-	turner/message_type
 	turner/msturn
 	turner/msturn.cpp
 	turner/protocol_error
@@ -26,7 +25,6 @@ list(APPEND turner_test_sources
 	turner/basic_message.test.cpp
 	turner/basic_message_reader.test.cpp
 	turner/error.test.cpp
-	turner/message_type.test.cpp
 	turner/msturn.test.cpp
 	turner/protocol_error.test.cpp
 	turner/stun.test.cpp

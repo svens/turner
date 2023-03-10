@@ -8,13 +8,41 @@
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
+#include <turner/basic_message>
 #include <turner/basic_message_reader>
-#include <turner/message_type>
 #include <pal/result>
 #include <array>
 #include <span>
 
 __turner_begin
+
+/// \cond
+
+struct msturn;
+
+// Internal: special cases for MS-TURN that does not fit generic IETF STUN semantics
+
+// Send Request:
+// - defined as request with no response
+template <>
+struct request_type<msturn, 0x0004>: basic_message<msturn, 0x0004, __bits::request_class>
+{ };
+
+// Data Indication
+// - indication, even if message class indicates error response
+template <>
+struct basic_message<msturn, 0x0115, __bits::indication_class>
+{
+	using protocol_type = msturn;
+	static constexpr uint16_t method = 0x0115;
+	static constexpr uint16_t type = 0x0115;
+	static constexpr bool is_request = false;
+	static constexpr bool is_success_response = false;
+	static constexpr bool is_error_response = false;
+	static constexpr bool is_indication = true;
+};
+
+/// \endcond
 
 
 /**
@@ -63,28 +91,20 @@ struct msturn
 	 */
 
 	/// MS-TURN Allocate request
-	static constexpr message_type<msturn> allocate = 0x0003;
-
-	/// MS-TURN Allocate request success response
-	static constexpr auto allocate_success = allocate.success_response();
-
-	/// MS-TURN Allocate request error response
-	static constexpr auto allocate_error = allocate.error_response();
+	static constexpr auto allocate = request<msturn, 0x0003>;
 
 	/// MS-TURN Send Request
-	static constexpr message_type<msturn> send_indication = 0x0004;
+	///
+	/// \note This request is mix of request and indication semantics:
+	/// - request must be authenticated
+	/// - server must not respond with either success or error response
+	static constexpr auto send_request = request<msturn, 0x0004>;
 
 	/// MS-TURN Data Indication
-	static constexpr message_type<msturn> data_indication = 0x0115;
+	static constexpr auto  data_indication = indication<msturn, 0x0115>;
 
 	/// MS-TURN Set Active Destination request
-	static constexpr message_type<msturn> set_active_destination = 0x0006;
-
-	/// MS-TURN Set Active Destination request success response
-	static constexpr auto set_active_destination_success = set_active_destination.success_response();
-
-	/// MS-TURN Set Active Destination request error response
-	static constexpr auto set_active_destination_error = set_active_destination.error_response();
+	static constexpr auto set_active_destination = request<msturn, 0x0006>;
 
 	/// \}
 

@@ -29,7 +29,7 @@ struct basic_message
 	static_assert(((Method | Class) & 0b1100'0000'0000'0000) == 0,
 		"The most significant 2 bits must be zeroes"
 	);
-	static_assert((Method & Class) == 0,
+	static_assert((Method & __bits::class_mask) == 0,
 		"Method value should not contain Class bits"
 	);
 
@@ -55,37 +55,29 @@ struct basic_message
 	static constexpr bool is_indication = Class == __bits::indication_class;
 };
 
-/// Request message
+/// Generic protocol request type
 template <typename Protocol, uint16_t Method>
-using basic_request = basic_message<
-	Protocol,
-	Method,
-	__bits::request_class
->;
+struct request_type: basic_message<Protocol, Method, __bits::request_class>
+{
+	/// Success response for request
+	static constexpr auto success = basic_message<Protocol, Method, __bits::success_response_class>{};
 
-/// Success response message
-template <typename Request>
-using basic_success_response = basic_message<
-	typename Request::protocol_type,
-	Request::method,
-	__bits::success_response_class
->;
+	/// Error response for request
+	static constexpr auto error = basic_message<Protocol, Method, __bits::error_response_class>{};
+};
 
-/// Failure response message
-template <typename Request>
-using basic_error_response = basic_message<
-	typename Request::protocol_type,
-	Request::method,
-	__bits::error_response_class
->;
-
-/// Message that does not receive response
+/// Generic protocol request type instance
 template <typename Protocol, uint16_t Method>
-using basic_indication = basic_message<
-	Protocol,
-	Method,
-	__bits::indication_class
->;
+constexpr auto request = request_type<Protocol, Method>{};
+
+/// Generic protocol indication type
+template <typename Protocol, uint16_t Method>
+struct indication_type: basic_message<Protocol, Method, __bits::indication_class>
+{ };
+
+/// Generic protocol indication type instance
+template <typename Protocol, uint16_t Method>
+constexpr auto indication = indication_type<Protocol, Method>{};
 
 
 __turner_end

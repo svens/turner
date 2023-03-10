@@ -28,47 +28,23 @@ struct turn: stun
 	 * \{
 	 */
 
-	/// TURN Binding request
-	static constexpr message_type<turn> allocate = 0x0003;
+	/// TURN Allocate
+	static constexpr auto allocate = request<turn, 0x0003>;
 
-	/// TURN Binding success response
-	static constexpr auto allocate_success = allocate.success_response();
+	/// TURN Refresh
+	static constexpr auto refresh = request<turn, 0x0004>;
 
-	/// TURN Binding error response
-	static constexpr auto allocate_error = allocate.error_response();
-
-	/// TURN Refresh request
-	static constexpr message_type<turn> refresh = 0x0004;
-
-	/// TURN Refresh success response
-	static constexpr auto refresh_success = refresh.success_response();
-
-	/// TURN Refresh error response
-	static constexpr auto refresh_error = refresh.error_response();
-
-	/// TURN Send indication
-	static constexpr message_type<turn> send_indication = 0x0006;
+	/// TURN SendIndication
+	static constexpr auto send_indication = indication<turn, 0x0006>;
 
 	/// TURN Data indication
-	static constexpr message_type<turn> data_indication = 0x0007;
+	static constexpr auto data_indication = indication<turn, 0x0007>;
 
-	/// TURN CreatePermission request
-	static constexpr message_type<turn> create_permission = 0x0008;
+	/// TURN CreatePermission
+	static constexpr auto create_permission = request<turn, 0x0008>;
 
-	/// TURN CreatePermission success response
-	static constexpr auto create_permission_success = create_permission.success_response();
-
-	/// TURN CreatePermission error response
-	static constexpr auto create_permission_error = create_permission.error_response();
-
-	/// TURN ChannelBind request
-	static constexpr message_type<turn> channel_bind = 0x0009;
-
-	/// TURN ChannelBind success response
-	static constexpr auto channel_bind_success = channel_bind.success_response();
-
-	/// TURN ChannelBind error response
-	static constexpr auto channel_bind_error = channel_bind.error_response();
+	/// TURN ChannelBind
+	static constexpr auto channel_bind = request<turn, 0x0009>;
 
 	/// \}
 

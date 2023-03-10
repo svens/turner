@@ -8,7 +8,8 @@
 #include <turner/__bits/lib>
 #include <turner/__bits/view>
 #include <turner/attribute_type>
-#include <turner/message_type>
+#include <turner/basic_message>
+#include <turner/error>
 #include <pal/byte_order>
 #include <pal/result>
 #include <span>
@@ -36,13 +37,12 @@ public:
 		return span_;
 	}
 
-	/**
-	 * Returns \a Protocol specific message type
-	 * \note There is no validity check for known message types.
-	 */
-	turner::message_type<Protocol> message_type () const noexcept
+	/// Returns true if reader contains \a message
+	template <typename OtherProtocol, uint16_t Method, uint16_t Class>
+	requires(std::is_convertible_v<Protocol, OtherProtocol>)
+	bool expect (const basic_message<OtherProtocol, Method, Class> &message) const noexcept
 	{
-		return {pal::ntoh(*reinterpret_cast<const uint16_t *>(span_.data()))};
+		return message.type == pal::ntoh(*reinterpret_cast<const uint16_t *>(span_.data()));
 	}
 
 	/// Returns \a this message transaction ID

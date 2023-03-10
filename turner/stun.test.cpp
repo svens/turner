@@ -12,8 +12,10 @@ TEST_CASE("stun")
 {
 	SECTION("method registry")
 	{
-		CHECK(turner::stun::binding == 0x0001_u16);
-		CHECK(turner::stun::binding_success == 0x0101_u16);
+		CHECK(turner::stun::binding.method == 0x0001_u16);
+		CHECK(turner::stun::binding.type == 0x0001_u16);
+		CHECK(turner::stun::binding.success.method == 0x0001_u16);
+		CHECK(turner::stun::binding.success.type == 0x0101_u16);
 	}
 
 	SECTION("attribute registry")

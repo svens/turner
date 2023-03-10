@@ -8,8 +8,8 @@
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
+#include <turner/basic_message>
 #include <turner/basic_message_reader>
-#include <turner/message_type>
 #include <pal/result>
 #include <array>
 #include <span>
@@ -62,10 +62,7 @@ struct stun
 	 */
 
 	/// STUN Binding request
-	static constexpr message_type<stun> binding = 0x0001;
-
-	/// STUN Binding request success response
-	static constexpr auto binding_success = binding.success_response();
+	static constexpr auto binding = request<stun, 0x0001>;
 
 	/// \}
 

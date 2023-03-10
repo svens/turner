@@ -140,7 +140,7 @@ TEMPLATE_TEST_CASE("basic_message_reader", "",
 
 		auto reader = Protocol::read_message(span);
 		REQUIRE(reader);
-		CHECK(reader->message_type() == TestType::expected_message_type);
+		CHECK(reader->expect(TestType::expected_message_type));
 		CHECK(reader->transaction_id() == TestType::expected_transaction_id);
 
 		auto raw = reader->as_bytes();
