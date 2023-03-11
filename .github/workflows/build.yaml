@@ -72,10 +72,10 @@ jobs:
         sudo make -C lcov-1.15 install
         CC=gcc-12 CXX=g++-12 COV=gcov-12 cmake . -G Ninja -DCMAKE_BUILD_TYPE=Coverage
 
-      - name: Generate test coverage
-        run: cmake --build . --target turner_test-cov
+    - name: Generate test coverage
+      run: cmake --build . --target turner_test-cov
 
-      - uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          path-to-lcov: turner_test.info
+    - uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        path-to-lcov: turner_test.info
