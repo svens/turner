@@ -1,4 +1,4 @@
-#include <turner/basic_message>
+#include <turner/message_type>
 #include <turner/test>
 
 
@@ -16,7 +16,7 @@ struct Protocol
 };
 
 
-TEST_CASE("basic_message")
+TEST_CASE("message_type")
 {
 	// request
 	CHECK(std::is_same_v<typename decltype(Protocol::request)::protocol_type, Protocol>);

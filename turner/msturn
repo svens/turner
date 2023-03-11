@@ -8,7 +8,7 @@
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
-#include <turner/basic_message>
+#include <turner/message_type>
 #include <turner/basic_message_reader>
 #include <pal/result>
 #include <array>
@@ -18,20 +18,19 @@ __turner_begin
 
 /// \cond
 
+// Special cases for MS-TURN messages that do not fit generic IETF STUN semantics
 struct msturn;
-
-// Internal: special cases for MS-TURN that does not fit generic IETF STUN semantics
 
 // Send Request:
 // - defined as request with no response
 template <>
-struct request_type<msturn, 0x0004>: basic_message<msturn, 0x0004, __bits::request_class>
+struct request_type<msturn, 0x0004>: message_type<msturn, 0x0004, __bits::request_class>
 { };
 
 // Data Indication
 // - indication, even if message class indicates error response
 template <>
-struct basic_message<msturn, 0x0115, __bits::indication_class>
+struct message_type<msturn, 0x0115, __bits::indication_class>
 {
 	using protocol_type = msturn;
 	static constexpr uint16_t method = 0x0115;

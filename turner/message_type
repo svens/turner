@@ -1,7 +1,7 @@
 #pragma once // -*- C++ -*-
 
 /**
- * \file turner/basic_message
+ * \file turner/message_type
  * Generic message and related subtypes (request, response, indicaton)
  */
 
@@ -24,7 +24,7 @@ static constexpr uint16_t indication_class = 0b0000'0000'0001'0000;
 
 /// Generic protocol message type
 template <typename Protocol, uint16_t Method, uint16_t Class>
-struct basic_message
+struct message_type
 {
 	static_assert(((Method | Class) & 0b1100'0000'0000'0000) == 0,
 		"The most significant 2 bits must be zeroes"
@@ -57,13 +57,13 @@ struct basic_message
 
 /// Generic protocol request type
 template <typename Protocol, uint16_t Method>
-struct request_type: basic_message<Protocol, Method, __bits::request_class>
+struct request_type: message_type<Protocol, Method, __bits::request_class>
 {
 	/// Success response for request
-	static constexpr auto success = basic_message<Protocol, Method, __bits::success_response_class>{};
+	static constexpr auto success = message_type<Protocol, Method, __bits::success_response_class>{};
 
 	/// Error response for request
-	static constexpr auto error = basic_message<Protocol, Method, __bits::error_response_class>{};
+	static constexpr auto error = message_type<Protocol, Method, __bits::error_response_class>{};
 };
 
 /// Generic protocol request type instance
@@ -72,7 +72,7 @@ constexpr auto request = request_type<Protocol, Method>{};
 
 /// Generic protocol indication type
 template <typename Protocol, uint16_t Method>
-struct indication_type: basic_message<Protocol, Method, __bits::indication_class>
+struct indication_type: message_type<Protocol, Method, __bits::indication_class>
 { };
 
 /// Generic protocol indication type instance

@@ -14,7 +14,7 @@ __turner_begin
 template <typename Protocol, typename AttributeValueType> struct attribute_type;
 
 // turner/message_type
-template <typename Protocol> struct message_type;
+template <typename Protocol, uint16_t Method, uint16_t Class> struct message_type;
 
 // turner/basic_message_reader
 template <typename Protocol> class basic_message_reader;

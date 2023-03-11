@@ -8,7 +8,7 @@
 #include <turner/__bits/lib>
 #include <turner/__bits/view>
 #include <turner/attribute_type>
-#include <turner/basic_message>
+#include <turner/message_type>
 #include <turner/error>
 #include <pal/byte_order>
 #include <pal/result>
@@ -40,7 +40,7 @@ public:
 	/// Returns true if reader contains \a message
 	template <typename OtherProtocol, uint16_t Method, uint16_t Class>
 	requires(std::is_convertible_v<Protocol, OtherProtocol>)
-	bool expect (const basic_message<OtherProtocol, Method, Class> &message) const noexcept
+	bool expect (const message_type<OtherProtocol, Method, Class> &message) const noexcept
 	{
 		return message.type == pal::ntoh(*reinterpret_cast<const uint16_t *>(span_.data()));
 	}
