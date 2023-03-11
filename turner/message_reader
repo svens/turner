@@ -1,7 +1,7 @@
 #pragma once // -*- C++ -*-
 
 /**
- * \file turner/basic_message_reader
+ * \file turner/message_reader
  * Protocol-specific generic message reader
  */
 
@@ -21,7 +21,7 @@ __turner_begin
  * Generic message reader
  */
 template <typename Protocol>
-class basic_message_reader
+class message_reader
 {
 public:
 
@@ -32,7 +32,7 @@ public:
 	using transaction_id_type = typename Protocol::transaction_id_type;
 
 	/// Returns message wire format as byte blob
-	constexpr std::span<const std::byte> as_bytes () const noexcept
+	std::span<const std::byte> as_bytes () const noexcept
 	{
 		return span_;
 	}
@@ -42,7 +42,7 @@ public:
 	requires(std::is_convertible_v<Protocol, OtherProtocol>)
 	bool expect (const message_type<OtherProtocol, Method, Class> &message) const noexcept
 	{
-		return message.type == pal::ntoh(*reinterpret_cast<const uint16_t *>(span_.data()));
+		return type_ == message.type;
 	}
 
 	/// Returns \a this message transaction ID
@@ -69,10 +69,12 @@ public:
 
 private:
 
+	uint16_t type_;
 	std::span<const std::byte> span_;
 
-	constexpr basic_message_reader (const std::span<const std::byte> &span) noexcept
-		: span_{span}
+	message_reader (const std::span<const std::byte> &span) noexcept
+		: type_{pal::ntoh(*reinterpret_cast<const uint16_t *>(span.data()))}
+		, span_{span}
 	{ }
 
 	friend Protocol;

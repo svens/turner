@@ -31,7 +31,7 @@ struct uint32_value_type
 	/// Read attribute value from \a span
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(value_type))
@@ -52,7 +52,7 @@ struct seconds_value_type
 	/// Read attribute value from \a span
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &message,
+		const message_reader<Protocol> &message,
 		const std::span<const std::byte> &span) noexcept
 	{
 		return uint32_value_type::read(message, span).map([](auto value)
@@ -80,7 +80,7 @@ struct address_family_value_type
 	/// Read attribute value from \a span
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
@@ -115,7 +115,7 @@ struct transport_protocol_value_type
 	/// Read attribute value from \a span
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
@@ -147,7 +147,7 @@ struct string_value_type
 	 */
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if constexpr (MaxSizeBytes != std::dynamic_extent)
@@ -180,7 +180,7 @@ struct bytes_value_type
 	 */
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if constexpr (Extent != std::dynamic_extent)
@@ -213,7 +213,7 @@ struct error_code_value_type
 	 */
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		static constexpr auto min_size_bytes = 4 * sizeof(uint8_t);
@@ -260,7 +260,7 @@ struct attribute_list_value_type
 	 */
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		auto size = span.size_bytes() / sizeof(uint16_t);
@@ -306,7 +306,7 @@ struct basic_endpoint_value_type
 	/// Read attribute value from \a span
 	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &message,
+		const message_reader<Protocol> &message,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 8)
@@ -372,7 +372,7 @@ private:
 	}
 
 	template <typename Protocol>
-	static auto map_with (const basic_message_reader<Protocol> &message) noexcept
+	static auto map_with (const message_reader<Protocol> &message) noexcept
 	{
 		return [&](value_type &&endpoint) -> pal::result<value_type>
 		{
@@ -394,7 +394,7 @@ struct no_endpoint_map
 	template <typename OtherProtocol>
 	requires(std::is_convertible_v<OtherProtocol, Protocol>)
 	static void transform (
-		const basic_message_reader<OtherProtocol> &,
+		const message_reader<OtherProtocol> &,
 		pal::net::ip::address &,
 		pal::net::ip::port_type &) noexcept
 	{ }
@@ -406,7 +406,7 @@ struct xor_endpoint_map
 	template <typename OtherProtocol>
 	requires(std::is_convertible_v<OtherProtocol, Protocol>)
 	static void transform (
-		const basic_message_reader<OtherProtocol> &message,
+		const message_reader<OtherProtocol> &message,
 		pal::net::ip::address &address,
 		pal::net::ip::port_type &port) noexcept
 	{

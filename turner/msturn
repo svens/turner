@@ -8,8 +8,8 @@
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
+#include <turner/message_reader>
 #include <turner/message_type>
-#include <turner/basic_message_reader>
 #include <pal/result>
 #include <array>
 #include <span>
@@ -81,7 +81,7 @@ struct msturn
 	using transaction_id_type = std::array<uint8_t, 16>;
 
 	/// Generic MS-TURN message reader
-	using message_reader = basic_message_reader<msturn>;
+	using message_reader = turner::message_reader<msturn>;
 
 	/**
 	 * \defgroup MSTURN_Methods MS-TURN Method registry
@@ -232,7 +232,7 @@ struct msturn::protocol_version_value_type
 
 	/// Read attribute value from \a span
 	static pal::result<value_type> read (
-		const basic_message_reader<msturn> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))

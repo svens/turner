@@ -98,7 +98,7 @@ struct turn: stun
 	/// \}
 
 	/// Generic TURN message reader
-	using message_reader = basic_message_reader<turn>;
+	using message_reader = turner::message_reader<turn>;
 
 	/**
 	 * Validates \a span contains TURN message and returns generic message reader
@@ -127,7 +127,7 @@ struct turn::channel_number_value_type
 
 	/// Read attribute value from \a span
 	static pal::result<value_type> read (
-		const basic_message_reader<turn> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
@@ -151,9 +151,8 @@ struct turn::even_port_value_type
 	using value_type = bool;
 
 	/// Read attribute value from \a span
-	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 1)
@@ -174,9 +173,8 @@ struct turn::dont_fragment_value_type
 	using value_type = bool;
 
 	/// Read attribute value from \a span
-	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 0)
@@ -206,9 +204,8 @@ struct turn::address_error_code_value_type
 	 * \note returned value_type reason field does not own specified
 	 * range, it points into \a span. Caller should copy value if needed.
 	 */
-	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		static constexpr auto min_size_bytes = 4 * sizeof(uint8_t);

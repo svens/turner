@@ -1,4 +1,4 @@
-#include <turner/basic_message_reader>
+#include <turner/message_reader>
 #include <turner/msturn>
 #include <turner/stun>
 #include <turner/turn>
@@ -7,7 +7,7 @@
 
 // FYI:
 // - STUN Fingerprint tests are in turner/stun.test.cpp
-// - basic_message_reader::read() tests are in turner/attribute_value_type.test.cpp
+// - message_reader::read() tests are in turner/attribute_value_type.test.cpp
 
 
 namespace {
@@ -127,7 +127,7 @@ struct turn //{{{1
 //}}}1
 
 
-TEMPLATE_TEST_CASE("basic_message_reader", "",
+TEMPLATE_TEST_CASE("message_reader", "",
 	msturn,
 	stun,
 	turn)

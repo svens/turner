@@ -8,7 +8,7 @@
 #include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
-#include <turner/basic_message_reader>
+#include <turner/message_reader>
 #include <turner/message_type>
 #include <pal/result>
 #include <array>
@@ -53,7 +53,7 @@ struct stun
 	using transaction_id_type = std::array<uint8_t, 12>;
 
 	/// Generic STUN message reader
-	using message_reader = basic_message_reader<stun>;
+	using message_reader = turner::message_reader<stun>;
 
 	/**
 	 * \defgroup STUN_Methods STUN Method registry
