@@ -251,7 +251,7 @@ TEMPLATE_TEST_CASE("message_reader", "",
 	SECTION("attribute not found")
 	{
 		auto span = std::as_bytes(std::span{TestType::valid_message});
-		auto reader = pal_try(Protocol::read_message(span));
+		auto reader = Protocol::read_message(span).value();
 		constexpr turner::attribute_type<Protocol, turner::uint32_value_type> not_found_attribute = 0x80ff;
 		auto value = reader.read(not_found_attribute);
 		REQUIRE(!value);

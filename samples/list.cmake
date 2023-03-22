@@ -5,5 +5,5 @@ list(APPEND samples_common_sources
 cxx_executable(stun_binding
 	SOURCES ${samples_common_sources}
 		samples/stun_binding.cpp
-	LIBRARIES turner::turner
+	LIBRARIES turner::protocol
 )

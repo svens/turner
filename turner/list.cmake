@@ -1,8 +1,15 @@
+configure_file(
+	turner/version.cpp.in
+	version.cpp
+	@ONLY
+)
+list(APPEND turner_sources ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+
 list(APPEND turner_sources
-	turner/__bits/lib
-	turner/__bits/view
+	turner/__view
 	turner/attribute_type
 	turner/attribute_value_type
+	turner/attribute_value_type.cpp
 	turner/error
 	turner/error.cpp
 	turner/fwd
@@ -15,6 +22,7 @@ list(APPEND turner_sources
 	turner/stun
 	turner/stun.cpp
 	turner/turn
+	turner/version
 )
 
 list(APPEND turner_test_sources

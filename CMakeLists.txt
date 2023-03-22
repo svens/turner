@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(turner LANGUAGES CXX)
 include(cmake/project_version.cmake)
-message(STATUS "${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_VERSION}")
+message(STATUS "${PROJECT_NAME} ${PROJECT_VERSION}")
 
 option(turner_test "Build tests" ON)
 option(turner_doc "Generate documentation" OFF)
@@ -12,7 +12,9 @@ if(NOT "${CMAKE_BUILD_TYPE};${CMAKE_CONFIGURATION_TYPES}" MATCHES ".*Coverage.*"
 	set(turner_test ON)
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 20)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -29,6 +31,7 @@ include(cmake/cxx.cmake)
 # library {{{1
 include(turner/list.cmake)
 cxx_library(turner
+	ALIAS turner::protocol
 	SOURCES ${turner_sources}
 	LIBRARIES pal::pal
 )
@@ -37,7 +40,7 @@ cxx_library(turner
 if(turner_test)
 	cxx_test(turner_test
 		SOURCES ${turner_test_sources}
-		LIBRARIES turner::turner
+		LIBRARIES turner::protocol
 		COVERAGE_BASE_DIR ${CMAKE_SOURCE_DIR}/turner
 	)
 endif()

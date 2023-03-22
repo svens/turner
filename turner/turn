@@ -5,12 +5,9 @@
  * TURN protocol
  */
 
-#include <turner/__bits/lib>
 #include <turner/stun>
 
-
-__turner_begin
-
+namespace turner {
 
 /**
  * TURN protocol requests/attributes
@@ -110,14 +107,13 @@ struct turn: stun
 	 */
 	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept
 	{
-		return stun::read_message(span).map([](auto stun_reader)
+		return stun::read_message(span).transform([](auto stun_reader)
 		{
 			// on success map to TURN-specific reader
 			return message_reader{stun_reader.as_bytes()};
 		});
 	}
 };
-
 
 /// TURN channel number value attribute value type reader/writer
 struct turn::channel_number_value_type
@@ -143,7 +139,6 @@ struct turn::channel_number_value_type
 	}
 };
 
-
 /// TURN EVEN-PORT attribute value reader/writer
 struct turn::even_port_value_type
 {
@@ -165,7 +160,6 @@ struct turn::even_port_value_type
 	}
 };
 
-
 /// TURN DONT-FRAGMENT attribute value reader/writer
 struct turn::dont_fragment_value_type
 {
@@ -185,7 +179,6 @@ struct turn::dont_fragment_value_type
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
-
 
 /// TURN ADDRESS-ERROR-CODE attribute value reader/writer
 struct turn::address_error_code_value_type
@@ -231,5 +224,4 @@ struct turn::address_error_code_value_type
 	}
 };
 
-
-__turner_end
+} // namespace turner

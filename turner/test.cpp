@@ -1,11 +1,13 @@
-#define _CRT_SECURE_NO_WARNINGS
-
-#include <turner/test>
-#include <catch2/catch_session.hpp>
+#if !defined(_CRT_SECURE_NO_WARNINGS)
+	#define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <cstdlib>
 
+#include <turner/test>
+#include <pal/version>
+#include <catch2/catch_session.hpp>
 
-#if __pal_os_windows && !NDEBUG
+#if __pal_os_windows && __pal_build_debug
 
 int report_hook (int report_type, char *message, int *return_value)
 {
@@ -27,13 +29,11 @@ void set_report_hook ()
 
 #endif
 
-
 int main (int argc, char *argv[])
 {
 	set_report_hook();
 	return Catch::Session().run(argc, argv);
 }
-
 
 void *operator new (size_t size)
 {
@@ -45,18 +45,15 @@ void *operator new (size_t size)
 	return std::malloc(size);
 }
 
-
 void operator delete (void *ptr) noexcept
 {
 	std::free(ptr);
 }
 
-
 void operator delete (void *ptr, size_t) noexcept
 {
 	std::free(ptr);
 }
-
 
 namespace turner_test {
 

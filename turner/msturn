@@ -5,7 +5,6 @@
  * MS-TURN protocol
  */
 
-#include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
 #include <turner/message_reader>
@@ -14,7 +13,7 @@
 #include <array>
 #include <span>
 
-__turner_begin
+namespace turner {
 
 /// \cond
 
@@ -24,13 +23,13 @@ struct msturn;
 // Send Request:
 // - defined as request with no response
 template <>
-struct request_type<msturn, 0x0004>: message_type<msturn, 0x0004, __bits::request_class>
+struct request_type<msturn, 0x0004>: message_type<msturn, 0x0004, __message_type::request_class>
 { };
 
 // Data Indication
 // - indication, even if message class indicates error response
 template <>
-struct message_type<msturn, 0x0115, __bits::indication_class>
+struct message_type<msturn, 0x0115, __message_type::indication_class>
 {
 	using protocol_type = msturn;
 	static constexpr uint16_t method = 0x0115;
@@ -223,7 +222,6 @@ struct msturn
 	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept;
 };
 
-
 /// MS-TURN MS-Version attribute value reader/writer
 struct msturn::protocol_version_value_type
 {
@@ -250,5 +248,4 @@ struct msturn::protocol_version_value_type
 	}
 };
 
-
-__turner_end
+} // namespace turner

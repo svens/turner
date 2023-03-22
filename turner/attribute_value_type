@@ -5,22 +5,18 @@
  * Attribute value reader/writer
  */
 
-#include <turner/__bits/lib>
 #include <turner/error>
 #include <turner/fwd>
 #include <turner/protocol_error>
 #include <pal/byte_order>
 #include <pal/net/ip/address>
-#include <pal/net/ip/basic_endpoint>
 #include <pal/result>
 #include <array>
 #include <chrono>
 #include <span>
 #include <string_view>
 
-
-__turner_begin
-
+namespace turner {
 
 /// Generic uint32_t type attribute value reader/writer
 struct uint32_value_type
@@ -42,7 +38,6 @@ struct uint32_value_type
 	}
 };
 
-
 /// Generic std::chrono::seconds type attribute value reader/writer
 struct seconds_value_type
 {
@@ -55,13 +50,12 @@ struct seconds_value_type
 		const message_reader<Protocol> &message,
 		const std::span<const std::byte> &span) noexcept
 	{
-		return uint32_value_type::read(message, span).map([](auto value)
+		return uint32_value_type::read(message, span).transform([](auto value)
 		{
 			return value_type{value};
 		});
 	}
 };
-
 
 /// Address family values for STUN/TURN/MS-TURN protocols
 enum class address_family: uint8_t
@@ -69,7 +63,6 @@ enum class address_family: uint8_t
 	v4 = 0x01, ///< IPv4
 	v6 = 0x02, ///< IPv6
 };
-
 
 /// Address family attribute value reader/writer
 struct address_family_value_type
@@ -96,7 +89,6 @@ struct address_family_value_type
 	}
 };
 
-
 /// Transport protocol for allocated transport address
 /// \see https://www.iana.org/assignments/protocol-numbers
 enum class transport_protocol: uint8_t
@@ -104,7 +96,6 @@ enum class transport_protocol: uint8_t
 	tcp = 6,
 	udp = 17,
 };
-
 
 /// Transport protocol attribute value reader/writer
 struct transport_protocol_value_type
@@ -130,7 +121,6 @@ struct transport_protocol_value_type
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
-
 
 /// Generic std::string_view type attribute value reader/writer
 template <size_t MaxSizeBytes = std::dynamic_extent>
@@ -164,7 +154,6 @@ struct string_value_type
 	}
 };
 
-
 /// Generic std::span<std::byte, Extent> type attribute value reader/writer
 template <size_t Extent = std::dynamic_extent>
 struct bytes_value_type
@@ -193,7 +182,6 @@ struct bytes_value_type
 		return value_type{span};
 	}
 };
-
 
 /// Generic protocol error type attribute value reader/writer
 struct error_code_value_type
@@ -232,7 +220,6 @@ struct error_code_value_type
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
-
 
 /**
  * Attribute list type value reader/writer.
@@ -285,7 +272,6 @@ private:
 	};
 };
 
-
 /**
  * Internet address/port pair type value reader/writer.
  *
@@ -300,7 +286,7 @@ struct basic_endpoint_value_type
 	struct value_type
 	{
 		pal::net::ip::address address;
-		pal::net::ip::port_type port;
+		uint16_t port;
 	};
 
 	/// Read attribute value from \a span
@@ -311,11 +297,11 @@ struct basic_endpoint_value_type
 	{
 		if (span.size_bytes() == 8)
 		{
-			return read_ipv4(span).and_then(map_with(message));
+			return read_ipv4(span).and_then(transform_with(message));
 		}
 		else if (span.size_bytes() == 20)
 		{
-			return read_ipv6(span).and_then(map_with(message));
+			return read_ipv6(span).and_then(transform_with(message));
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
@@ -327,7 +313,7 @@ private:
 		return reinterpret_cast<const address_family *>(span.data())[1];
 	}
 
-	static pal::net::ip::port_type port (const std::span<const std::byte> &span) noexcept
+	static uint16_t port (const std::span<const std::byte> &span) noexcept
 	{
 		return reinterpret_cast<const uint16_t *>(span.data())[1];
 	}
@@ -335,14 +321,17 @@ private:
 	template <typename Address>
 	static pal::net::ip::address address (const std::span<const std::byte> &span) noexcept
 	{
-		#if defined(__GNUC__) && !defined(__clang__) && defined(NDEBUG)
+		if constexpr (pal::compiler == pal::compiler_type::gnu && pal::build == pal::build_type::release)
+		{
 			// TODO: g++ claims 'else' part has unininitialized bytes
 			pal::net::ip::address result{};
 			result = Address{*reinterpret_cast<const typename Address::bytes_type *>(span.data() + 4)};
 			return result;
-		#else
+		}
+		else
+		{
 			return Address{*reinterpret_cast<const typename Address::bytes_type *>(span.data() + 4)};
-		#endif
+		}
 	}
 
 	static pal::result<value_type> read_ipv4 (const std::span<const std::byte> &span) noexcept
@@ -372,73 +361,38 @@ private:
 	}
 
 	template <typename Protocol>
-	static auto map_with (const message_reader<Protocol> &message) noexcept
+	static auto transform_with (const message_reader<Protocol> &message) noexcept
 	{
 		return [&](value_type &&endpoint) -> pal::result<value_type>
 		{
-			Map::transform(message, endpoint.address, endpoint.port);
+			Map::transform(message.as_bytes(), endpoint.address, endpoint.port);
 			endpoint.port = pal::ntoh(endpoint.port);
 			return std::move(endpoint);
 		};
 	}
 };
 
+namespace __attribute_value_type {
 
-namespace __bits {
-
-// below, Protocol vs OtherProtocol is for STUN <- TURN inheritance
-
-template <typename Protocol>
-struct no_endpoint_map
+struct no_op
 {
-	template <typename OtherProtocol>
-	requires(std::is_convertible_v<OtherProtocol, Protocol>)
 	static void transform (
-		const message_reader<OtherProtocol> &,
+		const std::span<const std::byte> &,
 		pal::net::ip::address &,
-		pal::net::ip::port_type &) noexcept
+		uint16_t &) noexcept
 	{ }
 };
 
-template <typename Protocol>
-struct xor_endpoint_map
+struct xor_op
 {
-	template <typename OtherProtocol>
-	requires(std::is_convertible_v<OtherProtocol, Protocol>)
 	static void transform (
-		const message_reader<OtherProtocol> &message,
+		const std::span<const std::byte> &message_bytes,
 		pal::net::ip::address &address,
-		pal::net::ip::port_type &port) noexcept
-	{
-		// - MS-TURN: 16B Transaction ID
-		// - TURN: 4B Magic Cookie + 12B Transaction ID
-		auto &xor_value = *reinterpret_cast<const std::array<uint8_t, 16> *>(
-			message.as_bytes().data() + 4
-		);
-
-		port ^= *reinterpret_cast<const uint16_t *>(xor_value.data());
-		if (address.is_v4())
-		{
-			auto &in = *const_cast<in_addr *>(
-				reinterpret_cast<const in_addr *>(address.v4().to_bytes().data())
-			);
-			in.s_addr ^= *reinterpret_cast<const uint32_t *>(xor_value.data());
-		}
-		else
-		{
-			auto &in = *const_cast<in6_addr *>(
-				reinterpret_cast<const in6_addr *>(address.v6().to_bytes().data())
-			);
-			for (auto i = 0u;  i < xor_value.max_size();  ++i)
-			{
-				in.s6_addr[i] ^= xor_value[i];
-			}
-		}
-	}
+		uint16_t &port
+	) noexcept;
 };
 
-} // namespace __bits
-
+} // namespace __attribute_value_type
 
 /**
  * Internet address/port pair type value reader/writer.
@@ -446,7 +400,7 @@ struct xor_endpoint_map
  * \see basic_endpoint_value_type<>
  */
 template <typename Protocol>
-using endpoint_value_type = basic_endpoint_value_type<__bits::no_endpoint_map<Protocol>>;
+using endpoint_value_type = basic_endpoint_value_type<__attribute_value_type::no_op>;
 
 /**
  * Internet address/port pair type value reader/writer.
@@ -458,7 +412,6 @@ using endpoint_value_type = basic_endpoint_value_type<__bits::no_endpoint_map<Pr
  * \see basic_endpoint_value_type<>
  */
 template <typename Protocol>
-using xor_endpoint_value_type = basic_endpoint_value_type<__bits::xor_endpoint_map<Protocol>>;
+using xor_endpoint_value_type = basic_endpoint_value_type<__attribute_value_type::xor_op>;
 
-
-__turner_end
+} // namespace turner

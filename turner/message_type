@@ -5,13 +5,11 @@
  * Generic message and related subtypes (request, response, indicaton)
  */
 
-#include <turner/__bits/lib>
+#include <cstdint>
 
+namespace turner {
 
-__turner_begin
-
-
-namespace __bits {
+namespace __message_type {
 
 static constexpr uint16_t class_mask = 0b0000'0001'0001'0000;
 static constexpr uint16_t request_class = 0b0000'0000'0000'0000;
@@ -19,8 +17,7 @@ static constexpr uint16_t success_response_class = 0b0000'0001'0000'0000;
 static constexpr uint16_t error_response_class = 0b0000'0001'0001'0000;
 static constexpr uint16_t indication_class = 0b0000'0000'0001'0000;
 
-} // namespace __bits
-
+} // namespace __message_type
 
 /// Generic protocol message type
 template <typename Protocol, uint16_t Method, uint16_t Class>
@@ -29,7 +26,7 @@ struct message_type
 	static_assert(((Method | Class) & 0b1100'0000'0000'0000) == 0,
 		"The most significant 2 bits must be zeroes"
 	);
-	static_assert((Method & __bits::class_mask) == 0,
+	static_assert((Method & __message_type::class_mask) == 0,
 		"Method value should not contain Class bits"
 	);
 
@@ -43,27 +40,27 @@ struct message_type
 	static constexpr uint16_t type = Method | Class;
 
 	/// True if this message is request
-	static constexpr bool is_request = Class == __bits::request_class;
+	static constexpr bool is_request = Class == __message_type::request_class;
 
 	/// True if this message is success response
-	static constexpr bool is_success_response = Class == __bits::success_response_class;
+	static constexpr bool is_success_response = Class == __message_type::success_response_class;
 
 	/// True if this message is error response
-	static constexpr bool is_error_response = Class == __bits::error_response_class;
+	static constexpr bool is_error_response = Class == __message_type::error_response_class;
 
 	/// True if this message is indication
-	static constexpr bool is_indication = Class == __bits::indication_class;
+	static constexpr bool is_indication = Class == __message_type::indication_class;
 };
 
 /// Generic protocol request type
 template <typename Protocol, uint16_t Method>
-struct request_type: message_type<Protocol, Method, __bits::request_class>
+struct request_type: message_type<Protocol, Method, __message_type::request_class>
 {
 	/// Success response for request
-	static constexpr auto success = message_type<Protocol, Method, __bits::success_response_class>{};
+	static constexpr auto success = message_type<Protocol, Method, __message_type::success_response_class>{};
 
 	/// Error response for request
-	static constexpr auto error = message_type<Protocol, Method, __bits::error_response_class>{};
+	static constexpr auto error = message_type<Protocol, Method, __message_type::error_response_class>{};
 };
 
 /// Generic protocol request type instance
@@ -72,12 +69,11 @@ constexpr auto request = request_type<Protocol, Method>{};
 
 /// Generic protocol indication type
 template <typename Protocol, uint16_t Method>
-struct indication_type: message_type<Protocol, Method, __bits::indication_class>
+struct indication_type: message_type<Protocol, Method, __message_type::indication_class>
 { };
 
 /// Generic protocol indication type instance
 template <typename Protocol, uint16_t Method>
 constexpr auto indication = indication_type<Protocol, Method>{};
 
-
-__turner_end
+} // namespace turner

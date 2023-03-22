@@ -1,19 +1,16 @@
 #include <turner/msturn>
-#include <turner/__bits/view>
+#include <turner/__view>
 #include <turner/error>
 #include <pal/byte_order>
 
-
-__turner_begin
-
+namespace turner {
 
 namespace {
 
-using message_view = __bits::message_view<msturn>;
-using attribute_view = __bits::attribute_view<msturn>;
+using message_view = __view::message<msturn>;
+using attribute_view = __view::attribute<msturn>;
 
 } // namespace
-
 
 pal::result<msturn::message_reader> msturn::read_message (const std::span<const std::byte> &span) noexcept
 {
@@ -55,5 +52,4 @@ pal::result<msturn::message_reader> msturn::read_message (const std::span<const 
 	return make_unexpected(errc::unexpected_attribute_length);
 }
 
-
-__turner_end
+} // namespace turner

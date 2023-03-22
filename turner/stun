@@ -5,7 +5,6 @@
  * STUN protocol
  */
 
-#include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
 #include <turner/message_reader>
@@ -14,9 +13,7 @@
 #include <array>
 #include <span>
 
-
-__turner_begin
-
+namespace turner {
 
 /**
  * STUN protocol requests/attributes
@@ -126,5 +123,4 @@ struct stun
 	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept;
 };
 
-
-__turner_end
+} // namespace turner
