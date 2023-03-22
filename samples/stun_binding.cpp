@@ -20,11 +20,10 @@ public:
 };
 
 
-void run (const config &config)
+int run (const config &config)
 {
 	config.print();
-
-	throw std::logic_error("not implemented");
+	return EXIT_FAILURE;
 }
 
 
@@ -32,8 +31,7 @@ int main (int argc, const char *argv[])
 {
 	try
 	{
-		run(config{argc, argv});
-		return EXIT_SUCCESS;
+		return run(config{argc, argv});
 	}
 	catch (const std::exception &e)
 	{

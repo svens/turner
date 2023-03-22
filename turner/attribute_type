@@ -5,11 +5,9 @@
  * Protocol-specific concrete attribute type
  */
 
-#include <turner/__bits/lib>
+#include <cstdint>
 
-
-__turner_begin
-
+namespace turner {
 
 /// Define \a Protocol message type.
 template <typename Protocol, typename AttributeValueType>
@@ -83,5 +81,4 @@ constexpr bool operator!= (uint16_t left, const attribute_type<Protocol, Attribu
 	return left != right.value;
 }
 
-
-__turner_end
+} // namespace turner

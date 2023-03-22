@@ -5,13 +5,10 @@
  * Turner library error codes
  */
 
-#include <turner/__bits/lib>
 #include <pal/result>
 #include <system_error>
 
-
-__turner_begin
-
+namespace turner {
 
 #define __turner_errc(Impl) \
 	Impl(__0, "internal placeholder for not an error") \
@@ -24,10 +21,7 @@ __turner_begin
 	Impl(fingerprint_mismatch, "fingerprint mismatch") \
 	Impl(attribute_not_found, "attribute not found")
 
-
-/**
- * Turner error codes
- */
+/// Turner error codes
 enum class errc: int
 {
 	#define __turner_errc_impl(code, message) code,
@@ -35,50 +29,22 @@ enum class errc: int
 	#undef __turner_errc_impl
 };
 
-
-/**
- * Return Turner error category. The name() virtual function returns "turner".
- */
+/// Return Turner error category. The name() virtual function returns "turner".
 const std::error_category &error_category () noexcept;
 
-
-/**
- * Make std::error_code from error code \a ec
- */
+/// Make std::error_code from error code \a ec
 inline std::error_code make_error_code (errc ec) noexcept
 {
 	return {static_cast<int>(ec), error_category()};
 }
 
-
-/**
- * Returns unexpected{make_error_code(ec)}
- */
+/// Returns unexpected{make_error_code(ec)}
 inline pal::unexpected<std::error_code> make_unexpected (errc ec) noexcept
 {
 	return pal::unexpected{make_error_code(ec)};
 }
 
-
-namespace __bits {
-
-inline void unexpected_message_type ()
-{
-	struct unexpected_message_type: std::exception
-	{
-		const char *what () const noexcept override
-		{
-			return "unexpected message type";
-		}
-	};
-	throw unexpected_message_type{};
-}
-
-} // namespace __bits
-
-
-__turner_end
-
+} // namespace turner
 
 namespace std {
 

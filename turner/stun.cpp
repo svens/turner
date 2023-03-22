@@ -1,16 +1,14 @@
 #include <turner/stun>
-#include <turner/__bits/view>
+#include <turner/__view>
 #include <turner/error>
 #include <pal/byte_order>
 
-
-__turner_begin
-
+namespace turner {
 
 namespace {
 
-using message_view = __bits::message_view<stun>;
-using attribute_view = __bits::attribute_view<stun>;
+using message_view = __view::message<stun>;
+using attribute_view = __view::attribute<stun>;
 
 template <uint32_t Polynomial>
 struct crc32_lookup
@@ -63,7 +61,6 @@ uint32_t crc32 (const uint32_t *first, const uint32_t *last) noexcept
 }
 
 } // namespace
-
 
 pal::result<stun::message_reader> stun::read_message (const std::span<const std::byte> &span) noexcept
 {
@@ -136,5 +133,4 @@ pal::result<stun::message_reader> stun::read_message (const std::span<const std:
 	return message_reader{span};
 }
 
-
-__turner_end
+} // namespace turner

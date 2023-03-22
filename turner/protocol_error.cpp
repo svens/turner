@@ -1,9 +1,7 @@
 #include <turner/protocol_error>
 #include <string>
 
-
-__turner_begin
-
+namespace turner {
 
 namespace {
 
@@ -19,7 +17,6 @@ constexpr std::string_view as_view (protocol_errc ec) noexcept
 }
 
 } // namespace
-
 
 const std::error_category &protocol_error_category () noexcept
 {
@@ -39,5 +36,4 @@ const std::error_category &protocol_error_category () noexcept
 	return impl;
 }
 
-
-__turner_end
+} // namespace turner

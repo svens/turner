@@ -1,0 +1,16 @@
+#pragma once // -*- C++ -*-
+
+#if __has_include(<version>)
+	#include <version>
+#endif
+
+namespace turner {
+
+//
+// project version
+//
+
+extern const char version[];
+extern const int version_major, version_minor, version_patch;
+
+} // namespace turner

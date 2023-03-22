@@ -18,25 +18,37 @@ TEST_CASE("turn")
 
 	SECTION("method registry") //{{{1
 	{
-		CHECK(turner::turn::allocate == 0x0003_u16);
-		CHECK(turner::turn::allocate_success == 0x0103_u16);
-		CHECK(turner::turn::allocate_error == 0x0113_u16);
+		// Allocate
+		CHECK(turner::turn::allocate.method == 0x0003_u16);
+		CHECK(turner::turn::allocate.type == 0x0003_u16);
+		CHECK(turner::turn::allocate.success.type == 0x0103_u16);
+		CHECK(turner::turn::allocate.error.type == 0x0113_u16);
 
-		CHECK(turner::turn::refresh == 0x0004_u16);
-		CHECK(turner::turn::refresh_success == 0x0104_u16);
-		CHECK(turner::turn::refresh_error == 0x0114_u16);
+		// Refresh
+		CHECK(turner::turn::refresh.method == 0x0004_u16);
+		CHECK(turner::turn::refresh.type == 0x0004_u16);
+		CHECK(turner::turn::refresh.success.type == 0x0104_u16);
+		CHECK(turner::turn::refresh.error.type == 0x0114_u16);
 
-		CHECK(turner::turn::send_indication == 0x0006_u16);
+		// SendIndication
+		CHECK(turner::turn::send_indication.method == 0x0006_u16);
+		CHECK(turner::turn::send_indication.type == 0x0016_u16);
 
-		CHECK(turner::turn::data_indication == 0x0007_u16);
+		// DataIndication
+		CHECK(turner::turn::data_indication.method == 0x0007_u16);
+		CHECK(turner::turn::data_indication.type == 0x0017_u16);
 
-		CHECK(turner::turn::create_permission == 0x0008_u16);
-		CHECK(turner::turn::create_permission_success == 0x0108_u16);
-		CHECK(turner::turn::create_permission_error == 0x0118_u16);
+		// CreatePermission
+		CHECK(turner::turn::create_permission.method == 0x0008_u16);
+		CHECK(turner::turn::create_permission.type == 0x0008_u16);
+		CHECK(turner::turn::create_permission.success.type == 0x0108_u16);
+		CHECK(turner::turn::create_permission.error.type == 0x0118_u16);
 
-		CHECK(turner::turn::channel_bind == 0x0009_u16);
-		CHECK(turner::turn::channel_bind_success == 0x0109_u16);
-		CHECK(turner::turn::channel_bind_error == 0x0119_u16);
+		// ChannelBind
+		CHECK(turner::turn::channel_bind.method == 0x0009_u16);
+		CHECK(turner::turn::channel_bind.type == 0x0009_u16);
+		CHECK(turner::turn::channel_bind.success.type == 0x0109_u16);
+		CHECK(turner::turn::channel_bind.error.type == 0x0119_u16);
 	}
 
 	SECTION("attribute registry") //{{{1
@@ -70,15 +82,17 @@ TEST_CASE("turn")
 
 		auto span = std::as_bytes(std::span{data});
 
+		// TURN reader can check both TURN & STUN messages
 		auto turn_reader = turner::turn::read_message(span);
 		REQUIRE(turn_reader);
-		CHECK(turn_reader->message_type() == turner::turn::allocate);
-		CHECK(turn_reader->message_type() != turner::stun::binding);
+		CHECK(turn_reader->expect(turner::turn::allocate));
+		CHECK_FALSE(turn_reader->expect(turner::stun::binding));
 
+		// STUN reader can check STUN messages but not TURN messages
 		auto stun_reader = turner::stun::read_message(span);
 		REQUIRE(stun_reader);
-		CHECK(stun_reader->message_type() == turner::turn::allocate);
-		CHECK(stun_reader->message_type() != turner::stun::binding);
+		CHECK_FALSE(stun_reader->expect(turner::stun::binding));
+		//CHECK(stun_reader->expect(turner::turn::allocate));
 	}
 
 	SECTION("even_port_value_type") //{{{1

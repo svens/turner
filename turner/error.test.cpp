@@ -41,20 +41,6 @@ TEST_CASE("error")
 		CHECK(ec.category() == turner::error_category());
 		CHECK(ec.category().name() == std::string{"turner"});
 	}
-
-	SECTION("unexpected_message_type")
-	{
-		const char *msg = nullptr;
-		try {
-			turner::__bits::unexpected_message_type();
-			CHECK(false);
-		}
-		catch (const std::exception &e)
-		{
-			msg = e.what();
-		}
-		CHECK(msg != nullptr);
-	}
 }
 
 

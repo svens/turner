@@ -5,16 +5,42 @@
  * MS-TURN protocol
  */
 
-#include <turner/__bits/lib>
 #include <turner/attribute_type>
 #include <turner/attribute_value_type>
-#include <turner/basic_message_reader>
+#include <turner/message_reader>
 #include <turner/message_type>
 #include <pal/result>
 #include <array>
 #include <span>
 
-__turner_begin
+namespace turner {
+
+/// \cond
+
+// Special cases for MS-TURN messages that do not fit generic IETF STUN semantics
+struct msturn;
+
+// Send Request:
+// - defined as request with no response
+template <>
+struct request_type<msturn, 0x0004>: message_type<msturn, 0x0004, __message_type::request_class>
+{ };
+
+// Data Indication
+// - indication, even if message class indicates error response
+template <>
+struct message_type<msturn, 0x0115, __message_type::indication_class>
+{
+	using protocol_type = msturn;
+	static constexpr uint16_t method = 0x0115;
+	static constexpr uint16_t type = 0x0115;
+	static constexpr bool is_request = false;
+	static constexpr bool is_success_response = false;
+	static constexpr bool is_error_response = false;
+	static constexpr bool is_indication = true;
+};
+
+/// \endcond
 
 
 /**
@@ -54,7 +80,7 @@ struct msturn
 	using transaction_id_type = std::array<uint8_t, 16>;
 
 	/// Generic MS-TURN message reader
-	using message_reader = basic_message_reader<msturn>;
+	using message_reader = turner::message_reader<msturn>;
 
 	/**
 	 * \defgroup MSTURN_Methods MS-TURN Method registry
@@ -63,28 +89,20 @@ struct msturn
 	 */
 
 	/// MS-TURN Allocate request
-	static constexpr message_type<msturn> allocate = 0x0003;
-
-	/// MS-TURN Allocate request success response
-	static constexpr auto allocate_success = allocate.success_response();
-
-	/// MS-TURN Allocate request error response
-	static constexpr auto allocate_error = allocate.error_response();
+	static constexpr auto allocate = request<msturn, 0x0003>;
 
 	/// MS-TURN Send Request
-	static constexpr message_type<msturn> send_indication = 0x0004;
+	///
+	/// \note This request is mix of request and indication semantics:
+	/// - request must be authenticated
+	/// - server must not respond with either success or error response
+	static constexpr auto send_request = request<msturn, 0x0004>;
 
 	/// MS-TURN Data Indication
-	static constexpr message_type<msturn> data_indication = 0x0115;
+	static constexpr auto  data_indication = indication<msturn, 0x0115>;
 
 	/// MS-TURN Set Active Destination request
-	static constexpr message_type<msturn> set_active_destination = 0x0006;
-
-	/// MS-TURN Set Active Destination request success response
-	static constexpr auto set_active_destination_success = set_active_destination.success_response();
-
-	/// MS-TURN Set Active Destination request error response
-	static constexpr auto set_active_destination_error = set_active_destination.error_response();
+	static constexpr auto set_active_destination = request<msturn, 0x0006>;
 
 	/// \}
 
@@ -204,7 +222,6 @@ struct msturn
 	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept;
 };
 
-
 /// MS-TURN MS-Version attribute value reader/writer
 struct msturn::protocol_version_value_type
 {
@@ -213,7 +230,7 @@ struct msturn::protocol_version_value_type
 
 	/// Read attribute value from \a span
 	static pal::result<value_type> read (
-		const basic_message_reader<msturn> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
@@ -231,5 +248,4 @@ struct msturn::protocol_version_value_type
 	}
 };
 
-
-__turner_end
+} // namespace turner

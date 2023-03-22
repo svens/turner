@@ -5,12 +5,9 @@
  * TURN protocol
  */
 
-#include <turner/__bits/lib>
 #include <turner/stun>
 
-
-__turner_begin
-
+namespace turner {
 
 /**
  * TURN protocol requests/attributes
@@ -28,47 +25,23 @@ struct turn: stun
 	 * \{
 	 */
 
-	/// TURN Binding request
-	static constexpr message_type<turn> allocate = 0x0003;
+	/// TURN Allocate
+	static constexpr auto allocate = request<turn, 0x0003>;
 
-	/// TURN Binding success response
-	static constexpr auto allocate_success = allocate.success_response();
+	/// TURN Refresh
+	static constexpr auto refresh = request<turn, 0x0004>;
 
-	/// TURN Binding error response
-	static constexpr auto allocate_error = allocate.error_response();
-
-	/// TURN Refresh request
-	static constexpr message_type<turn> refresh = 0x0004;
-
-	/// TURN Refresh success response
-	static constexpr auto refresh_success = refresh.success_response();
-
-	/// TURN Refresh error response
-	static constexpr auto refresh_error = refresh.error_response();
-
-	/// TURN Send indication
-	static constexpr message_type<turn> send_indication = 0x0006;
+	/// TURN SendIndication
+	static constexpr auto send_indication = indication<turn, 0x0006>;
 
 	/// TURN Data indication
-	static constexpr message_type<turn> data_indication = 0x0007;
+	static constexpr auto data_indication = indication<turn, 0x0007>;
 
-	/// TURN CreatePermission request
-	static constexpr message_type<turn> create_permission = 0x0008;
+	/// TURN CreatePermission
+	static constexpr auto create_permission = request<turn, 0x0008>;
 
-	/// TURN CreatePermission success response
-	static constexpr auto create_permission_success = create_permission.success_response();
-
-	/// TURN CreatePermission error response
-	static constexpr auto create_permission_error = create_permission.error_response();
-
-	/// TURN ChannelBind request
-	static constexpr message_type<turn> channel_bind = 0x0009;
-
-	/// TURN ChannelBind success response
-	static constexpr auto channel_bind_success = channel_bind.success_response();
-
-	/// TURN ChannelBind error response
-	static constexpr auto channel_bind_error = channel_bind.error_response();
+	/// TURN ChannelBind
+	static constexpr auto channel_bind = request<turn, 0x0009>;
 
 	/// \}
 
@@ -122,7 +95,7 @@ struct turn: stun
 	/// \}
 
 	/// Generic TURN message reader
-	using message_reader = basic_message_reader<turn>;
+	using message_reader = turner::message_reader<turn>;
 
 	/**
 	 * Validates \a span contains TURN message and returns generic message reader
@@ -134,14 +107,13 @@ struct turn: stun
 	 */
 	static pal::result<message_reader> read_message (const std::span<const std::byte> &span) noexcept
 	{
-		return stun::read_message(span).map([](auto stun_reader)
+		return stun::read_message(span).transform([](auto stun_reader)
 		{
 			// on success map to TURN-specific reader
 			return message_reader{stun_reader.as_bytes()};
 		});
 	}
 };
-
 
 /// TURN channel number value attribute value type reader/writer
 struct turn::channel_number_value_type
@@ -151,7 +123,7 @@ struct turn::channel_number_value_type
 
 	/// Read attribute value from \a span
 	static pal::result<value_type> read (
-		const basic_message_reader<turn> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
@@ -167,7 +139,6 @@ struct turn::channel_number_value_type
 	}
 };
 
-
 /// TURN EVEN-PORT attribute value reader/writer
 struct turn::even_port_value_type
 {
@@ -175,9 +146,8 @@ struct turn::even_port_value_type
 	using value_type = bool;
 
 	/// Read attribute value from \a span
-	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 1)
@@ -190,7 +160,6 @@ struct turn::even_port_value_type
 	}
 };
 
-
 /// TURN DONT-FRAGMENT attribute value reader/writer
 struct turn::dont_fragment_value_type
 {
@@ -198,9 +167,8 @@ struct turn::dont_fragment_value_type
 	using value_type = bool;
 
 	/// Read attribute value from \a span
-	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 0)
@@ -211,7 +179,6 @@ struct turn::dont_fragment_value_type
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
-
 
 /// TURN ADDRESS-ERROR-CODE attribute value reader/writer
 struct turn::address_error_code_value_type
@@ -230,9 +197,8 @@ struct turn::address_error_code_value_type
 	 * \note returned value_type reason field does not own specified
 	 * range, it points into \a span. Caller should copy value if needed.
 	 */
-	template <typename Protocol>
 	static pal::result<value_type> read (
-		const basic_message_reader<Protocol> &,
+		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		static constexpr auto min_size_bytes = 4 * sizeof(uint8_t);
@@ -258,5 +224,4 @@ struct turn::address_error_code_value_type
 	}
 };
 
-
-__turner_end
+} // namespace turner

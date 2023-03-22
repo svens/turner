@@ -1,16 +1,13 @@
 #pragma once // -*- C++ -*-
 
-#include <turner/__bits/lib>
 #include <pal/byte_order>
 #include <span>
 
-__turner_begin
-
-namespace __bits {
+namespace turner::__view {
 
 // non-owning overlayed structure over message attribute
 template <typename Protocol>
-struct attribute_view
+struct attribute
 {
 	uint16_t type () const noexcept
 	{
@@ -35,9 +32,9 @@ struct attribute_view
 		};
 	}
 
-	const attribute_view *next () const noexcept
+	const attribute *next () const noexcept
 	{
-		return reinterpret_cast<const attribute_view *>(
+		return reinterpret_cast<const attribute *>(
 			reinterpret_cast<const std::byte *>(this)
 			+ padded_value_size_bytes()
 			+ 2 * sizeof(uint16_t)
@@ -47,7 +44,7 @@ struct attribute_view
 
 // non-owning overlayed structure over message header
 template <typename Protocol>
-struct message_view
+struct message
 {
 	uint16_t type () const noexcept
 	{
@@ -67,24 +64,24 @@ struct message_view
 		);
 	}
 
-	const attribute_view<Protocol> *begin () const noexcept
+	const attribute<Protocol> *begin () const noexcept
 	{
-		return reinterpret_cast<const attribute_view<Protocol> *>(
+		return reinterpret_cast<const attribute<Protocol> *>(
 			reinterpret_cast<const std::byte *>(this)
 			+ Protocol::header_size_bytes
 		);
 	}
 
-	const attribute_view<Protocol> *end () const noexcept
+	const attribute<Protocol> *end () const noexcept
 	{
-		return reinterpret_cast<const attribute_view<Protocol> *>(
+		return reinterpret_cast<const attribute<Protocol> *>(
 			reinterpret_cast<const std::byte *>(this)
 			+ Protocol::header_size_bytes
 			+ payload_size_bytes()
 		);
 	}
 
-	const attribute_view<Protocol> *find (uint16_t attribute_type) const noexcept
+	const attribute<Protocol> *find (uint16_t attribute_type) const noexcept
 	{
 		for (auto it = begin(), e = end();  it != e;  it = it->next())
 		{
@@ -97,15 +94,11 @@ struct message_view
 	}
 };
 
-
-// cast pre-validated span to message_view
+// cast pre-validated span to message
 template <typename Protocol>
-const message_view<Protocol> *as_message_view (const std::span<const std::byte> &span) noexcept
+const message<Protocol> *as_message (const std::span<const std::byte> &span) noexcept
 {
-	return reinterpret_cast<const message_view<Protocol> *>(span.data());
+	return reinterpret_cast<const message<Protocol> *>(span.data());
 }
 
-
-} // namespace __bits
-
-__turner_end
+} // namespace turner::__view

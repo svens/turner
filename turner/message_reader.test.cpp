@@ -1,4 +1,4 @@
-#include <turner/basic_message_reader>
+#include <turner/message_reader>
 #include <turner/msturn>
 #include <turner/stun>
 #include <turner/turn>
@@ -7,7 +7,7 @@
 
 // FYI:
 // - STUN Fingerprint tests are in turner/stun.test.cpp
-// - basic_message_reader::read() tests are in turner/attribute_value_type.test.cpp
+// - message_reader::read() tests are in turner/attribute_value_type.test.cpp
 
 
 namespace {
@@ -127,7 +127,7 @@ struct turn //{{{1
 //}}}1
 
 
-TEMPLATE_TEST_CASE("basic_message_reader", "",
+TEMPLATE_TEST_CASE("message_reader", "",
 	msturn,
 	stun,
 	turn)
@@ -140,7 +140,7 @@ TEMPLATE_TEST_CASE("basic_message_reader", "",
 
 		auto reader = Protocol::read_message(span);
 		REQUIRE(reader);
-		CHECK(reader->message_type() == TestType::expected_message_type);
+		CHECK(reader->expect(TestType::expected_message_type));
 		CHECK(reader->transaction_id() == TestType::expected_transaction_id);
 
 		auto raw = reader->as_bytes();
@@ -251,7 +251,7 @@ TEMPLATE_TEST_CASE("basic_message_reader", "",
 	SECTION("attribute not found")
 	{
 		auto span = std::as_bytes(std::span{TestType::valid_message});
-		auto reader = pal_try(Protocol::read_message(span));
+		auto reader = Protocol::read_message(span).value();
 		constexpr turner::attribute_type<Protocol, turner::uint32_value_type> not_found_attribute = 0x80ff;
 		auto value = reader.read(not_found_attribute);
 		REQUIRE(!value);

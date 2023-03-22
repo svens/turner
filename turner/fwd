@@ -5,18 +5,15 @@
  * Forward declarations
  */
 
-#include <turner/__bits/lib>
-
-
-__turner_begin
+namespace turner {
 
 // turner/attribute_type
 template <typename Protocol, typename AttributeValueType> struct attribute_type;
 
+// turner/message_reader
+template <typename Protocol> class message_reader;
+
 // turner/message_type
-template <typename Protocol> struct message_type;
+template <typename Protocol, uint16_t Method, uint16_t Class> struct message_type;
 
-// turner/basic_message_reader
-template <typename Protocol> class basic_message_reader;
-
-__turner_end
+} // namespace turner
