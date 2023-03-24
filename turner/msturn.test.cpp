@@ -54,12 +54,12 @@ TEST_CASE("msturn")
 		static_assert(msturn::app_id.type == 0x8037);
 		static_assert(msturn::secure_tag.type == 0x8039);
 		// TODO static_assert(msturn::ms_sequence_number.type == 0x8050);
-		// TODO static_assert(msturn::ms_service_quality.type == 0x8055);
+		static_assert(msturn::ms_service_quality.type == 0x8055);
 		static_assert(msturn::ms_alternate_mapped_address.type == 0x8090);
 		static_assert(msturn::multiplexed_session_id.type == 0x8095);
 	}
 
-	SECTION("ms_version_value_type") //{{{1
+	SECTION("protocol_version_value_type") //{{{1
 	{
 		using message_type = test_message<msturn::protocol_version_value_type>;
 
@@ -103,6 +103,68 @@ TEST_CASE("msturn")
 			{
 				0x80, 0x80, 0x00, 0x04,
 				0x00, 0x00, 0x00, 0xff,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+	}
+
+	SECTION("service_quality_value_type") //{{{1
+	{
+		using message_type = test_message<msturn::service_quality_value_type>;
+
+		SECTION("valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x00, 0x01, 0x00, 0x01,
+			};
+			REQUIRE(message.value);
+			auto [type, quality] = *message.value;
+			CHECK(type == msturn::stream_type::audio);
+			CHECK(quality == msturn::service_quality::reliable);
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x03,
+				0x00, 0x00, 0x00, 0x06,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
+		}
+
+		SECTION("below type range")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x00, 0x00, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+
+		SECTION("above type range")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x00, 0x05, 0x00, 0x00,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+
+		SECTION("above quality range")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x04,
+				0x00, 0x01, 0x00, 0x02,
 			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);

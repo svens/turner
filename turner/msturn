@@ -134,7 +134,24 @@ struct msturn
 		with_mturn = v6,
 	};
 
+	/// MS-Service stream type
+	enum class stream_type: uint16_t
+	{
+		audio = 0x0001,
+		vide = 0x0002,
+		supplemental_video = 0x0003,
+		data = 0x0004,
+	};
+
+	/// MS-Service quality type
+	enum class service_quality: uint16_t
+	{
+		best_effort = 0x0000,
+		reliable = 0x0001,
+	};
+
 	struct protocol_version_value_type;
+	struct service_quality_value_type;
 
 	/**
 	 * \defgroup MSTURN_Attributes MS-TURN Attribute Registry
@@ -203,7 +220,7 @@ struct msturn
 	// static constexpr auto ms_sequence_number = attribute<msturn, TODO, 0x8050>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/e6add235-93a1-4802-b05a-1dabb1544344
-	// static constexpr auto ms_service_quality = attribute<msturn, TODO, 0x8055>;
+	static constexpr auto ms_service_quality = attribute<msturn, service_quality_value_type, 0x8055>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/3a99a9cf-7757-4d9a-87b6-688bcfe15f10
 	static constexpr auto ms_alternate_mapped_address = attribute<msturn, endpoint_value_type, 0x8090>;
@@ -245,6 +262,55 @@ struct msturn::protocol_version_value_type
 			return make_unexpected(errc::unexpected_attribute_value);
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+/// MS-TURN service quality type is used to convey information about the data
+/// stream that the protocol client is intending to transfer over allocated
+/// port.
+struct msturn::service_quality_value_type
+{
+	/// Native value type
+	struct value_type
+	{
+		stream_type type;
+		service_quality quality;
+	};
+
+	/// Read attribute value from \a span
+	static pal::result<value_type> read (
+		const message_reader &,
+		const std::span<const std::byte> &span) noexcept
+	{
+		if (span.size_bytes() == 2 * sizeof(uint16_t))
+		{
+			value_type v =
+			{
+				.type = (stream_type)read(span, 0),
+				.quality = (service_quality)read(span, 1),
+			};
+			if (is_valid(v))
+			{
+				return v;
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
+
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+
+private:
+
+	static uint16_t read (const std::span<const std::byte> &span, size_t index) noexcept
+	{
+		return pal::ntoh(reinterpret_cast<const uint16_t *>(span.data())[index]);
+	}
+
+	static bool is_valid (const value_type &v) noexcept
+	{
+		return stream_type::audio <= v.type && v.type <= stream_type::data
+			&& service_quality::best_effort <= v.quality && v.quality <= service_quality::reliable
+		;
 	}
 };
 
