@@ -53,7 +53,7 @@ TEST_CASE("msturn")
 		static_assert(msturn::ms_alternate_host_name.type == 0x8032);
 		static_assert(msturn::app_id.type == 0x8037);
 		static_assert(msturn::secure_tag.type == 0x8039);
-		// TODO static_assert(msturn::ms_sequence_number.type == 0x8050);
+		static_assert(msturn::ms_sequence_number.type == 0x8050);
 		static_assert(msturn::ms_service_quality.type == 0x8055);
 		static_assert(msturn::ms_alternate_mapped_address.type == 0x8090);
 		static_assert(msturn::multiplexed_session_id.type == 0x8095);
@@ -168,6 +168,51 @@ TEST_CASE("msturn")
 			};
 			REQUIRE(!message.value);
 			CHECK(message.value.error() == turner::errc::unexpected_attribute_value);
+		}
+	}
+
+	SECTION("sequence_number_value_type") //{{{1
+	{
+		using message_type = test_message<msturn::sequence_number_value_type>;
+
+		SECTION("valid")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x18,
+				0x01, 0x02, 0x03, 0x04,
+				0x05, 0x06, 0x07, 0x08,
+				0x09, 0x0a, 0x0b, 0x0c,
+				0x0d, 0x0e, 0x0f, 0x10,
+				0x11, 0x12, 0x13, 0x14,
+				0x12, 0x34, 0x56, 0x78,
+			};
+			REQUIRE(message.value);
+			auto [connection_id, sequence_number] = *message.value;
+
+			constexpr msturn::connection_id_type expected_connection_id
+			{
+				0x01, 0x02, 0x03, 0x04,
+				0x05, 0x06, 0x07, 0x08,
+				0x09, 0x0a, 0x0b, 0x0c,
+				0x0d, 0x0e, 0x0f, 0x10,
+				0x11, 0x12, 0x13, 0x14,
+			};
+			CHECK(connection_id == expected_connection_id);
+
+			CHECK(sequence_number == 0x12345678);
+		}
+
+		SECTION("unexpected attribute length")
+		{
+			message_type message
+			{
+				0x80, 0x80, 0x00, 0x08,
+				0x01, 0x02, 0x03, 0x04,
+				0x05, 0x06, 0x07, 0x08,
+			};
+			REQUIRE(!message.value);
+			CHECK(message.value.error() == turner::errc::unexpected_attribute_length);
 		}
 	}
 

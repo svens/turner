@@ -111,7 +111,6 @@ struct msturn
 	using xor_endpoint_value_type = turner::xor_endpoint_value_type<msturn>;
 	/// \endcond
 
-
 	/// MS-Version attribute values
 	enum class protocol_version: uint32_t
 	{
@@ -150,8 +149,12 @@ struct msturn
 		reliable = 0x0001,
 	};
 
+	/// Connection ID type
+	using connection_id_type = std::array<uint8_t, 20>;
+
 	struct protocol_version_value_type;
 	struct service_quality_value_type;
+	struct sequence_number_value_type;
 
 	/**
 	 * \defgroup MSTURN_Attributes MS-TURN Attribute Registry
@@ -217,7 +220,7 @@ struct msturn
 	static constexpr auto secure_tag = attribute<msturn, bytes_value_type<40>, 0x8039>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/bf1907a9-2135-41fb-8316-5988f1438ab1
-	// static constexpr auto ms_sequence_number = attribute<msturn, TODO, 0x8050>;
+	static constexpr auto ms_sequence_number = attribute<msturn, sequence_number_value_type, 0x8050>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/e6add235-93a1-4802-b05a-1dabb1544344
 	static constexpr auto ms_service_quality = attribute<msturn, service_quality_value_type, 0x8055>;
@@ -311,6 +314,34 @@ private:
 		return stream_type::audio <= v.type && v.type <= stream_type::data
 			&& service_quality::best_effort <= v.quality && v.quality <= service_quality::reliable
 		;
+	}
+};
+
+/// MS-TURN sequence information for all authenticated request messages
+struct msturn::sequence_number_value_type
+{
+	/// Native value type
+	struct value_type
+	{
+		connection_id_type connection_id;
+		uint32_t sequence_number;
+	};
+
+	/// Read attribute value from span
+	static pal::result<value_type> read (
+		const message_reader &,
+		const std::span<const std::byte> &span) noexcept
+	{
+		if (span.size_bytes() == 24)
+		{
+			value_type v =
+			{
+				.connection_id = *reinterpret_cast<const connection_id_type *>(span.data()),
+				.sequence_number = pal::ntoh(reinterpret_cast<const uint32_t *>(span.data())[5]),
+			};
+			return v;
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
 	}
 };
 
