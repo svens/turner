@@ -104,7 +104,7 @@ pal::result<stun::message_reader> stun::read_message (const std::span<const std:
 			return make_unexpected(errc::unexpected_attribute_length);
 		}
 
-		if (attr.type() == fingerprint)
+		if (attr.type() == fingerprint.type)
 		{
 			if (it != end)
 			{

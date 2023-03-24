@@ -111,7 +111,6 @@ struct msturn
 	using xor_endpoint_value_type = turner::xor_endpoint_value_type<msturn>;
 	/// \endcond
 
-
 	/// MS-Version attribute values
 	enum class protocol_version: uint32_t
 	{
@@ -134,7 +133,28 @@ struct msturn
 		with_mturn = v6,
 	};
 
+	/// MS-Service stream type
+	enum class stream_type: uint16_t
+	{
+		audio = 0x0001,
+		vide = 0x0002,
+		supplemental_video = 0x0003,
+		data = 0x0004,
+	};
+
+	/// MS-Service quality type
+	enum class service_quality: uint16_t
+	{
+		best_effort = 0x0000,
+		reliable = 0x0001,
+	};
+
+	/// Connection ID type
+	using connection_id_type = std::array<uint8_t, 20>;
+
 	struct protocol_version_value_type;
+	struct service_quality_value_type;
+	struct sequence_number_value_type;
 
 	/**
 	 * \defgroup MSTURN_Attributes MS-TURN Attribute Registry
@@ -143,73 +163,73 @@ struct msturn
 	 */
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/735464a2-28e3-423f-8b65-19dd4b4dbc52
-	static constexpr attribute_type<msturn, endpoint_value_type> mapped_address = 0x0001;
+	static constexpr auto mapped_address = attribute<msturn, endpoint_value_type, 0x0001>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/bbf7bc45-93b6-495e-adcc-685d270a2eae
-	static constexpr attribute_type<msturn, string_value_type<>> username = 0x0006;
+	static constexpr auto username = attribute<msturn, string_value_type<>, 0x0006>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/dfa0f83e-8c18-468c-a183-baa534a7f54c
-	static constexpr attribute_type<msturn, bytes_value_type<>> message_integrity = 0x0008;
+	static constexpr auto message_integrity = attribute<msturn, bytes_value_type<>, 0x0008>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/91972889-8dfd-43d1-885e-7d135bd91c2d
-	static constexpr attribute_type<msturn, error_code_value_type> error_code = 0x0009;
+	static constexpr auto error_code = attribute<msturn, error_code_value_type, 0x0009>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/2b097c56-f250-43fe-970e-66ca08b2dfcd
-	static constexpr attribute_type<msturn, attribute_list_value_type> unknown_attributes = 0x000a;
+	static constexpr auto unknown_attributes = attribute<msturn, attribute_list_value_type, 0x000a>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/46555d94-a165-40c9-a5ff-4d841d4d012a
-	static constexpr attribute_type<msturn, seconds_value_type> lifetime = 0x000d;
+	static constexpr auto lifetime = attribute<msturn, seconds_value_type, 0x000d>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/c8ebc611-c0c4-48c4-b7da-47e57b3f96c3
-	static constexpr attribute_type<msturn, endpoint_value_type> alternate_server = 0x000e;
+	static constexpr auto alternate_server = attribute<msturn, endpoint_value_type, 0x000e>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/f98b6d22-e8e2-4817-b936-5904402d1788
-	static constexpr attribute_type<msturn, uint32_value_type> bandwidth = 0x0010;
+	static constexpr auto bandwidth = attribute<msturn, uint32_value_type, 0x0010>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/9cd7e664-7c19-4464-ab05-761b4ca39372
-	static constexpr attribute_type<msturn, endpoint_value_type> destination_address = 0x0011;
+	static constexpr auto destination_address = attribute<msturn, endpoint_value_type, 0x0011>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/cf5c3756-d0a7-414e-8a14-c54786e34dbc
-	static constexpr attribute_type<msturn, endpoint_value_type> remote_address = 0x0012;
+	static constexpr auto remote_address = attribute<msturn, endpoint_value_type, 0x0012>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/d9dd90bc-5bd3-4daa-89ac-0d70c5a1cb81
-	static constexpr attribute_type<msturn, bytes_value_type<>> data = 0x0013;
+	static constexpr auto data = attribute<msturn, bytes_value_type<>, 0x0013>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/129e9c99-7d4b-4c8c-abd0-8d7a5874d73d
-	static constexpr attribute_type<msturn, string_value_type<128>> nonce = 0x0014;
+	static constexpr auto nonce = attribute<msturn, string_value_type<128>, 0x0014>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/108c58d4-129d-4ba5-b12b-fc6c1a54e7b3
-	static constexpr attribute_type<msturn, string_value_type<128>> realm = 0x0015;
+	static constexpr auto realm = attribute<msturn, string_value_type<128>, 0x0015>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/e7efc457-9312-4a6b-8089-94032a599198
-	static constexpr attribute_type<msturn, address_family_value_type> requested_address_family = 0x0017;
+	static constexpr auto requested_address_family = attribute<msturn, address_family_value_type, 0x0017>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/a972c937-780a-476a-915a-b81869428342
-	static constexpr attribute_type<msturn, protocol_version_value_type> ms_version = 0x8008;
+	static constexpr auto ms_version = attribute<msturn, protocol_version_value_type, 0x8008>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/d6f3f10a-b5f2-423a-af1d-a1d69b09ddab
-	static constexpr attribute_type<msturn, xor_endpoint_value_type> xor_mapped_address = 0x8020;
+	static constexpr auto xor_mapped_address = attribute<msturn, xor_endpoint_value_type, 0x8020>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/69ca1e1a-7423-4a3a-8618-f0bf76383cdc
-	static constexpr attribute_type<msturn, string_value_type<128>> ms_alternate_host_name = 0x8032;
+	static constexpr auto ms_alternate_host_name = attribute<msturn, string_value_type<128>, 0x8032>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/0a4bffc9-6cdc-4525-b76d-34a3606a7603
-	static constexpr attribute_type<msturn, uint32_value_type> app_id = 0x8037;
+	static constexpr auto app_id = attribute<msturn, uint32_value_type, 0x8037>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/571bc09c-81b7-4e53-a64b-1b1c2278b7cb
-	static constexpr attribute_type<msturn, bytes_value_type<40>> secure_tag = 0x8039;
+	static constexpr auto secure_tag = attribute<msturn, bytes_value_type<40>, 0x8039>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/bf1907a9-2135-41fb-8316-5988f1438ab1
-	static constexpr attribute_type<msturn, uint16_t> ms_sequence_number = 0x8050;
+	static constexpr auto ms_sequence_number = attribute<msturn, sequence_number_value_type, 0x8050>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/e6add235-93a1-4802-b05a-1dabb1544344
-	static constexpr attribute_type<msturn, uint16_t> ms_service_quality = 0x8055;
+	static constexpr auto ms_service_quality = attribute<msturn, service_quality_value_type, 0x8055>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/3a99a9cf-7757-4d9a-87b6-688bcfe15f10
-	static constexpr attribute_type<msturn, endpoint_value_type> ms_alternate_mapped_address = 0x8090;
+	static constexpr auto ms_alternate_mapped_address = attribute<msturn, endpoint_value_type, 0x8090>;
 
 	/// \see https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn/8192de42-81aa-453b-b4f4-77d4889da70e
-	static constexpr attribute_type<msturn, bytes_value_type<8>> multiplexed_session_id = 0x8095;
+	static constexpr auto multiplexed_session_id = attribute<msturn, bytes_value_type<8>, 0x8095>;
 
 	/// \}
 
@@ -243,6 +263,83 @@ struct msturn::protocol_version_value_type
 				return v;
 			}
 			return make_unexpected(errc::unexpected_attribute_value);
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+};
+
+/// MS-TURN service quality type is used to convey information about the data
+/// stream that the protocol client is intending to transfer over allocated
+/// port.
+struct msturn::service_quality_value_type
+{
+	/// Native value type
+	struct value_type
+	{
+		stream_type type;
+		service_quality quality;
+	};
+
+	/// Read attribute value from \a span
+	static pal::result<value_type> read (
+		const message_reader &,
+		const std::span<const std::byte> &span) noexcept
+	{
+		if (span.size_bytes() == 2 * sizeof(uint16_t))
+		{
+			value_type v =
+			{
+				.type = (stream_type)read(span, 0),
+				.quality = (service_quality)read(span, 1),
+			};
+			if (is_valid(v))
+			{
+				return v;
+			}
+			return make_unexpected(errc::unexpected_attribute_value);
+
+		}
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+
+private:
+
+	static uint16_t read (const std::span<const std::byte> &span, size_t index) noexcept
+	{
+		return pal::ntoh(reinterpret_cast<const uint16_t *>(span.data())[index]);
+	}
+
+	static bool is_valid (const value_type &v) noexcept
+	{
+		return stream_type::audio <= v.type && v.type <= stream_type::data
+			&& service_quality::best_effort <= v.quality && v.quality <= service_quality::reliable
+		;
+	}
+};
+
+/// MS-TURN sequence information for all authenticated request messages
+struct msturn::sequence_number_value_type
+{
+	/// Native value type
+	struct value_type
+	{
+		connection_id_type connection_id;
+		uint32_t sequence_number;
+	};
+
+	/// Read attribute value from span
+	static pal::result<value_type> read (
+		const message_reader &,
+		const std::span<const std::byte> &span) noexcept
+	{
+		if (span.size_bytes() == 24)
+		{
+			value_type v =
+			{
+				.connection_id = *reinterpret_cast<const connection_id_type *>(span.data()),
+				.sequence_number = pal::ntoh(reinterpret_cast<const uint32_t *>(span.data())[5]),
+			};
+			return v;
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
 	}

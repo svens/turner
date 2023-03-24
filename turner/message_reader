@@ -35,7 +35,7 @@ public:
 
 	/// Returns true if reader contains \a message
 	template <typename OtherProtocol, uint16_t Method, uint16_t Class>
-	requires(std::is_convertible_v<Protocol, OtherProtocol>)
+		requires(std::is_convertible_v<Protocol, OtherProtocol>)
 	bool expect (const message_type<OtherProtocol, Method, Class> &message) const noexcept
 	{
 		return type_ == message.type;
@@ -49,16 +49,15 @@ public:
 		);
 	}
 
-	/// Returns value of attribute \a type
-	template <typename OtherProtocol, typename AttributeValueType>
-	requires(std::is_convertible_v<Protocol, OtherProtocol>)
-	pal::result<typename AttributeValueType::value_type> read (
-		const attribute_type<OtherProtocol, AttributeValueType> &type) const noexcept
+	/// Returns value of \a attribute
+	template <typename OtherProtocol, typename ValueType, uint16_t Type>
+		requires(std::is_convertible_v<Protocol, OtherProtocol>)
+	pal::result<typename ValueType::value_type> read (
+		const attribute_type<OtherProtocol, ValueType, Type> &) const noexcept
 	{
-		auto message = __view::as_message<Protocol>(span_);
-		if (auto attribute = message->find(type.value))
+		if (auto a = __view::as_message<Protocol>(span_)->find(Type))
 		{
-			return AttributeValueType::read(*this, attribute->value());
+			return ValueType::read(*this, a->value());
 		}
 		return make_unexpected(errc::attribute_not_found);
 	}

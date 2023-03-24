@@ -8,12 +8,23 @@
 namespace turner {
 
 // turner/attribute_type
-template <typename Protocol, typename AttributeValueType> struct attribute_type;
+template <typename Protocol, typename ValueType, uint16_t Type> struct attribute_type;
 
 // turner/message_reader
 template <typename Protocol> class message_reader;
 
 // turner/message_type
 template <typename Protocol, uint16_t Method, uint16_t Class> struct message_type;
+template <typename Protocol, uint16_t Method> struct request_type;
+template <typename Protocol, uint16_t Method> struct indication_type;
+
+// turner/msturn
+struct msturn;
+
+// turner/stun
+struct stun;
+
+// turner/turn
+struct turn;
 
 } // namespace turner

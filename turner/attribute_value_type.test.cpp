@@ -5,7 +5,6 @@
 #include <turner/test>
 #include <catch2/catch_template_test_macros.hpp>
 
-
 namespace {
 
 using namespace turner_test;
@@ -578,6 +577,5 @@ TEMPLATE_TEST_CASE("attribute_value_type", "",
 
 	//}}}1
 }
-
 
 } // namespace
