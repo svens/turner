@@ -12,27 +12,27 @@ TEST_CASE("stun")
 {
 	SECTION("method registry")
 	{
-		CHECK(turner::stun::binding.method == 0x0001_u16);
-		CHECK(turner::stun::binding.type == 0x0001_u16);
-		CHECK(turner::stun::binding.success.method == 0x0001_u16);
-		CHECK(turner::stun::binding.success.type == 0x0101_u16);
+		static_assert(turner::stun::binding.method == 0x0001);
+		static_assert(turner::stun::binding.type == 0x0001);
+		static_assert(turner::stun::binding.success.method == 0x0001);
+		static_assert(turner::stun::binding.success.type == 0x0101);
 	}
 
 	SECTION("attribute registry")
 	{
-		CHECK(turner::stun::mapped_address == 0x0001_u16);
-		CHECK(turner::stun::username == 0x0006_u16);
-		CHECK(turner::stun::message_integrity == 0x0008_u16);
-		CHECK(turner::stun::error_code == 0x0009_u16);
-		CHECK(turner::stun::unknown_attributes == 0x000a_u16);
-		CHECK(turner::stun::realm == 0x0014_u16);
-		CHECK(turner::stun::nonce == 0x0015_u16);
-		CHECK(turner::stun::xor_mapped_address == 0x0020_u16);
+		static_assert(turner::stun::mapped_address == 0x0001);
+		static_assert(turner::stun::username == 0x0006);
+		static_assert(turner::stun::message_integrity == 0x0008);
+		static_assert(turner::stun::error_code == 0x0009);
+		static_assert(turner::stun::unknown_attributes == 0x000a);
+		static_assert(turner::stun::realm == 0x0014);
+		static_assert(turner::stun::nonce == 0x0015);
+		static_assert(turner::stun::xor_mapped_address == 0x0020);
 
-		CHECK(turner::stun::alternate_domain == 0x8003_u16);
-		CHECK(turner::stun::software == 0x8022_u16);
-		CHECK(turner::stun::alternate_server == 0x8023_u16);
-		CHECK(turner::stun::fingerprint == 0x8028_u16);
+		static_assert(turner::stun::alternate_domain == 0x8003);
+		static_assert(turner::stun::software == 0x8022);
+		static_assert(turner::stun::alternate_server == 0x8023);
+		static_assert(turner::stun::fingerprint == 0x8028);
 	}
 
 	SECTION("read_message")

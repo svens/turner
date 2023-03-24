@@ -14,48 +14,48 @@ TEST_CASE("msturn")
 {
 	SECTION("method registry") //{{{1
 	{
-		CHECK(turner::msturn::allocate.method == 0x0003_u16);
-		CHECK(turner::msturn::allocate.type == 0x0003_u16);
-		CHECK(turner::msturn::allocate.success.type == 0x0103_u16);
-		CHECK(turner::msturn::allocate.error.type == 0x0113_u16);
+		static_assert(turner::msturn::allocate.method == 0x0003);
+		static_assert(turner::msturn::allocate.type == 0x0003);
+		static_assert(turner::msturn::allocate.success.type == 0x0103);
+		static_assert(turner::msturn::allocate.error.type == 0x0113);
 
-		CHECK(turner::msturn::send_request.method == 0x0004_u16);
-		CHECK(turner::msturn::send_request.type == 0x0004_u16);
+		static_assert(turner::msturn::send_request.method == 0x0004);
+		static_assert(turner::msturn::send_request.type == 0x0004);
 
-		CHECK(turner::msturn::data_indication.method == 0x0115_u16);
-		CHECK(turner::msturn::data_indication.type == 0x0115_u16);
+		static_assert(turner::msturn::data_indication.method == 0x0115);
+		static_assert(turner::msturn::data_indication.type == 0x0115);
 
-		CHECK(turner::msturn::set_active_destination.method == 0x0006_u16);
-		CHECK(turner::msturn::set_active_destination.type == 0x0006_u16);
-		CHECK(turner::msturn::set_active_destination.success.type == 0x0106_u16);
-		CHECK(turner::msturn::set_active_destination.error.type == 0x0116_u16);
+		static_assert(turner::msturn::set_active_destination.method == 0x0006);
+		static_assert(turner::msturn::set_active_destination.type == 0x0006);
+		static_assert(turner::msturn::set_active_destination.success.type == 0x0106);
+		static_assert(turner::msturn::set_active_destination.error.type == 0x0116);
 	}
 
 	SECTION("attribute registry") //{{{1
 	{
-		CHECK(turner::msturn::mapped_address == 0x0001_u16);
-		CHECK(turner::msturn::username == 0x0006_u16);
-		CHECK(turner::msturn::message_integrity == 0x0008_u16);
-		CHECK(turner::msturn::error_code == 0x0009_u16);
-		CHECK(turner::msturn::unknown_attributes == 0x000a_u16);
-		CHECK(turner::msturn::lifetime == 0x000d_u16);
-		CHECK(turner::msturn::alternate_server == 0x000e_u16);
-		CHECK(turner::msturn::bandwidth == 0x0010_u16);
-		CHECK(turner::msturn::destination_address == 0x0011_u16);
-		CHECK(turner::msturn::remote_address == 0x0012_u16);
-		CHECK(turner::msturn::data == 0x0013_u16);
-		CHECK(turner::msturn::nonce == 0x0014_u16);
-		CHECK(turner::msturn::realm == 0x0015_u16);
-		CHECK(turner::msturn::requested_address_family == 0x0017_u16);
-		CHECK(turner::msturn::ms_version == 0x8008_u16);
-		CHECK(turner::msturn::xor_mapped_address == 0x8020_u16);
-		CHECK(turner::msturn::ms_alternate_host_name == 0x8032_u16);
-		CHECK(turner::msturn::app_id == 0x8037_u16);
-		CHECK(turner::msturn::secure_tag == 0x8039_u16);
-		CHECK(turner::msturn::ms_sequence_number == 0x8050_u16);
-		CHECK(turner::msturn::ms_service_quality == 0x8055_u16);
-		CHECK(turner::msturn::ms_alternate_mapped_address == 0x8090_u16);
-		CHECK(turner::msturn::multiplexed_session_id == 0x8095_u16);
+		static_assert(turner::msturn::mapped_address == 0x0001);
+		static_assert(turner::msturn::username == 0x0006);
+		static_assert(turner::msturn::message_integrity == 0x0008);
+		static_assert(turner::msturn::error_code == 0x0009);
+		static_assert(turner::msturn::unknown_attributes == 0x000a);
+		static_assert(turner::msturn::lifetime == 0x000d);
+		static_assert(turner::msturn::alternate_server == 0x000e);
+		static_assert(turner::msturn::bandwidth == 0x0010);
+		static_assert(turner::msturn::destination_address == 0x0011);
+		static_assert(turner::msturn::remote_address == 0x0012);
+		static_assert(turner::msturn::data == 0x0013);
+		static_assert(turner::msturn::nonce == 0x0014);
+		static_assert(turner::msturn::realm == 0x0015);
+		static_assert(turner::msturn::requested_address_family == 0x0017);
+		static_assert(turner::msturn::ms_version == 0x8008);
+		static_assert(turner::msturn::xor_mapped_address == 0x8020);
+		static_assert(turner::msturn::ms_alternate_host_name == 0x8032);
+		static_assert(turner::msturn::app_id == 0x8037);
+		static_assert(turner::msturn::secure_tag == 0x8039);
+		static_assert(turner::msturn::ms_sequence_number == 0x8050);
+		static_assert(turner::msturn::ms_service_quality == 0x8055);
+		static_assert(turner::msturn::ms_alternate_mapped_address == 0x8090);
+		static_assert(turner::msturn::multiplexed_session_id == 0x8095);
 	}
 
 	SECTION("ms_version_value_type") //{{{1

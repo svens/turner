@@ -3,9 +3,7 @@
 #include <catch2/generators/catch_generators_all.hpp>
 #include <type_traits>
 
-
 namespace {
-
 
 TEST_CASE("error")
 {
@@ -42,6 +40,5 @@ TEST_CASE("error")
 		CHECK(ec.category().name() == std::string{"turner"});
 	}
 }
-
 
 } // namespace

@@ -19,52 +19,52 @@ TEST_CASE("turn")
 	SECTION("method registry") //{{{1
 	{
 		// Allocate
-		CHECK(turner::turn::allocate.method == 0x0003_u16);
-		CHECK(turner::turn::allocate.type == 0x0003_u16);
-		CHECK(turner::turn::allocate.success.type == 0x0103_u16);
-		CHECK(turner::turn::allocate.error.type == 0x0113_u16);
+		static_assert(turner::turn::allocate.method == 0x0003);
+		static_assert(turner::turn::allocate.type == 0x0003);
+		static_assert(turner::turn::allocate.success.type == 0x0103);
+		static_assert(turner::turn::allocate.error.type == 0x0113);
 
 		// Refresh
-		CHECK(turner::turn::refresh.method == 0x0004_u16);
-		CHECK(turner::turn::refresh.type == 0x0004_u16);
-		CHECK(turner::turn::refresh.success.type == 0x0104_u16);
-		CHECK(turner::turn::refresh.error.type == 0x0114_u16);
+		static_assert(turner::turn::refresh.method == 0x0004);
+		static_assert(turner::turn::refresh.type == 0x0004);
+		static_assert(turner::turn::refresh.success.type == 0x0104);
+		static_assert(turner::turn::refresh.error.type == 0x0114);
 
 		// SendIndication
-		CHECK(turner::turn::send_indication.method == 0x0006_u16);
-		CHECK(turner::turn::send_indication.type == 0x0016_u16);
+		static_assert(turner::turn::send_indication.method == 0x0006);
+		static_assert(turner::turn::send_indication.type == 0x0016);
 
 		// DataIndication
-		CHECK(turner::turn::data_indication.method == 0x0007_u16);
-		CHECK(turner::turn::data_indication.type == 0x0017_u16);
+		static_assert(turner::turn::data_indication.method == 0x0007);
+		static_assert(turner::turn::data_indication.type == 0x0017);
 
 		// CreatePermission
-		CHECK(turner::turn::create_permission.method == 0x0008_u16);
-		CHECK(turner::turn::create_permission.type == 0x0008_u16);
-		CHECK(turner::turn::create_permission.success.type == 0x0108_u16);
-		CHECK(turner::turn::create_permission.error.type == 0x0118_u16);
+		static_assert(turner::turn::create_permission.method == 0x0008);
+		static_assert(turner::turn::create_permission.type == 0x0008);
+		static_assert(turner::turn::create_permission.success.type == 0x0108);
+		static_assert(turner::turn::create_permission.error.type == 0x0118);
 
 		// ChannelBind
-		CHECK(turner::turn::channel_bind.method == 0x0009_u16);
-		CHECK(turner::turn::channel_bind.type == 0x0009_u16);
-		CHECK(turner::turn::channel_bind.success.type == 0x0109_u16);
-		CHECK(turner::turn::channel_bind.error.type == 0x0119_u16);
+		static_assert(turner::turn::channel_bind.method == 0x0009);
+		static_assert(turner::turn::channel_bind.type == 0x0009);
+		static_assert(turner::turn::channel_bind.success.type == 0x0109);
+		static_assert(turner::turn::channel_bind.error.type == 0x0119);
 	}
 
 	SECTION("attribute registry") //{{{1
 	{
-		CHECK(turner::turn::channel_number == 0x000c_u16);
-		CHECK(turner::turn::lifetime == 0x000d_u16);
-		CHECK(turner::turn::xor_peer_address == 0x0012_u16);
-		CHECK(turner::turn::data == 0x0013_u16);
-		CHECK(turner::turn::xor_relayed_address == 0x0016_u16);
-		CHECK(turner::turn::requested_address_family == 0x0017_u16);
-		CHECK(turner::turn::even_port == 0x0018_u16);
-		CHECK(turner::turn::requested_transport == 0x0019_u16);
-		CHECK(turner::turn::dont_fragment == 0x001a_u16);
-		CHECK(turner::turn::reservation_token == 0x0022_u16);
-		CHECK(turner::turn::additional_address_family == 0x8000_u16);
-		CHECK(turner::turn::address_error_code == 0x8001_u16);
+		static_assert(turner::turn::channel_number == 0x000c);
+		static_assert(turner::turn::lifetime == 0x000d);
+		static_assert(turner::turn::xor_peer_address == 0x0012);
+		static_assert(turner::turn::data == 0x0013);
+		static_assert(turner::turn::xor_relayed_address == 0x0016);
+		static_assert(turner::turn::requested_address_family == 0x0017);
+		static_assert(turner::turn::even_port == 0x0018);
+		static_assert(turner::turn::requested_transport == 0x0019);
+		static_assert(turner::turn::dont_fragment == 0x001a);
+		static_assert(turner::turn::reservation_token == 0x0022);
+		static_assert(turner::turn::additional_address_family == 0x8000);
+		static_assert(turner::turn::address_error_code == 0x8001);
 	}
 
 	SECTION("STUN interoperability") //{{{1

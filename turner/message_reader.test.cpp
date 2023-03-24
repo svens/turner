@@ -9,9 +9,7 @@
 // - STUN Fingerprint tests are in turner/stun.test.cpp
 // - message_reader::read() tests are in turner/attribute_value_type.test.cpp
 
-
 namespace {
-
 
 struct msturn //{{{1
 {
@@ -125,7 +123,6 @@ struct turn //{{{1
 };
 
 //}}}1
-
 
 TEMPLATE_TEST_CASE("message_reader", "",
 	msturn,
@@ -258,6 +255,5 @@ TEMPLATE_TEST_CASE("message_reader", "",
 		CHECK(value.error() == turner::errc::attribute_not_found);
 	}
 }
-
 
 } // namespace
