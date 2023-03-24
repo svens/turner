@@ -69,7 +69,7 @@ struct test_message
 		auto new_size = (uint16_t)(data.size() - Protocol::header_size_bytes);
 		reinterpret_cast<uint16_t *>(data.data())[1] = pal::hton(new_size);
 		auto reader = Protocol::read_message(std::as_bytes(std::span{data})).value();
-		return reader.read(turner::attribute_type<Protocol, ValueType>{0x8080});
+		return reader.read(turner::attribute<Protocol, ValueType, 0x8080>);
 	}
 };
 

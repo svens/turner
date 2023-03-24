@@ -2,83 +2,35 @@
 
 /**
  * \file turner/attribute_type
- * Protocol-specific concrete attribute type
+ * Protocol-specific generic attribute type
  */
 
 #include <cstdint>
 
 namespace turner {
 
-/// Define \a Protocol message type.
-template <typename Protocol, typename AttributeValueType>
+/// Define \a protocol message attribute type
+template <typename Protocol, typename ValueType, uint16_t Type>
 struct attribute_type
 {
-	/// Protocol that defines this message type.
+	/// Protocol that defines attribute type
 	using protocol_type = Protocol;
 
-	/// Attribute type numeric value (in host byte order)
-	const uint16_t value;
+	/// Attribute value type
+	using value_type = ValueType;
 
-	attribute_type () = delete;
+	/// Attribute type
+	static constexpr uint16_t type = Type;
 
-	/// Construct new attribute_type using \a value
-	constexpr attribute_type (uint16_t value) noexcept
-		: value{value}
-	{ }
+	/// True if application is required to handle attribute
+	static constexpr bool is_comprehension_required = 0x0000 <= type && type <= 0x7fff;
 
-	/// Returns true if application is required to handle attribute
-	constexpr bool is_comprehension_required () const noexcept
-	{
-		return 0x0000 <= value && value <= 0x7fff;
-	}
-
-	/// Returns true if application may safely skip handling attribute it does not know
-	constexpr bool is_comprehension_optional () const noexcept
-	{
-		return 0x8000 <= value && value <= 0xffff;
-	}
-
-	/// Returns true if this message type is same as \a that message type.
-	template <typename OtherAttributeValueType>
-	constexpr bool operator== (const attribute_type<Protocol, OtherAttributeValueType> &that) const noexcept
-	{
-		return value == that.value;
-	}
-
-	/// Returns true if this message type is not same as \a that message type.
-	template <typename OtherAttributeValueType>
-	constexpr bool operator!= (const attribute_type<Protocol, OtherAttributeValueType> &that) const noexcept
-	{
-		return value != that.value;
-	}
+	/// True if application may safely skip handling attribute
+	static constexpr bool is_comprehension_optional = 0x8000 <= type && type <= 0xffff;
 };
 
-/// Returns true if message type \a left value is same as \a right.
-template <typename Protocol, typename AttributeValueType>
-constexpr bool operator== (const attribute_type<Protocol, AttributeValueType> &left, uint16_t right) noexcept
-{
-	return left.value == right;
-}
-
-/// Returns true if message type \a right value is same as \a left.
-template <typename Protocol, typename AttributeValueType>
-constexpr bool operator== (uint16_t left, const attribute_type<Protocol, AttributeValueType> &right) noexcept
-{
-	return left == right.value;
-}
-
-/// Returns true if message type \a left value is not same as \a right.
-template <typename Protocol, typename AttributeValueType>
-constexpr bool operator!= (const attribute_type<Protocol, AttributeValueType> &left, uint16_t right) noexcept
-{
-	return left.value != right;
-}
-
-/// Returns true if message type \a right value is not same as \a left.
-template <typename Protocol, typename AttributeValueType>
-constexpr bool operator!= (uint16_t left, const attribute_type<Protocol, AttributeValueType> &right) noexcept
-{
-	return left != right.value;
-}
+/// Generic protocol message attribute type instance
+template <typename Protocol, typename ValueType, uint16_t Type>
+constexpr auto attribute = attribute_type<Protocol, ValueType, Type>{};
 
 } // namespace turner

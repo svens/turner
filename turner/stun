@@ -21,10 +21,10 @@ namespace turner {
  * \see https://datatracker.ietf.org/doc/html/rfc8489
  *
  * \note Missing attribute types:
- * - static constexpr attribute_type<stun, T> message_integrity_sha256 = 0x001c;
- * - static constexpr attribute_type<stun, T> password_algorithm = 0x001d;
- * - static constexpr attribute_type<stun, T> userhash = 0x001e;
- * - static constexpr attribute_type<stun, T> password_algorithms = 0x8002;
+ * - message_integrity_sha256 = 0x001c;
+ * - password_algorithm = 0x001d;
+ * - userhash = 0x001e;
+ * - password_algorithms = 0x8002;
  */
 struct stun
 {
@@ -75,40 +75,40 @@ struct stun
 	 */
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.1
-	static constexpr attribute_type<stun, endpoint_value_type> mapped_address = 0x0001;
+	static constexpr auto mapped_address = attribute<stun, endpoint_value_type, 0x0001>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.3
-	static constexpr attribute_type<stun, string_value_type<513>> username = 0x0006;
+	static constexpr auto username = attribute<stun, string_value_type<513>, 0x0006>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.5
-	static constexpr attribute_type<stun, bytes_value_type<20>> message_integrity = 0x0008;
+	static constexpr auto message_integrity = attribute<stun, bytes_value_type<20>, 0x0008>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.8
-	static constexpr attribute_type<stun, error_code_value_type> error_code = 0x0009;
+	static constexpr auto error_code = attribute<stun, error_code_value_type, 0x0009>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.13
-	static constexpr attribute_type<stun, attribute_list_value_type> unknown_attributes = 0x000a;
+	static constexpr auto unknown_attributes = attribute<stun, attribute_list_value_type, 0x000a>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.9
-	static constexpr attribute_type<stun, string_value_type<763>> realm = 0x0014;
+	static constexpr auto realm = attribute<stun, string_value_type<763>, 0x0014>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.10
-	static constexpr attribute_type<stun, string_value_type<763>> nonce = 0x0015;
+	static constexpr auto nonce = attribute<stun, string_value_type<763>, 0x0015>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.2
-	static constexpr attribute_type<stun, xor_endpoint_value_type> xor_mapped_address = 0x0020;
+	static constexpr auto xor_mapped_address = attribute<stun, xor_endpoint_value_type, 0x0020>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.16
-	static constexpr attribute_type<stun, string_value_type<255>> alternate_domain = 0x8003;
+	static constexpr auto alternate_domain = attribute<stun, string_value_type<255>, 0x8003>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.14
-	static constexpr attribute_type<stun, string_value_type<763>> software = 0x8022;
+	static constexpr auto software = attribute<stun, string_value_type<763>, 0x8022>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.15
-	static constexpr attribute_type<stun, endpoint_value_type> alternate_server = 0x8023;
+	static constexpr auto alternate_server = attribute<stun, endpoint_value_type, 0x8023>;
 
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.7
-	static constexpr attribute_type<stun, uint32_value_type> fingerprint = 0x8028;
+	static constexpr auto fingerprint = attribute<stun, uint32_value_type, 0x8028>;
 
 	/// \}
 
