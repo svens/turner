@@ -56,13 +56,13 @@ struct test_message
 		0x72, 0xc6, 0x4b, 0xc6, // MSTURN: Magic Cookie
 	};
 
-	pal::result<typename ValueType::value_type> value;
+	pal::result<typename ValueType::native_value_type> value;
 
 	test_message (std::initializer_list<uint8_t> payload)
 		: value{read(payload)}
 	{ }
 
-	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload)
+	pal::result<typename ValueType::native_value_type> read (std::initializer_list<uint8_t> payload)
 	{
 		data.reserve(data.size() + payload.size());
 		data.insert(data.end(), payload);

@@ -246,10 +246,10 @@ struct msturn
 struct msturn::protocol_version_value_type
 {
 	/// Native value type
-	using value_type = protocol_version;
+	using native_value_type = protocol_version;
 
 	/// Read attribute value from \a span
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
@@ -274,20 +274,20 @@ struct msturn::protocol_version_value_type
 struct msturn::service_quality_value_type
 {
 	/// Native value type
-	struct value_type
+	struct native_value_type
 	{
 		stream_type type;
 		service_quality quality;
 	};
 
 	/// Read attribute value from \a span
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 2 * sizeof(uint16_t))
 		{
-			value_type v =
+			native_value_type v =
 			{
 				.type = (stream_type)read(span, 0),
 				.quality = (service_quality)read(span, 1),
@@ -309,7 +309,7 @@ private:
 		return pal::ntoh(reinterpret_cast<const uint16_t *>(span.data())[index]);
 	}
 
-	static bool is_valid (const value_type &v) noexcept
+	static bool is_valid (const native_value_type &v) noexcept
 	{
 		return stream_type::audio <= v.type && v.type <= stream_type::data
 			&& service_quality::best_effort <= v.quality && v.quality <= service_quality::reliable
@@ -321,20 +321,20 @@ private:
 struct msturn::sequence_number_value_type
 {
 	/// Native value type
-	struct value_type
+	struct native_value_type
 	{
 		connection_id_type connection_id;
 		uint32_t sequence_number;
 	};
 
 	/// Read attribute value from span
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == 24)
 		{
-			value_type v =
+			native_value_type v =
 			{
 				.connection_id = *reinterpret_cast<const connection_id_type *>(span.data()),
 				.sequence_number = pal::ntoh(reinterpret_cast<const uint32_t *>(span.data())[5]),

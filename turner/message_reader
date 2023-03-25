@@ -52,7 +52,7 @@ public:
 	/// Returns value of \a attribute
 	template <typename OtherProtocol, typename ValueType, uint16_t Type>
 		requires(std::is_convertible_v<Protocol, OtherProtocol>)
-	pal::result<typename ValueType::value_type> read (
+	pal::result<typename ValueType::native_value_type> read (
 		const attribute_type<OtherProtocol, ValueType, Type> &) const noexcept
 	{
 		if (auto a = __view::as_message<Protocol>(span_)->find(Type))

@@ -22,17 +22,17 @@ namespace turner {
 struct uint32_value_type
 {
 	/// Native value type
-	using value_type = uint32_t;
+	using native_value_type = uint32_t;
 
 	/// Read attribute value from \a span
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
-		if (span.size_bytes() == sizeof(value_type))
+		if (span.size_bytes() == sizeof(native_value_type))
 		{
-			return pal::ntoh(*reinterpret_cast<const value_type *>(span.data()));
+			return pal::ntoh(*reinterpret_cast<const native_value_type *>(span.data()));
 		}
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
@@ -42,17 +42,17 @@ struct uint32_value_type
 struct seconds_value_type
 {
 	/// Native value type
-	using value_type = std::chrono::seconds;
+	using native_value_type = std::chrono::seconds;
 
 	/// Read attribute value from \a span
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &message,
 		const std::span<const std::byte> &span) noexcept
 	{
 		return uint32_value_type::read(message, span).transform([](auto value)
 		{
-			return value_type{value};
+			return native_value_type{value};
 		});
 	}
 };
@@ -68,17 +68,17 @@ enum class address_family: uint8_t
 struct address_family_value_type
 {
 	/// Native value type
-	using value_type = address_family;
+	using native_value_type = address_family;
 
 	/// Read attribute value from \a span
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
 		{
-			auto v = *reinterpret_cast<const value_type *>(span.data());
+			auto v = *reinterpret_cast<const native_value_type *>(span.data());
 			if (v == address_family::v4 || v == address_family::v6)
 			{
 				return v;
@@ -101,17 +101,17 @@ enum class transport_protocol: uint8_t
 struct transport_protocol_value_type
 {
 	/// Native value type
-	using value_type = transport_protocol;
+	using native_value_type = transport_protocol;
 
 	/// Read attribute value from \a span
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		if (span.size_bytes() == sizeof(uint32_t))
 		{
-			auto v = *reinterpret_cast<const value_type *>(span.data());
+			auto v = *reinterpret_cast<const native_value_type *>(span.data());
 			if (v == transport_protocol::udp || v == transport_protocol::tcp)
 			{
 				return v;
@@ -127,7 +127,7 @@ template <size_t MaxSizeBytes = std::dynamic_extent>
 struct string_value_type
 {
 	/// Native value type
-	using value_type = std::string_view;
+	using native_value_type = std::string_view;
 
 	/**
 	 * Read attribute value from \a span
@@ -136,7 +136,7 @@ struct string_value_type
 	 * points into \a span. Caller should copy value if needed.
 	 */
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
@@ -147,7 +147,7 @@ struct string_value_type
 				return make_unexpected(errc::unexpected_attribute_length);
 			}
 		}
-		return value_type{
+		return native_value_type{
 			reinterpret_cast<const char *>(span.data()),
 			span.size_bytes()
 		};
@@ -159,7 +159,7 @@ template <size_t Extent = std::dynamic_extent>
 struct bytes_value_type
 {
 	/// Native value type
-	using value_type = std::span<const std::byte, Extent>;
+	using native_value_type = std::span<const std::byte, Extent>;
 
 	/**
 	 * Read attribute value from \a span
@@ -168,7 +168,7 @@ struct bytes_value_type
 	 * points into \a span. Caller should copy value if needed.
 	 */
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
@@ -179,7 +179,7 @@ struct bytes_value_type
 				return make_unexpected(errc::unexpected_attribute_length);
 			}
 		}
-		return value_type{span};
+		return native_value_type{span};
 	}
 };
 
@@ -187,7 +187,7 @@ struct bytes_value_type
 struct error_code_value_type
 {
 	/// Native value type
-	struct value_type
+	struct native_value_type
 	{
 		protocol_errc code;
 		std::string_view reason;
@@ -196,11 +196,11 @@ struct error_code_value_type
 	/**
 	 * Read attribute value from \a span
 	 *
-	 * \note returned value_type reason field does not own specified
+	 * \note returned native_value_type reason field does not own specified
 	 * range, it points into \a span. Caller should copy value if needed.
 	 */
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
@@ -208,7 +208,7 @@ struct error_code_value_type
 		if (span.size_bytes() >= min_size_bytes)
 		{
 			auto data = reinterpret_cast<const char *>(span.data());
-			return value_type
+			return native_value_type
 			{
 				.code = (protocol_errc)((data[2] & 0b0000'0111) * 100 + data[3]),
 				.reason = std::string_view{
@@ -224,15 +224,15 @@ struct error_code_value_type
 /**
  * Attribute list type value reader/writer.
  *
- * \note value_type::list supports up to 4 elements, even though underlying
+ * \note native_value_type::list supports up to 4 elements, even though underlying
  * Protocol does not limit this number. If attribute in \a span contains more
- * elements, only up to 4 are copied but returned value_type::size field
+ * elements, only up to 4 are copied but returned native_value_type::size field
  * reflects actual number.
  */
 struct attribute_list_value_type
 {
 	/// Native value type
-	struct value_type
+	struct native_value_type
 	{
 		size_t size;
 		std::array<uint16_t, 4> list;
@@ -246,14 +246,14 @@ struct attribute_list_value_type
 	 * network byte order.
 	 */
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &,
 		const std::span<const std::byte> &span) noexcept
 	{
 		auto size = span.size_bytes() / sizeof(uint16_t);
 		if (size * sizeof(uint16_t) == span.size_bytes())
 		{
-			value_type result{size, {}};
+			native_value_type result{size, {}};
 			size = (std::min)(size, result.list.max_size());
 			auto *src = reinterpret_cast<const uint16_t *>(span.data());
 			std::transform(src, src + size, result.list.begin(), ntoh);
@@ -283,7 +283,7 @@ template <typename Map>
 struct basic_endpoint_value_type
 {
 	/// Native value type
-	struct value_type
+	struct native_value_type
 	{
 		pal::net::ip::address address;
 		uint16_t port;
@@ -291,7 +291,7 @@ struct basic_endpoint_value_type
 
 	/// Read attribute value from \a span
 	template <typename Protocol>
-	static pal::result<value_type> read (
+	static pal::result<native_value_type> read (
 		const message_reader<Protocol> &message,
 		const std::span<const std::byte> &span) noexcept
 	{
@@ -334,11 +334,11 @@ private:
 		}
 	}
 
-	static pal::result<value_type> read_ipv4 (const std::span<const std::byte> &span) noexcept
+	static pal::result<native_value_type> read_ipv4 (const std::span<const std::byte> &span) noexcept
 	{
 		if (family(span) == address_family::v4)
 		{
-			return value_type
+			return native_value_type
 			{
 				.address = address<pal::net::ip::address_v4>(span),
 				.port = port(span)
@@ -347,11 +347,11 @@ private:
 		return make_unexpected(errc::unexpected_attribute_value);
 	}
 
-	static pal::result<value_type> read_ipv6 (const std::span<const std::byte> &span) noexcept
+	static pal::result<native_value_type> read_ipv6 (const std::span<const std::byte> &span) noexcept
 	{
 		if (family(span) == address_family::v6)
 		{
-			return value_type
+			return native_value_type
 			{
 				.address = address<pal::net::ip::address_v6>(span),
 				.port = port(span)
@@ -363,7 +363,7 @@ private:
 	template <typename Protocol>
 	static auto transform_with (const message_reader<Protocol> &message) noexcept
 	{
-		return [&](value_type &&endpoint) -> pal::result<value_type>
+		return [&](native_value_type &&endpoint) -> pal::result<native_value_type>
 		{
 			Map::transform(message.as_bytes(), endpoint.address, endpoint.port);
 			endpoint.port = pal::ntoh(endpoint.port);
