@@ -6,6 +6,7 @@
  */
 
 #include <turner/__view>
+#include <turner/attribute_list>
 #include <turner/attribute_type>
 #include <turner/message_type>
 #include <turner/error>
@@ -14,6 +15,19 @@
 #include <span>
 
 namespace turner {
+
+struct msturn;
+
+/*
+namespace __message_reader {
+
+template <typename Protocol, auto... Attributes>
+constexpr bool expect_protocol_v = std::is_convertible_v<Protocol,
+	typename attribute_list<Attributes...>::protocol_type
+>;
+
+} // namespace __message_reader
+*/
 
 /// Generic message reader
 template <typename Protocol>
@@ -62,6 +76,45 @@ public:
 		return make_unexpected(errc::attribute_not_found);
 	}
 
+	/// Returns values of all \a attributes as tuple of optional values.
+	/// Values not found in message remains as valueless optional element
+	template <auto... Attributes>
+	typename attribute_list<Attributes...>::read_value_list read_all (
+		const attribute_list<Attributes...> &attributes) const noexcept
+	{
+		static_assert(attribute_list<Attributes...>::template is_compatible_with<Protocol>);
+		return read_many(attributes, attributes.index_sequence());
+	}
+
+	/// Iterate over values in this reader and check for comprehension
+	/// required types that are not specified in \a attributes. Unhandled
+	/// attribute types are stored into \a result (up to N items).
+	///
+	/// \returns number of unhandled comprehension required types. Might
+	/// be more than stored into \a result.
+	template <size_t N, auto... Attributes>
+	size_t unread_comprehension_required (
+		const attribute_list<Attributes...> &attributes,
+		std::array<uint16_t, N> &result) const noexcept
+	{
+		static_assert(attribute_list<Attributes...>::template is_compatible_with<Protocol>);
+		size_t count = 0;
+		auto message = __view::as_message<Protocol>(span_);
+		for (auto it = message->begin(), end = message->end();  it != end;  it = it->next())
+		{
+			auto type = it->type();
+			if (comprehension_required(type) && !attributes.contains(type))
+			{
+				if (count < result.max_size())
+				{
+					result[count] = type;
+				}
+				count++;
+			}
+		}
+		return count;
+	}
+
 private:
 
 	uint16_t type_;
@@ -71,6 +124,43 @@ private:
 		: type_{pal::ntoh(*reinterpret_cast<const uint16_t *>(span.data()))}
 		, span_{span}
 	{ }
+
+	template <typename AttributeList, size_t... I>
+	auto read_many (const AttributeList &, std::index_sequence<I...>) const noexcept
+	{
+		typename AttributeList::read_value_list result;
+		auto message = __view::as_message<Protocol>(span_);
+		(read_one<I>(AttributeList::types, result, *message), ...);
+		return result;
+	}
+
+	template <size_t At, typename Types, typename Result>
+	void read_one (const Types &, Result &result, const __view::message<Protocol> &message) const noexcept
+	{
+		using attribute = std::tuple_element_t<At, Types>;
+		if (auto a = message.find(attribute::type))
+		{
+			std::get<At>(result) = attribute::value_type::read(*this, a->value());
+		}
+		else
+		{
+			std::get<At>(result) = make_unexpected(errc::attribute_not_found);
+		}
+	}
+
+	static constexpr bool comprehension_required (uint16_t type) noexcept
+	{
+		if constexpr (std::is_same_v<Protocol, msturn>)
+		{
+			if (type == 0x000f)
+			{
+				// Special case for MS-TURN: magic cookie is also attribute,
+				// do not consider it comprehension required in this context
+				return false;
+			}
+		}
+		return type <= 0x7fff;
+	}
 
 	friend Protocol;
 };
