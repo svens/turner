@@ -33,4 +33,18 @@ struct attribute_type
 template <typename Protocol, typename ValueType, uint16_t Type>
 constexpr auto attribute = attribute_type<Protocol, ValueType, Type>{};
 
+/// Returns true if \a t is equal to \a Type
+template <typename Protocol, typename ValueType, uint16_t Type>
+constexpr bool operator== (attribute_type<Protocol, ValueType, Type>, uint16_t t) noexcept
+{
+	return Type == t;
+}
+
+/// Returns true if \a t is not equal to \a Type
+template <typename Protocol, typename ValueType, uint16_t Type>
+constexpr bool operator!= (attribute_type<Protocol, ValueType, Type>, uint16_t t) noexcept
+{
+	return Type != t;
+}
+
 } // namespace turner
