@@ -1,0 +1,106 @@
+#pragma once // -*- C++ -*-
+
+/**
+ * \file turner/attribute_type_list
+ * List of protocol-specific generic attribute types
+ */
+
+#include <turner/attribute_type>
+#include <turner/fwd>
+#include <tuple>
+#include <type_traits>
+
+namespace turner {
+
+namespace __attribute_type_list { //{{{1
+
+template <typename T, typename Head, typename... Tail>
+constexpr bool contains_type_v = std::is_same_v<T, Head> || (contains_type_v<T, Tail> && ...);
+
+template <typename T, typename Tail>
+constexpr bool contains_type_v<T, Tail> = std::is_same_v<T, Tail>;
+
+template <typename Head, typename... Tail>
+constexpr bool distinct_types_v = !contains_type_v<Head, Tail...> && distinct_types_v<Tail...>;
+
+template <typename T>
+constexpr bool distinct_types_v<T> = true;
+
+template <typename Tuple, std::size_t... I>
+constexpr auto from_tuple (std::index_sequence<I...>) noexcept
+{
+	return attribute_type_list<std::tuple_element_t<I, Tuple>{}...>{};
+}
+
+} // namespace __attribute_type_list }}}1
+
+/// Attribute type list
+template <auto... AttributeType>
+struct attribute_type_list
+{
+	static_assert(__attribute_type_list::distinct_types_v<decltype(AttributeType)...>);
+
+	/// Protocol type common to all attribute types
+	///
+	/// It is compile-time error to combine attribute types from different
+	/// protocol into single type list unless protocols are convertible
+	/// (like STUN <-> TURN)
+	using protocol_type = std::common_type_t<
+		typename decltype(AttributeType)::protocol_type...
+	>;
+
+	/// Returns true if attributes list contains \a type
+	static constexpr bool contains (uint16_t type) noexcept
+	{
+		return ((type == AttributeType.type) || ...);
+	}
+
+	/// Returns subset of \a this attribute_type_list containing only
+	/// comprehension required attributes
+	static constexpr auto comprehension_required () noexcept
+	{
+		using tuple_type = decltype(
+			std::tuple_cat(
+				std::conditional_t<
+					AttributeType.is_comprehension_required,
+					std::tuple<std::decay_t<decltype(AttributeType)>>,
+					std::tuple<>
+				>{}...
+			)
+		);
+		return __attribute_type_list::from_tuple<tuple_type>(
+			std::make_index_sequence<std::tuple_size_v<tuple_type>>{}
+		);
+	}
+};
+
+/// Convenience instance to define attribute_type_list as variable
+template <auto... AttributeType>
+constexpr attribute_type_list<AttributeType...> attributes;
+
+} // namespace turner
+
+//
+// Specializations for attribute_type_list to be std::tuple-like
+//
+
+namespace std {
+
+template <auto... AttributeType>
+struct tuple_size<turner::attribute_type_list<AttributeType...>>
+	: integral_constant<size_t, sizeof...(AttributeType)>
+{ };
+
+template <size_t I, auto... AttributeType>
+struct tuple_element<I, turner::attribute_type_list<AttributeType...>>
+{
+	using type = tuple_element_t<I, tuple<std::decay_t<decltype(AttributeType)>...>>;
+};
+
+template <size_t I, auto... AttributeTypes>
+constexpr auto get (turner::attribute_type_list<AttributeTypes...>) noexcept
+{
+	return tuple_element_t<I, turner::attribute_type_list<AttributeTypes...>>{};
+}
+
+} // namespace std

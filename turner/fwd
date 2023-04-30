@@ -10,6 +10,9 @@ namespace turner {
 // turner/attribute_type
 template <typename Protocol, typename ValueType, uint16_t Type> struct attribute_type;
 
+// turner/attribute_type_list
+template <auto... AttributeType> struct attribute_type_list;
+
 // turner/message_reader
 template <typename Protocol> class message_reader;
 

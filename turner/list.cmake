@@ -8,6 +8,7 @@ list(APPEND turner_sources ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 list(APPEND turner_sources
 	turner/__view
 	turner/attribute_type
+	turner/attribute_type_list
 	turner/attribute_value_type
 	turner/attribute_value_type.cpp
 	turner/error
@@ -29,6 +30,7 @@ list(APPEND turner_test_sources
 	turner/test
 	turner/test.cpp
 	turner/attribute_type.test.cpp
+	turner/attribute_type_list.test.cpp
 	turner/attribute_value_type.test.cpp
 	turner/error.test.cpp
 	turner/message_reader.test.cpp
