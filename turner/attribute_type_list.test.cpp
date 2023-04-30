@@ -38,6 +38,7 @@ TEST_CASE("attribute_type_list")
 		__turner_check(var.contains(test_protocol::a0.type));
 		__turner_check(var.contains(test_protocol::a1.type));
 		__turner_check(var.contains(test_protocol::a2.type));
+		__turner_check(!var.contains(0xffff));
 	}
 
 	SECTION("comprehension_required")
@@ -52,6 +53,7 @@ TEST_CASE("attribute_type_list")
 		__turner_check(required.contains(test_protocol::a0.type));
 		__turner_check(required.contains(test_protocol::a1.type));
 		__turner_check(!required.contains(test_protocol::a2.type));
+		__turner_check(!required.contains(0xffff));
 
 		auto required_1 = required.comprehension_required();
 		__turner_check(!std::is_same_v<decltype(required_1), decltype(var)>);
