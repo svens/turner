@@ -14,6 +14,8 @@ template <typename Protocol, typename ValueType, uint16_t Type> struct attribute
 template <auto... AttributeType> struct attribute_type_list;
 
 // turner/message_reader
+struct message_reader_entry;
+template <typename Protocol> class message_reader_iterator;
 template <typename Protocol> class message_reader;
 
 // turner/message_type

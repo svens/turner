@@ -7,6 +7,7 @@
 
 #include <turner/__view>
 #include <turner/attribute_type>
+#include <turner/fwd>
 #include <turner/message_type>
 #include <turner/error>
 #include <pal/byte_order>
@@ -15,7 +16,91 @@
 
 namespace turner {
 
-struct msturn;
+/// Message attribute iterator entry
+struct message_reader_entry
+{
+	/// Message attribute type
+	uint16_t type;
+
+	/// Message attribute data
+	std::span<const std::byte> data;
+};
+
+/// Message attribute iterator
+template <typename Protocol>
+class message_reader_iterator
+{
+public:
+
+	/// Owner message protocol type
+	using protocol_type = Protocol;
+
+	message_reader_iterator () = default;
+	message_reader_iterator (const message_reader_iterator &) = default;
+	message_reader_iterator (message_reader_iterator &&) = default;
+	message_reader_iterator &operator= (const message_reader_iterator &) = default;
+	message_reader_iterator &operator= (message_reader_iterator &&) = default;
+	~message_reader_iterator () = default;
+
+	/// Return reference to current message attribute entry
+	const message_reader_entry &operator* () const noexcept
+	{
+		return entry_;
+	}
+
+	/// Return pointer to current message attribute entry
+	const message_reader_entry *operator-> () const noexcept
+	{
+		return &entry_;
+	}
+
+	/// Message attribute iterator pre-increment
+	message_reader_iterator &operator++ () noexcept
+	{
+		it_ = it_->next();
+		set_entry();
+		return *this;
+	}
+
+	/// Message attribute iterator post-increment
+	message_reader_iterator operator++ (int) noexcept
+	{
+		auto tmp = *this;
+		++*this;
+		return tmp;
+	}
+
+	/// Return true if message iterators \a left and \a right point to same attribute entries
+	friend bool operator== (const message_reader_iterator &left, const message_reader_iterator &right) noexcept
+	{
+		return left.it_ == right.it_;
+	}
+
+	/// Return true if message iterators \a left and \a right point to different attribute entries
+	friend bool operator!= (const message_reader_iterator &left, const message_reader_iterator &right) noexcept
+	{
+		return !(left == right);
+	}
+
+private:
+
+	const __view::attribute<Protocol> *it_ = nullptr;
+	message_reader_entry entry_{};
+
+	message_reader_iterator (const __view::attribute<Protocol> *it) noexcept
+		: it_{it}
+	{
+		set_entry();
+	}
+
+	void set_entry () noexcept
+	{
+		entry_.type = it_->type();
+		entry_.data = it_->value();
+	}
+
+	friend class message_reader<Protocol>;
+};
 
 /// Generic message reader
 template <typename Protocol>
@@ -28,6 +113,12 @@ public:
 
 	/// Message transaction ID type
 	using transaction_id_type = typename Protocol::transaction_id_type;
+
+	/// Message attributes iterator
+	using const_iterator = message_reader_iterator<Protocol>;
+
+	/// \copydoc const_iterator
+	using iterator = const_iterator;
 
 	/// Returns message wire format as byte blob
 	std::span<const std::byte> as_bytes () const noexcept
@@ -62,6 +153,30 @@ public:
 			return ValueType::read(*this, a->value());
 		}
 		return make_unexpected(errc::attribute_not_found);
+	}
+
+	/// Returns iterator to message 1st attribute
+	const_iterator cbegin () const noexcept
+	{
+		return __view::as_message<Protocol>(span_)->begin();
+	}
+
+	/// Returns iterator to end of message attributes.
+	const_iterator cend () const noexcept
+	{
+		return __view::as_message<Protocol>(span_)->end();
+	}
+
+	/// Returns iterator to message 1st attribute
+	const_iterator begin () const noexcept
+	{
+		return cbegin();
+	}
+
+	/// Returns iterator to end of message attributes.
+	const_iterator end () const noexcept
+	{
+		return cend();
 	}
 
 private:
