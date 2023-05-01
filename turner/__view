@@ -3,6 +3,8 @@
 #include <pal/byte_order>
 #include <span>
 
+namespace turner { struct msturn; }
+
 namespace turner::__view {
 
 // non-owning overlayed structure over message attribute
@@ -66,10 +68,23 @@ struct message
 
 	const attribute<Protocol> *begin () const noexcept
 	{
-		return reinterpret_cast<const attribute<Protocol> *>(
+		auto it = reinterpret_cast<const attribute<Protocol> *>(
 			reinterpret_cast<const std::byte *>(this)
 			+ Protocol::header_size_bytes
 		);
+
+		if constexpr (std::is_same_v<Protocol, msturn>)
+		{
+			// MS-TURN: skip Magic Cookie as 1st attribute
+			//
+			// Note: when reaching here, we assume message
+			// structure itself is already validated previously
+			// i.e. we can be sure 1st attribute is Magic Cookie
+			// indeed, no need to check here
+			it = it->next();
+		}
+
+		return it;
 	}
 
 	const attribute<Protocol> *end () const noexcept

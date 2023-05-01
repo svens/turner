@@ -8,6 +8,7 @@
 // FYI:
 // - STUN Fingerprint tests are in turner/stun.test.cpp
 // - message_reader::read() tests are in turner/attribute_value_type.test.cpp
+// - message_reader::read() + not_read() tests are in turner/attribute_type_list.test.cpp
 
 namespace {
 

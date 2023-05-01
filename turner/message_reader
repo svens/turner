@@ -7,7 +7,7 @@
 
 #include <turner/__view>
 #include <turner/attribute_type>
-#include <turner/fwd>
+#include <turner/attribute_type_list>
 #include <turner/message_type>
 #include <turner/error>
 #include <pal/byte_order>
@@ -15,6 +15,9 @@
 #include <span>
 
 namespace turner {
+
+template <typename Protocol>
+class message_reader;
 
 /// Message attribute iterator entry
 struct message_reader_entry
@@ -142,17 +145,57 @@ public:
 		);
 	}
 
-	/// Returns value of \a attribute
-	template <typename OtherProtocol, typename ValueType, uint16_t Type>
-		requires(std::is_convertible_v<Protocol, OtherProtocol>)
-	pal::result<typename ValueType::native_value_type> read (
-		const attribute_type<OtherProtocol, ValueType, Type> &) const noexcept
+	/// Returns native value of attribute type \a A enclosed in pal::result<>.
+	/// If there is no such attribute in \a this message, result error is
+	/// set to turner::errc::attribute_not_found.
+	template <typename OtherProtocol, typename ValueType, uint16_t Type,
+		typename A = attribute_type<OtherProtocol, ValueType, Type>,
+		typename V = typename A::value_type::native_value_type
+	>
+	pal::result<V> read (attribute_type<OtherProtocol, ValueType, Type>) const noexcept
 	{
-		if (auto a = __view::as_message<Protocol>(span_)->find(Type))
+		const auto &message = *__view::as_message<Protocol>(span_);
+		return read_one<A{}>(message);
+	}
+
+	/// Returns native values for list of \a AttributeType items enclosed
+	/// in std::tuple with pal::result<> elements. If attribute is missing
+	/// for AttributeType, it's position in tuple contains error
+	/// turner::errc::attribute_not_found
+	template <auto... AttributeType>
+	auto read (attribute_type_list<AttributeType...>) const noexcept
+		-> std::tuple<pal::result<typename decltype(AttributeType)::value_type::native_value_type>...>
+	{
+		const auto &message = *__view::as_message<Protocol>(span_);
+		return std::make_tuple(read_one<AttributeType>(message)...);
+	}
+
+	/// Iterates over comprehension required attributes in in \a this reader
+	/// and for each attribute type checks if it specified in \a list.
+	/// If not, attribute type is stored into \a result, not exceeding size of span.
+	///
+	/// \returns number of toal unread attributes. Returned value can be
+	/// bigger than result size.
+	template <size_t Extent, auto... AttributeType>
+	size_t not_read (
+		std::span<uint16_t, Extent> result,
+		attribute_type_list<AttributeType...> list) const noexcept
+	{
+		size_t count = 0;
+		const auto &message = *__view::as_message<Protocol>(span_);
+		for (auto it = message.begin(), end = message.end();  it != end;  it = it->next())
 		{
-			return ValueType::read(*this, a->value());
+			auto type = it->type();
+			if (is_comprehension_required(type) && !list.contains(type))
+			{
+				if (count < result.size())
+				{
+					result.data()[count] = type;
+				}
+				count++;
+			}
 		}
-		return make_unexpected(errc::attribute_not_found);
+		return count;
 	}
 
 	/// Returns iterator to message 1st attribute
@@ -188,6 +231,25 @@ private:
 		: type_{pal::ntoh(*reinterpret_cast<const uint16_t *>(span.data()))}
 		, span_{span}
 	{ }
+
+	template <auto AttributeType,
+		typename A = decltype(AttributeType),
+		typename V = typename A::value_type::native_value_type
+	>
+	pal::result<V> read_one (const __view::message<Protocol> &message) const noexcept
+		requires(std::is_convertible_v<Protocol, typename A::protocol_type>)
+	{
+		if (auto a = message.find(A::type))
+		{
+			return A::value_type::read(*this, a->value());
+		}
+		return make_unexpected(errc::attribute_not_found);
+	}
+
+	static constexpr bool is_comprehension_required (uint16_t type) noexcept
+	{
+		return type < 0x8000;
+	}
 
 	friend Protocol;
 };
