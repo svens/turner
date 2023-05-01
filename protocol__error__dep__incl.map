@@ -1,0 +1,7 @@
+<map id="turner/protocol_error" name="turner/protocol_error">
+<area shape="rect" id="node1" title="STUN family protocols&#39; errors." alt="" coords="45,5,201,32"/>
+<area shape="rect" id="node2" href="$attribute__value__type.html" title="Attribute value reader/writer." alt="" coords="23,80,223,107"/>
+<area shape="rect" id="node3" href="$msturn.html" title="MS&#45;TURN protocol." alt="" coords="5,155,116,181"/>
+<area shape="rect" id="node4" href="$stun.html" title="STUN protocol." alt="" coords="141,155,234,181"/>
+<area shape="rect" id="node5" href="$turn.html" title="TURN protocol." alt="" coords="142,229,233,256"/>
+</map>

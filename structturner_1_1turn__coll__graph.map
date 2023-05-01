@@ -1,0 +1,5 @@
+<map id="turner::turn" name="turner::turn">
+<area shape="rect" id="node1" title="TURN protocol requests/attributes." alt="" coords="19,171,114,197"/>
+<area shape="rect" id="node2" href="$structturner_1_1stun.html" title="STUN protocol requests/attributes." alt="" coords="18,95,115,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,128,32"/>
+</map>

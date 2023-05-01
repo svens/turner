@@ -1,0 +1,26 @@
+var group__MSTURN__Attributes =
+[
+    [ "alternate_server", "group__MSTURN__Attributes.html#gab6291b54afae96f045504645e0e338f8", null ],
+    [ "app_id", "group__MSTURN__Attributes.html#ga3b1cb0e8a3c7692b75f7a8cd4e5edda9", null ],
+    [ "bandwidth", "group__MSTURN__Attributes.html#gafcb20c0766388cf59bcf0eca8bd750d1", null ],
+    [ "data", "group__MSTURN__Attributes.html#ga9b7ddd841275d853d00f65462b9c6754", null ],
+    [ "destination_address", "group__MSTURN__Attributes.html#ga38cce729c7bde4284c2bdfd5947a8a2e", null ],
+    [ "error_code", "group__MSTURN__Attributes.html#ga47ecddb251126e4514f9e3a1733dfe50", null ],
+    [ "lifetime", "group__MSTURN__Attributes.html#ga9fa26e8d02663ee1becc3ef9a686ff14", null ],
+    [ "mapped_address", "group__MSTURN__Attributes.html#gac6da0262ac73e605c0011beb8f44443f", null ],
+    [ "message_integrity", "group__MSTURN__Attributes.html#gaba8c50f1748442ab64173d031d54aea8", null ],
+    [ "ms_alternate_host_name", "group__MSTURN__Attributes.html#ga4f4316930fb24339e22d4986af2f1ed0", null ],
+    [ "ms_alternate_mapped_address", "group__MSTURN__Attributes.html#ga7c9f43a9291ffa9d9c6a9cc913b059a2", null ],
+    [ "ms_sequence_number", "group__MSTURN__Attributes.html#ga863223d7089c30924f41bd5afb1b9bff", null ],
+    [ "ms_service_quality", "group__MSTURN__Attributes.html#gafcac4a794a1c7b8835e6f6519499a15f", null ],
+    [ "ms_version", "group__MSTURN__Attributes.html#ga7e69d15ffa73939dcd83e06b79d5ac1f", null ],
+    [ "multiplexed_session_id", "group__MSTURN__Attributes.html#ga9e2d165ad192c7e8c52c4584403166b7", null ],
+    [ "nonce", "group__MSTURN__Attributes.html#gaa2a342bae350417abd9069ca45579d93", null ],
+    [ "realm", "group__MSTURN__Attributes.html#gaec8058033d485e3f227eb7db6a9e9a83", null ],
+    [ "remote_address", "group__MSTURN__Attributes.html#gadc40abf72ee42b01bd11f42cc53e65bb", null ],
+    [ "requested_address_family", "group__MSTURN__Attributes.html#ga33063e406a76e29aa5f76ccd66a294a7", null ],
+    [ "secure_tag", "group__MSTURN__Attributes.html#ga98c658d1e3aa7aa8fcc676c80580db9b", null ],
+    [ "unknown_attributes", "group__MSTURN__Attributes.html#ga7e033075abfadad227cb9ba4595857bf", null ],
+    [ "username", "group__MSTURN__Attributes.html#ga723d9240303ad38fd1166ed05100b8be", null ],
+    [ "xor_mapped_address", "group__MSTURN__Attributes.html#ga97b30d8c7eaba94ddd1c4745af0aa99e", null ]
+];

@@ -1,0 +1,8 @@
+<map id="turner/attribute_type" name="turner/attribute_type">
+<area shape="rect" id="node1" title="Protocol&#45;specific generic attribute type." alt="" coords="106,5,263,32"/>
+<area shape="rect" id="node2" href="$attribute__type__list.html" title="List of protocol&#45;specific generic attribute types." alt="" coords="28,80,212,107"/>
+<area shape="rect" id="node3" href="$message__reader.html" title="Protocol&#45;specific generic message reader." alt="" coords="62,155,235,181"/>
+<area shape="rect" id="node4" href="$msturn.html" title="MS&#45;TURN protocol." alt="" coords="29,229,140,256"/>
+<area shape="rect" id="node5" href="$stun.html" title="STUN protocol." alt="" coords="166,229,259,256"/>
+<area shape="rect" id="node6" href="$turn.html" title="TURN protocol." alt="" coords="167,304,258,331"/>
+</map>

@@ -1,0 +1,15 @@
+<map id="turner/message_reader" name="turner/message_reader">
+<area shape="rect" id="node1" title="Protocol&#45;specific generic message reader." alt="" coords="519,5,692,32"/>
+<area shape="rect" id="node2" href="$attribute__type.html" title="Protocol&#45;specific generic attribute type." alt="" coords="5,155,163,181"/>
+<area shape="rect" id="node4" href="$attribute__type__list.html" title="List of protocol&#45;specific generic attribute types." alt="" coords="200,80,384,107"/>
+<area shape="rect" id="node8" href="$message__type.html" title="Generic message and related subtypes (request, response, indicaton)" alt="" coords="408,80,568,107"/>
+<area shape="rect" id="node9" href="$error.html" title="Turner library error codes." alt="" coords="643,80,739,107"/>
+<area shape="rect" id="node10" title=" " alt="" coords="564,155,647,181"/>
+<area shape="rect" id="node12" title=" " alt="" coords="763,80,879,107"/>
+<area shape="rect" id="node13" title=" " alt="" coords="904,80,957,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="263,229,329,256"/>
+<area shape="rect" id="node5" href="$fwd.html" title="Forward declarations." alt="" coords="187,155,275,181"/>
+<area shape="rect" id="node6" title=" " alt="" coords="299,155,354,181"/>
+<area shape="rect" id="node7" title=" " alt="" coords="378,155,470,181"/>
+<area shape="rect" id="node11" title=" " alt="" coords="671,155,779,181"/>
+</map>
