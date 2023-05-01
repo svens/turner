@@ -76,4 +76,18 @@ struct indication_type: message_type<Protocol, Method, __message_type::indicatio
 template <typename Protocol, uint16_t Method>
 constexpr auto indication = indication_type<Protocol, Method>{};
 
+/// Return true if \a t is equal to Method|Class
+template <typename Protocol, uint16_t Method, uint16_t Class>
+constexpr bool operator== (message_type<Protocol, Method, Class>, uint16_t t) noexcept
+{
+	return (Method | Class) == t;
+}
+
+/// Return true if \a t is not equal to Method|Class
+template <typename Protocol, uint16_t Method, uint16_t Class>
+constexpr bool operator!= (message_type<Protocol, Method, Class>, uint16_t t) noexcept
+{
+	return (Method | Class) != t;
+}
+
 } // namespace turner

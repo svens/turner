@@ -8,6 +8,7 @@
 // FYI:
 // - STUN Fingerprint tests are in turner/stun.test.cpp
 // - message_reader::read() tests are in turner/attribute_value_type.test.cpp
+// - message_reader::read() + not_read() tests are in turner/attribute_type_list.test.cpp
 
 namespace {
 
@@ -143,6 +144,79 @@ TEMPLATE_TEST_CASE("message_reader", "",
 		auto raw = reader->as_bytes();
 		CHECK(raw.data() == span.data());
 		CHECK(raw.size_bytes() == span.size_bytes());
+	}
+
+	SECTION("iterator")
+	{
+		auto span = std::as_bytes(std::span{TestType::valid_message});
+		auto reader = Protocol::read_message(span);
+		REQUIRE(reader);
+
+		// MS-TURN Magic Cookie is intentionally omitted in turner,
+		// set it explicitly here
+		// For STUN/TURN, use Fingerprint
+		constexpr auto expected_type = std::conditional_t<
+			std::is_same_v<TestType, msturn>,
+			std::integral_constant<uint16_t, 0x000f>,
+			std::integral_constant<uint16_t, turner::stun::fingerprint.type>
+		>::value;
+
+		SECTION("pre-increment")
+		{
+			for (auto it = reader->begin();  it != reader->end();  ++it)
+			{
+				CHECK(it->type == expected_type);
+				CHECK(it->data.size() == 4);
+				CHECK(it->data.data() > span.data());
+				CHECK(it->data.data() < span.data() + span.size());
+			}
+		}
+
+		SECTION("post-increment")
+		{
+			auto it = reader->begin(), end = reader->end();
+			while (it != end)
+			{
+				auto entry = *it++;
+				CHECK(entry.type == expected_type);
+				CHECK(entry.data.size() == 4);
+				CHECK(entry.data.data() > span.data());
+				CHECK(entry.data.data() < span.data() + span.size());
+			}
+		}
+
+		SECTION("auto &entry")
+		{
+			for (auto &entry: *reader)
+			{
+				CHECK(entry.type == expected_type);
+				CHECK(entry.data.size() == 4);
+				CHECK(entry.data.data() > span.data());
+				CHECK(entry.data.data() < span.data() + span.size());
+			}
+		}
+
+		SECTION("auto &[type, data]")
+		{
+			for (auto &[type, data]: *reader)
+			{
+				CHECK(type == expected_type);
+				CHECK(data.size() == 4);
+				CHECK(data.data() > span.data());
+				CHECK(data.data() < span.data() + span.size());
+			}
+		}
+
+		SECTION("std::for_each")
+		{
+			std::for_each(reader->begin(), reader->end(), [&span](auto &entry)
+			{
+				CHECK(entry.type == expected_type);
+				CHECK(entry.data.size() == 4);
+				CHECK(entry.data.data() > span.data());
+				CHECK(entry.data.data() < span.data() + span.size());
+			});
+		}
 	}
 
 	SECTION("insufficient data")

@@ -10,6 +10,12 @@
 
 namespace turner_test {
 
+// 2-in-1: compile-time and run-time checks (for constexpr + test coverage)
+#define __turner_check(...) __turner_check_impl((__VA_ARGS__))
+#define __turner_check_impl(Expr) \
+	static_assert(Expr); \
+	CHECK(Expr)
+
 inline std::string case_name ()
 {
 	return Catch::getResultCapture().getCurrentTestName();
@@ -56,13 +62,13 @@ struct test_message
 		0x72, 0xc6, 0x4b, 0xc6, // MSTURN: Magic Cookie
 	};
 
-	pal::result<typename ValueType::value_type> value;
+	pal::result<typename ValueType::native_value_type> value;
 
 	test_message (std::initializer_list<uint8_t> payload)
 		: value{read(payload)}
 	{ }
 
-	pal::result<typename ValueType::value_type> read (std::initializer_list<uint8_t> payload)
+	pal::result<typename ValueType::native_value_type> read (std::initializer_list<uint8_t> payload)
 	{
 		data.reserve(data.size() + payload.size());
 		data.insert(data.end(), payload);
@@ -71,6 +77,14 @@ struct test_message
 		auto reader = Protocol::read_message(std::as_bytes(std::span{data})).value();
 		return reader.read(turner::attribute<Protocol, ValueType, 0x8080>);
 	}
+};
+
+struct test_protocol
+{
+	struct attribute_value_type { };
+	static constexpr auto a0 = turner::attribute<test_protocol, attribute_value_type, 0x0001>;
+	static constexpr auto a1 = turner::attribute<test_protocol, attribute_value_type, 0x0002>;
+	static constexpr auto a2 = turner::attribute<test_protocol, attribute_value_type, 0x8001>;
 };
 
 } // namespace turner_test
