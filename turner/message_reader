@@ -170,23 +170,20 @@ public:
 		return std::make_tuple(read_one<AttributeType>(message)...);
 	}
 
-	/// Iterates over comprehension required attributes in in \a this reader
-	/// and for each attribute type checks if it specified in \a list.
-	/// If not, attribute type is stored into \a result, not exceeding size of span.
+	/// Iterates over attributes in in \a this reader and for each attribute
+	/// type checks if functor \a unread returns for it true. If it does,
+	/// attribute type is stored into \a result, not exceeding size of span.
 	///
-	/// \returns number of toal unread attributes. Returned value can be
+	/// \returns number of unread attributes. Returned value can be
 	/// bigger than result size.
-	template <size_t Extent, auto... AttributeType>
-	size_t not_read (
-		std::span<uint16_t, Extent> result,
-		attribute_type_list<AttributeType...> list) const noexcept
+	template <size_t Extent, typename F>
+	size_t not_read (std::span<uint16_t, Extent> result, F unread) const noexcept
 	{
 		size_t count = 0;
 		const auto &message = *__view::as_message<Protocol>(span_);
 		for (auto it = message.begin(), end = message.end();  it != end;  it = it->next())
 		{
-			auto type = it->type();
-			if (is_comprehension_required(type) && !list.contains(type))
+			if (auto type = it->type();  unread(type))
 			{
 				if (count < result.size())
 				{
@@ -244,11 +241,6 @@ private:
 			return A::value_type::read(*this, a->value());
 		}
 		return make_unexpected(errc::attribute_not_found);
-	}
-
-	static constexpr bool is_comprehension_required (uint16_t type) noexcept
-	{
-		return type < 0x8000;
 	}
 
 	friend Protocol;

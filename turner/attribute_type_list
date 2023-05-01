@@ -72,6 +72,36 @@ struct attribute_type_list
 			std::make_index_sequence<std::tuple_size_v<tuple_type>>{}
 		);
 	}
+
+	/// Returns unary lambda that checks if specified uint16_t attribute
+	/// type has value not listed in this \a attribute_type_list
+	///
+	/// \see message_reader::not_read()
+	static constexpr auto any () noexcept
+	{
+		return [](uint16_t type) noexcept -> bool
+		{
+			return !contains(type);
+		};
+	}
+
+	/// Returns unary lambda that checks if specified uint16_t attribute
+	/// type has value in comprehension required range and is not listed
+	/// in attribute_type_list::comprehension_required()
+	///
+	/// Differently put, passing this lambda as \a unread argument for
+	/// message_reader::not_read() collects attribute types in comprehension
+	/// required range that are not read when using this argument_type_list
+	///
+	/// \see attribute_type_list::any()
+	/// \see message_reader::not_read()
+	static constexpr auto any_comprehension_required () noexcept
+	{
+		return [list = comprehension_required()](uint16_t type) noexcept -> bool
+		{
+			return type < 0x8000 && !list.contains(type);
+		};
+	}
 };
 
 /// Convenience instance to define attribute_type_list as variable

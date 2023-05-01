@@ -164,6 +164,12 @@ TEMPLATE_TEST_CASE("attribute_type_list", "",
 	auto reader = Protocol::read_message(span);
 	REQUIRE(reader);
 
+	static constexpr auto custom_attribute = turner::attribute<
+		Protocol,
+		turner::string_value_type<>,
+		0x8000
+	>;
+
 	SECTION("read")
 	{
 		auto attributes = turner::attributes<Protocol::realm, Protocol::username>;
@@ -180,17 +186,21 @@ TEMPLATE_TEST_CASE("attribute_type_list", "",
 		CHECK(nonce.error_or(std::error_code{}) == turner::errc::attribute_not_found);
 	}
 
-	SECTION("not_read")
+	SECTION("not_read: any")
 	{
-		static constexpr auto custom_attribute = turner::attribute<
-			Protocol,
-			turner::string_value_type<>,
-			0x8000
-		>;
-
-		auto attributes = turner::attributes<Protocol::realm, custom_attribute>;
+		auto attributes = turner::attributes<Protocol::realm>;
 		std::array<uint16_t, 2> list;
-		auto count = reader->not_read(std::span{list}, attributes);
+		auto count = reader->not_read(std::span{list}, attributes.any());
+		REQUIRE(count == 2);
+		CHECK(list[0] == Protocol::username);
+		CHECK(list[1] == custom_attribute);
+	}
+
+	SECTION("not_read: any_comprehension_required")
+	{
+		auto attributes = turner::attributes<Protocol::realm>;
+		std::array<uint16_t, 2> list;
+		auto count = reader->not_read(std::span{list}, attributes.any_comprehension_required());
 		REQUIRE(count == 1);
 		CHECK(list[0] == Protocol::username);
 	}
@@ -199,9 +209,12 @@ TEMPLATE_TEST_CASE("attribute_type_list", "",
 	{
 		auto attributes = turner::attributes<Protocol::realm>;
 		std::array<uint16_t, 2> list{};
-		auto count = reader->not_read(std::span{list}.first(0), attributes);
-		REQUIRE(count == 1);
-		CHECK(list[0] == 0);
+		auto count = reader->not_read(std::span{list}.first(0), attributes.any());
+		CAPTURE(count, list[0]);
+
+		// if not satisfied, we have buffer overflow
+		REQUIRE(count == 2);
+		REQUIRE(list[0] == 0);
 	}
 }
 
