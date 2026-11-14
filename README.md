@@ -1,6 +1,6 @@
 # turner
 
-C++23 STUN/TURN/MS-TURN library and server.
+C++23 STUN/TURN/MS-TURN/MTURN library and server.
 
 [![CI](https://github.com/svens/turner/actions/workflows/ci.yml/badge.svg)](https://github.com/svens/turner/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/github/svens/turner/graph/badge.svg)](https://codecov.io/github/svens/turner)
@@ -18,11 +18,16 @@ C++23 STUN/TURN/MS-TURN library and server.
     |- CMakePresets.json    Compiler/config presets and workflows
     `- build.ninja          Convenience wrapper for cmake workflow presets
 
+## Specifications
+
+1. [RFC 8489](https://datatracker.ietf.org/doc/html/rfc8489): STUN
+2. [RFC 8656](https://datatracker.ietf.org/doc/html/rfc8656): TURN
+3. [MS-TURN](https://docs.microsoft.com/en-us/openspecs/office_protocols/ms-turn): MS-TURN/MTURN
+
 ## Dependencies
 
-1. [pal](https://github.com/svens/pal): fetched at the commit pinned in
-   `cmake/pal.cmake`. A sibling checkout at `../../pal/main` is used instead
-   when present; set `FETCHCONTENT_SOURCE_DIR_PAL` to choose another tree.
+1. [pal](https://github.com/svens/pal): fetched at the commit pinned in `cmake/pal.cmake`. A sibling checkout at
+   `../../pal/main` is used instead when present; set `FETCHCONTENT_SOURCE_DIR_PAL` to choose another tree.
 
 ## Building
 
