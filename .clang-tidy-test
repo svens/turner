@@ -1,0 +1,6 @@
+InheritParentConfig: true
+Checks: >-
+  -bugprone-sizeof-expression,
+  -bugprone-unchecked-optional-access,
+  -bugprone-use-after-move,
+  -performance-move-const-arg,

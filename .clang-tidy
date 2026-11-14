@@ -1,0 +1,19 @@
+Checks: >
+  -*,
+  bugprone-*,
+  misc-const-correctness,
+  performance-*,
+  readability-make-member-function-const,
+  -bugprone-derived-method-shadowing-base-method,
+  -bugprone-invalid-enum-default-initialization,
+  -bugprone-reserved-identifier,
+  -bugprone-signed-bitwise,
+  -performance-enum-size,
+
+CheckOptions:
+  misc-const-correctness.AnalyzeParameters: false
+  misc-const-correctness.AnalyzePointers: false
+  misc-const-correctness.AnalyzeValues: false
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(turner|app)/.*\.hpp$'

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-22 libc++-22-dev libc++abi-22-dev g++-15
+          sudo ln -sf /usr/bin/clang++-22 /usr/bin/clang++
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 15
+      - run: ninja all
+
+  macos:
+    name: MacOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ninja all
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - run: ninja all

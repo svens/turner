@@ -1,0 +1,26 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: ninja style-check
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-22 clang-tidy-22 libc++-22-dev libc++abi-22-dev
+          sudo ln -sf /usr/bin/clang-22 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-22 /usr/bin/clang++
+          sudo ln -sf /usr/bin/clang-tidy-22 /usr/bin/clang-tidy
+          sudo ln -sf /usr/bin/run-clang-tidy-22 /usr/bin/run-clang-tidy
+
+      - run: ninja tidy

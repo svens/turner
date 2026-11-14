@@ -1,0 +1,46 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  coverage:
+    name: Coverage report
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-22 libc++-22-dev libc++abi-22-dev llvm-22
+          sudo ln -sf /usr/bin/clang++-22 /usr/bin/clang++
+          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-cov-22 /usr/bin/llvm-cov
+
+      - name: Coverage LCOV
+        run: ninja coverage-lcov
+
+      - name: Test results
+        if: ${{ !cancelled() }}
+        run: |
+          .build/linux-clang-coverage/turner_test \
+            --skip-benchmarks \
+            --reporter junit::out=junit.xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: .build/linux-clang-coverage/coverage.lcov
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          files: junit.xml
+          report_type: test_results
+          token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,0 +1,27 @@
+name: Sanitize
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sanitize:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-15
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 15
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: matrix.os == 'windows'
+      - run: ninja sanitize
