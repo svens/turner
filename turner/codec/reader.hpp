@@ -6,13 +6,20 @@
  */
 
 #include <turner/codec/__wire.hpp>
+#include <turner/codec/attribute.hpp>
+#include <turner/codec/error.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol.hpp>
 #include <pal/packed_struct.hpp>
+#include <pal/result.hpp>
+#include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <ranges>
 #include <span>
+#include <type_traits>
 
 namespace turner
 {
@@ -35,7 +42,102 @@ const typename Protocol::transaction_id &transaction_id (std::span<std::byte> bu
 	return pal::packed_as<id_type>(buffer.subspan<Protocol::transaction_id_offset, sizeof(id_type)>());
 }
 
+template <typename Protocol>
+constexpr size_t attributes_offset = (std::max)(
+	Protocol::header_size,
+	Protocol::cookie_offset + Protocol::cookie.size()
+);
+
+template <attribute_value Value>
+[[nodiscard]] pal::result<typename Value::native_type> read_value (
+	std::span<const std::byte> message,
+	std::span<const std::byte> value) noexcept
+{
+	if (value.size() < Value::min_size || value.size() > Value::max_size)
+	{
+		return make_unexpected(errc::unexpected_attribute_length);
+	}
+	return Value::read(message, value);
+}
+
 } // namespace __reader
+
+/// Iterator over values of attributes of type \a Type in validated \a Protocol message. Each element is
+/// result of reading one such attribute with \a Value. Elements are returned by value: with algorithms that
+/// need more than single pass, use those of \c std::ranges.
+template <typename Protocol, attribute_value Value, uint16_t Type>
+class attribute_value_iterator
+{
+public:
+
+	/// Iterator difference type
+	using difference_type = std::ptrdiff_t;
+
+	/// Iterator value type
+	using value_type = pal::result<typename Value::native_type>;
+
+	/// Construct iterator that refers to no attribute
+	attribute_value_iterator () noexcept = default;
+
+	/// Construct iterator to value of first attribute of type \a Type in \a attributes of \a message
+	attribute_value_iterator (
+		std::ranges::subrange<wire_attribute_iterator<Protocol>> attributes,
+		std::span<const std::byte> message) noexcept
+		: current_{attributes.begin()}
+		, end_{attributes.end()}
+		, message_{message}
+	{
+		skip_other_types();
+	}
+
+	/// Return result of reading current attribute
+	[[nodiscard]] value_type operator* () const noexcept
+	{
+		return __reader::read_value<Value>(message_, current_->value);
+	}
+
+	/// Return result of reading current attribute, for member access
+	[[nodiscard]] __iterator::arrow_proxy<value_type> operator-> () const noexcept
+	{
+		return {**this};
+	}
+
+	/// Advance to next attribute of type \a Type
+	attribute_value_iterator &operator++ () noexcept
+	{
+		++current_;
+		skip_other_types();
+		return *this;
+	}
+
+	/// Advance to next attribute of type \a Type, return iterator to current one
+	attribute_value_iterator operator++ (int) noexcept
+	{
+		auto current = *this;
+		++*this;
+		return current;
+	}
+
+	/// Return true if \a a and \a b refer to same attribute
+	friend bool operator== (const attribute_value_iterator &a, const attribute_value_iterator &b) noexcept
+	{
+		return a.current_ == b.current_;
+	}
+
+private:
+
+	wire_attribute_iterator<Protocol> current_;
+	wire_attribute_iterator<Protocol> end_;
+	std::span<const std::byte> message_;
+
+	void skip_other_types () noexcept
+	{
+		while (current_ != end_ && current_->type != Type)
+		{
+			++current_;
+		}
+	}
+};
 
 /// Reader of validated message of type \a Message (message_type). Created by parsed_message::as().
 template <typename Message>
@@ -52,6 +154,88 @@ public:
 		return __reader::transaction_id<protocol_type>(buffer_);
 	}
 
+	/// Iterator over message attributes
+	using wire_attribute_iterator = turner::wire_attribute_iterator<protocol_type>;
+
+	/// Iterator over values of every occurrence of \a Attribute in message
+	template <auto Attribute>
+	using attribute_value_iterator = turner::attribute_value_iterator<
+		protocol_type,
+		typename decltype(Attribute)::value_type,
+		decltype(Attribute)::type
+	>;
+
+	/// Range of values of every occurrence of \a Attribute in message: what read_each() returns
+	template <auto Attribute>
+	using attribute_value_range = std::ranges::subrange<attribute_value_iterator<Attribute>>;
+
+	/// Return message attributes as they appear in message, in message order
+	[[nodiscard]] std::ranges::subrange<wire_attribute_iterator> wire_attributes () const noexcept
+	{
+		const auto bytes = message().subspan(__reader::attributes_offset<protocol_type>);
+		return {wire_attribute_iterator{bytes}, wire_attribute_iterator{bytes.last(0)}};
+	}
+
+	/// Return value of first occurrence of given attribute in message. Fails with errc::attribute_not_found
+	/// if there is none, and with errc::unexpected_attribute_length or errc::unexpected_attribute_value if it
+	/// is malformed.
+	template <typename P, attribute_value V, uint16_t Type>
+		requires usable_with<attribute_type<P, V, Type>, protocol_type>
+	[[nodiscard]] pal::result<typename V::native_type> read (attribute_type<P, V, Type>) const noexcept
+	{
+		for (const auto attribute: wire_attributes())
+		{
+			if (attribute.type == Type)
+			{
+				return __reader::read_value<V>(message(), attribute.value);
+			}
+		}
+		return make_unexpected(errc::attribute_not_found);
+	}
+
+	/// Return value of first occurrence of \a attribute in message, or \a fallback if there is none. Fails
+	/// with errc::unexpected_attribute_length or errc::unexpected_attribute_value if the attribute is
+	/// malformed. Not available for attribute without value (flag): use read() to test its presence.
+	template <typename P, attribute_value V, uint16_t Type>
+		requires usable_with<attribute_type<P, V, Type>, protocol_type>
+			&& (!std::is_empty_v<typename V::native_type>)
+	[[nodiscard]] pal::result<typename V::native_type> read_or (
+		attribute_type<P, V, Type> attribute,
+		const typename V::native_type &fallback) const noexcept
+	{
+		auto value = read(attribute);
+		if (!value && value.error() == errc::attribute_not_found)
+		{
+			return fallback;
+		}
+		return value;
+	}
+
+	/// Not available: value of attribute refers to bytes it does not own, \a fallback temporary would be
+	/// destroyed while returned value still refers to it.
+	template <typename P, attribute_value V, uint16_t Type, std::ranges::range Fallback>
+		requires usable_with<attribute_type<P, V, Type>, protocol_type>
+			&& std::ranges::borrowed_range<typename V::native_type>
+			&& (!std::ranges::borrowed_range<Fallback>)
+			&& std::convertible_to<Fallback, typename V::native_type>
+	pal::result<typename V::native_type> read_or (attribute_type<P, V, Type>, Fallback &&fallback) const = delete;
+
+	/// Return range of values of every occurrence of given attribute in message, in message order. Each
+	/// element is result of reading one occurrence: value, or errc::unexpected_attribute_length or
+	/// errc::unexpected_attribute_value if that occurrence is malformed.
+	template <typename P, attribute_value V, uint16_t Type>
+		requires usable_with<attribute_type<P, V, Type>, protocol_type>
+	[[nodiscard]] attribute_value_range<attribute<P, V, Type>> read_each (
+		attribute_type<P, V, Type>) const noexcept
+	{
+		using iterator = attribute_value_iterator<attribute<P, V, Type>>;
+		const auto attributes = wire_attributes();
+		return {
+			iterator{attributes, message()},
+			iterator{{attributes.end(), attributes.end()}, message()},
+		};
+	}
+
 private:
 
 	std::span<std::byte> buffer_;
@@ -59,6 +243,11 @@ private:
 	explicit basic_message_reader (std::span<std::byte> buffer) noexcept
 		: buffer_{buffer}
 	{
+	}
+
+	[[nodiscard]] std::span<const std::byte> message () const noexcept
+	{
+		return buffer_.first(protocol_type::header_size + __reader::type_and_length(buffer_).length);
 	}
 
 	template <typename>

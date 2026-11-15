@@ -5,8 +5,10 @@
  * MS-TURN protocol
  */
 
+#include <turner/codec/attribute.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/reader.hpp>
+#include <turner/codec/value.hpp>
 #include <pal/result.hpp>
 #include <array>
 #include <cstddef>
@@ -66,6 +68,27 @@ struct msturn
 
 	/// Set Active Destination
 	static constexpr auto set_active_destination = request<msturn, 0x006>;
+
+	/// Username
+	static constexpr auto username = attribute<msturn, string_value<>, 0x0006>;
+
+	/// Lifetime
+	static constexpr auto lifetime = attribute<msturn, seconds_value, 0x000d>;
+
+	/// Bandwidth
+	static constexpr auto bandwidth = attribute<msturn, uint32_value, 0x0010>;
+
+	/// Data
+	static constexpr auto data = attribute<msturn, bytes_value<>, 0x0013>;
+
+	/// Nonce
+	static constexpr auto nonce = attribute<msturn, string_value<128>, 0x0014>;
+
+	/// Realm
+	static constexpr auto realm = attribute<msturn, string_value<128>, 0x0015>;
+
+	/// Requested Address Family
+	static constexpr auto requested_address_family = attribute<msturn, address_family_value, 0x0017>;
 
 	/// Validate message in first \a received bytes of \a buffer. \a buffer is whole I/O buffer: response to the
 	/// message is built in it. \a received must not exceed \a buffer size.

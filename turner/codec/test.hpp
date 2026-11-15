@@ -9,32 +9,54 @@
 #include <array>
 #include <cstddef>
 #include <stdexcept>
+#include <string_view>
+#include <vector>
 
 namespace turner_test
 {
+
+constexpr unsigned hex_digit (char c)
+{
+	if ('0' <= c && c <= '9')
+	{
+		return static_cast<unsigned>(c - '0');
+	}
+	if ('a' <= c && c <= 'f')
+	{
+		return static_cast<unsigned>(c - 'a' + 10);
+	}
+	throw std::invalid_argument{"invalid hex digit"};
+}
+
+constexpr std::byte hex_byte (char high, char low)
+{
+	return static_cast<std::byte>((hex_digit(high) << 4) | hex_digit(low));
+}
 
 template <size_t N>
 constexpr std::array<std::byte, (N - 1) / 2> bytes (const char (&hex)[N])
 {
 	static_assert(N % 2 == 1, "odd number of hex digits");
 
-	constexpr auto nibble = [](char c)
-	{
-		if ('0' <= c && c <= '9')
-		{
-			return static_cast<unsigned>(c - '0');
-		}
-		if ('a' <= c && c <= 'f')
-		{
-			return static_cast<unsigned>(c - 'a' + 10);
-		}
-		throw std::invalid_argument{"invalid hex digit"};
-	};
-
 	std::array<std::byte, (N - 1) / 2> result{};
 	for (size_t i = 0; i < result.size(); ++i)
 	{
-		result[i] = static_cast<std::byte>((nibble(hex[2 * i]) << 4) | nibble(hex[2 * i + 1]));
+		result[i] = hex_byte(hex[2 * i], hex[2 * i + 1]);
+	}
+	return result;
+}
+
+inline std::vector<std::byte> to_bytes (std::string_view hex)
+{
+	if (hex.size() % 2 != 0)
+	{
+		throw std::invalid_argument{"odd number of hex digits"};
+	}
+
+	std::vector<std::byte> result(hex.size() / 2);
+	for (size_t i = 0; i < result.size(); ++i)
+	{
+		result[i] = hex_byte(hex[2 * i], hex[2 * i + 1]);
 	}
 	return result;
 }
@@ -123,6 +145,21 @@ inline constexpr auto allocate_error = bytes(
 inline constexpr auto refresh_request = bytes(
 	"00040008" "2112a442" "01020304" "05060708" "090a0b0c"
 	"000d0004" "00000000"
+);
+
+inline constexpr auto refresh_request_repeated_lifetime = bytes(
+	"00040028" "2112a442" "01020304" "05060708" "090a0b0c"
+	"000d0004" "0000000a"
+	"80220004" "74657374"
+	"000d0004" "00000014"
+	"000d0002" "00010000"
+	"00130004" "01020304"
+);
+
+inline constexpr auto refresh_request_malformed_lifetime_first = bytes(
+	"00040010" "2112a442" "01020304" "05060708" "090a0b0c"
+	"000d0002" "00010000"
+	"000d0004" "0000000a"
 );
 
 inline constexpr auto refresh_success = bytes(

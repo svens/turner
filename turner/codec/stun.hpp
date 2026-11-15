@@ -5,8 +5,10 @@
  * STUN protocol
  */
 
+#include <turner/codec/attribute.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/reader.hpp>
+#include <turner/codec/value.hpp>
 #include <pal/result.hpp>
 #include <array>
 #include <cstddef>
@@ -49,6 +51,18 @@ struct stun
 		0x001,
 		message_class::request_response | message_class::indication
 	>;
+
+	/// USERNAME
+	static constexpr auto username = attribute<stun, string_value<508>, 0x0006>;
+
+	/// REALM
+	static constexpr auto realm = attribute<stun, string_value<763>, 0x0014>;
+
+	/// NONCE
+	static constexpr auto nonce = attribute<stun, string_value<763>, 0x0015>;
+
+	/// SOFTWARE
+	static constexpr auto software = attribute<stun, string_value<763>, 0x8022>;
 
 	/// Validate message in first \a received bytes of \a buffer. \a buffer is whole I/O buffer: response to the
 	/// message is built in it. \a received must not exceed \a buffer size.
