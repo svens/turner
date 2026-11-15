@@ -61,8 +61,8 @@ Rules covering cases the baseline does not.
 
 1. Document public API with Doxygen `///`; open each header with a `/** \file ... */` block, marking internal ones
    `\internal`. Refer to parameters with `\a`.
-2. Do not document `__`-prefixed or internal-namespace symbols. Guard non-API declarations kept in a header with
-   `/// \cond` ... `/// \endcond`.
+2. Do not document `__`-prefixed or internal-namespace symbols, and do not wrap them in `/// \cond` ...
+   `/// \endcond`: excluding `__`-prefixed namespaces is the Doxygen configuration's job.
 
 ### 2.7 Idioms
 
