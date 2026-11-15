@@ -5,6 +5,7 @@
  * Codec errors
  */
 
+#include <pal/result.hpp>
 #include <system_error>
 
 namespace turner
@@ -40,6 +41,12 @@ const std::error_category &error_category () noexcept;
 inline std::error_code make_error_code (errc ec) noexcept
 {
 	return {static_cast<int>(ec), error_category()};
+}
+
+/// Make \c pal::unexpected from error code \a ec
+inline pal::unexpected make_unexpected (errc ec) noexcept
+{
+	return pal::unexpected{make_error_code(ec)};
 }
 
 } // namespace turner

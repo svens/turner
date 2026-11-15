@@ -6,7 +6,11 @@
  */
 
 #include <turner/codec/method.hpp>
+#include <turner/codec/reader.hpp>
 #include <turner/codec/stun.hpp>
+#include <pal/result.hpp>
+#include <cstddef>
+#include <span>
 
 namespace turner
 {
@@ -35,6 +39,12 @@ struct turn: stun
 
 	/// ChannelBind
 	static constexpr auto channel_bind = request<turn, 0x009>;
+
+	/// \copydoc stun::parse
+	[[nodiscard]] static pal::result<parsed_message<turn>> parse (
+		std::span<std::byte> buffer,
+		size_t received
+	) noexcept;
 };
 
 } // namespace turner

@@ -6,9 +6,12 @@
  */
 
 #include <turner/codec/method.hpp>
+#include <turner/codec/reader.hpp>
+#include <pal/result.hpp>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace turner
 {
@@ -63,6 +66,17 @@ struct msturn
 
 	/// Set Active Destination
 	static constexpr auto set_active_destination = request<msturn, 0x006>;
+
+	/// Validate message in first \a received bytes of \a buffer. \a buffer is whole I/O buffer: response to the
+	/// message is built in it. \a received must not exceed \a buffer size.
+	///
+	/// Checks message structure only (header, Magic Cookie, attribute layout), not whether message type or
+	/// attributes are known. Fails with errc::incomplete if \a received bytes do not hold whole message.
+	/// Bytes following the message are ignored: use parsed_message::size() to find them.
+	[[nodiscard]] static pal::result<parsed_message<msturn>> parse (
+		std::span<std::byte> buffer,
+		size_t received
+	) noexcept;
 };
 
 } // namespace turner
