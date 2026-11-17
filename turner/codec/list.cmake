@@ -15,6 +15,7 @@ list(APPEND turner_codec_sources
 	turner/codec/turn.hpp
 	turner/codec/turn.cpp
 	turner/codec/value.hpp
+	turner/codec/writer.hpp
 )
 
 list(APPEND turner_codec_test_sources
@@ -28,4 +29,5 @@ list(APPEND turner_codec_test_sources
 	turner/codec/stun.test.cpp
 	turner/codec/turn.test.cpp
 	turner/codec/value.test.cpp
+	turner/codec/writer.test.cpp
 )

@@ -654,9 +654,9 @@ TEST_CASE("value")
 		const auto hex = GENERATE("00000000"sv, "03000000"sv, "ff000000"sv);
 		CAPTURE(hex);
 		const auto wire = turner_test::to_bytes(hex);
-		CHECK(
-			turner::address_family_value::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::address_family_value::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 	}
 
@@ -665,9 +665,9 @@ TEST_CASE("value")
 		const auto hex = GENERATE("00000000"sv, "05000000"sv, "07000000"sv, "10000000"sv, "12000000"sv);
 		CAPTURE(hex);
 		const auto wire = turner_test::to_bytes(hex);
-		CHECK(
-			turner::transport_protocol_value::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::transport_protocol_value::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 	}
 
@@ -727,18 +727,18 @@ TEST_CASE("value")
 		CHECK(turner::endpoint_value::read(no_message, wire) == turner::transport_address{ipv4, stun_port});
 
 		const auto xor_wire = turner_test::to_bytes("ff01a147" "e112a643");
-		CHECK(
-			turner::xor_endpoint_value::read(message_of<xor_endpoint>(), xor_wire)
-			== turner::transport_address{ipv4, xor_endpoint::rfc5769_port}
+		CHECK(turner::xor_endpoint_value::read(message_of<xor_endpoint>(), xor_wire)
+			==
+			turner::transport_address{ipv4, xor_endpoint::rfc5769_port}
 		);
 	}
 
 	SECTION("endpoint: write ignores IPv6 scope ID")
 	{
 		const auto scoped = pal::net::ip::make_address_v6(ipv6.to_bytes(), 7);
-		CHECK(
-			written<turner::endpoint_value>({scoped, stun_port})
-			== with_guard("00020d96" "20010db8" "00000000" "00000000" "00000001")
+		CHECK(written<turner::endpoint_value>({scoped, stun_port})
+			==
+			with_guard("00020d96" "20010db8" "00000000" "00000000" "00000001")
 		);
 	}
 
@@ -775,9 +775,9 @@ TEST_CASE("value")
 		const auto hex = GENERATE("00000000"sv, "00000200"sv, "00000700"sv, "00000464"sv, "000004ff"sv);
 		CAPTURE(hex);
 		const auto wire = turner_test::to_bytes(hex);
-		CHECK(
-			turner::error_code_value<>::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::error_code_value<>::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 	}
 
@@ -791,9 +791,9 @@ TEST_CASE("value")
 
 	SECTION("error code: write bare code with its reason phrase")
 	{
-		CHECK(
-			written<turner::error_code_value<>>(turner::protocol_errc::stale_nonce)
-			== with_guard("00000426" "5374616c" "65204e6f" "6e6365")
+		CHECK(written<turner::error_code_value<>>(turner::protocol_errc::stale_nonce)
+			==
+			with_guard("00000426" "5374616c" "65204e6f" "6e6365")
 		);
 	}
 
@@ -808,18 +808,18 @@ TEST_CASE("value")
 	SECTION("unknown attributes: read rejects odd length")
 	{
 		const auto wire = turner_test::to_bytes("000a00");
-		CHECK(
-			turner::unknown_attributes_value::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_length)
+		CHECK(turner::unknown_attributes_value::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_length)
 		);
 	}
 
 	SECTION("unknown attributes: read drops types beyond capacity")
 	{
 		const auto wire = turner_test::to_bytes("0001" "0002" "0003" "0004" "0005");
-		CHECK(
-			turner::unknown_attributes_value::read(no_message, wire)
-			== turner::attribute_type_list{{1, 2, 3, 4}}
+		CHECK(turner::unknown_attributes_value::read(no_message, wire)
+			==
+			turner::attribute_type_list{{1, 2, 3, 4}}
 		);
 	}
 
@@ -848,23 +848,23 @@ TEST_CASE("value")
 		const auto hex = GENERATE("00000000"sv, "00030000"sv, "00010004"sv, "00020001"sv);
 		CAPTURE(hex);
 		const auto wire = turner_test::to_bytes(hex);
-		CHECK(
-			turner::password_algorithm_value::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::password_algorithm_value::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 	}
 
 	SECTION("password algorithms: read rejects parameters or partial entry")
 	{
 		const auto parameters = turner_test::to_bytes("00020000" "00010004");
-		CHECK(
-			turner::password_algorithms_value::read(no_message, parameters)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::password_algorithms_value::read(no_message, parameters)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 		const auto partial = turner_test::to_bytes("00020000" "0001");
-		CHECK(
-			turner::password_algorithms_value::read(no_message, partial)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_length)
+		CHECK(turner::password_algorithms_value::read(no_message, partial)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_length)
 		);
 	}
 
@@ -881,9 +881,9 @@ TEST_CASE("value")
 		const auto hex = GENERATE("00000000"sv, "3fff0000"sv, "50000000"sv, "ffff0000"sv);
 		CAPTURE(hex);
 		const auto wire = turner_test::to_bytes(hex);
-		CHECK(
-			turner::channel_number_value::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::channel_number_value::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 	}
 
@@ -898,9 +898,9 @@ TEST_CASE("value")
 		const auto hex = GENERATE("00000428"sv, "03000428"sv, "01000228"sv, "01000464"sv);
 		CAPTURE(hex);
 		const auto wire = turner_test::to_bytes(hex);
-		CHECK(
-			turner::address_error_code_value::read(no_message, wire)
-			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		CHECK(turner::address_error_code_value::read(no_message, wire)
+			==
+			turner::make_unexpected(turner::errc::unexpected_attribute_value)
 		);
 	}
 
@@ -914,13 +914,13 @@ TEST_CASE("value")
 
 	SECTION("msturn error code: write pads reason with spaces")
 	{
-		CHECK(
-			written<turner::msturn::error_code_value>(turner::protocol_errc::stale_nonce)
-			== with_guard("00000426" "5374616c" "65204e6f" "6e636520")
+		CHECK(written<turner::msturn::error_code_value>(turner::protocol_errc::stale_nonce)
+			==
+			with_guard("00000426" "5374616c" "65204e6f" "6e636520")
 		);
-		CHECK(
-			written<turner::msturn::error_code_value>(turner::protocol_errc::forbidden)
-			== with_guard("00000403" "466f7262" "69646465" "6e202020")
+		CHECK(written<turner::msturn::error_code_value>(turner::protocol_errc::forbidden)
+			==
+			with_guard("00000403" "466f7262" "69646465" "6e202020")
 		);
 	}
 
@@ -935,18 +935,18 @@ TEST_CASE("value")
 	SECTION("msturn unknown attributes: write repeats last type when odd")
 	{
 		CHECK(written<turner::msturn::unknown_attributes_value>({{0x000a}}) == with_guard("000a" "000a"));
-		CHECK(
-			written<turner::msturn::unknown_attributes_value>({{0x000a, 0x8000, 0x0001}})
-			== with_guard("000a" "8000" "0001" "0001")
+		CHECK(written<turner::msturn::unknown_attributes_value>({{0x000a, 0x8000, 0x0001}})
+			==
+			with_guard("000a" "8000" "0001" "0001")
 		);
 	}
 
 	SECTION("msturn unknown attributes: read accepts unpadded list")
 	{
 		const auto wire = turner_test::to_bytes("000a");
-		CHECK(
-			turner::msturn::unknown_attributes_value::read(no_message, wire)
-			== turner::attribute_type_list{{0x000a}}
+		CHECK(turner::msturn::unknown_attributes_value::read(no_message, wire)
+			==
+			turner::attribute_type_list{{0x000a}}
 		);
 	}
 }

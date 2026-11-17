@@ -1,6 +1,7 @@
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol.hpp>
 #include <concepts>
+#include <type_traits>
 
 namespace
 {
@@ -106,5 +107,14 @@ static_assert(turner::usable_with<decltype(req), derived_proto>);
 static_assert(turner::usable_with<decltype(req.success), derived_proto>);
 static_assert(!turner::usable_with<decltype(req), other_proto>);
 static_assert(!turner::usable_with<decltype(turner::request<derived_proto, 0x003>), proto>);
+
+template <auto M>
+constexpr message_class class_of = turner::__method::class_of<std::remove_cvref_t<decltype(M)>>;
+
+static_assert(class_of<req.request> == message_class::request);
+static_assert(class_of<req.success> == message_class::success);
+static_assert(class_of<req.error> == message_class::error);
+static_assert(class_of<ind.indication> == message_class::indication);
+static_assert(class_of<all.indication> == message_class::indication);
 
 } // namespace

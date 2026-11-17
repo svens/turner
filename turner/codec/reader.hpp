@@ -45,12 +45,6 @@ const typename Protocol::transaction_id &transaction_id (std::span<std::byte> bu
 	return pal::packed_as<id_type>(buffer.subspan<Protocol::transaction_id_offset, sizeof(id_type)>());
 }
 
-template <typename Protocol>
-constexpr size_t attributes_offset = (std::max)(
-	Protocol::header_size,
-	Protocol::cookie_offset + Protocol::cookie.size()
-);
-
 template <attribute_value Value>
 [[nodiscard]] pal::result<typename Value::native_type> read_value (
 	std::span<const std::byte> message,
@@ -229,7 +223,7 @@ public:
 	/// Return message attributes as they appear in message, in message order
 	[[nodiscard]] std::ranges::subrange<wire_attribute_iterator> wire_attributes () const noexcept
 	{
-		const auto bytes = message().subspan(__reader::attributes_offset<protocol_type>);
+		const auto bytes = message().subspan(__wire::attributes_offset<protocol_type>);
 		return {wire_attribute_iterator{bytes}, wire_attribute_iterator{bytes.last(0)}};
 	}
 

@@ -693,9 +693,9 @@ TEST_CASE("attribute/values")
 		auto buffer = make_buffer(turner_test::rfc5769::long_term_request);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
-		CHECK(
-			request.read(turner::stun::username)
-			== "\xe3\x83\x9e\xe3\x83\x88\xe3\x83\xaa\xe3\x83\x83\xe3\x82\xaf\xe3\x82\xb9"
+		CHECK(request.read(turner::stun::username)
+			==
+			"\xe3\x83\x9e\xe3\x83\x88\xe3\x83\xaa\xe3\x83\x83\xe3\x82\xaf\xe3\x82\xb9"
 		);
 		CHECK(request.read(turner::stun::nonce) == "f//499k954d6OL34oL9FSTvy64sA");
 		CHECK(request.read(turner::stun::realm) == "example.org");
@@ -729,9 +729,9 @@ TEST_CASE("attribute/values")
 		CHECK_FALSE(dont_fragment == false);
 		CHECK(std::ranges::distance(request.read_each(turner::turn::dont_fragment)) == 1);
 		CHECK(request.read(turner::turn::requested_transport) == turner::transport_protocol::udp);
-		CHECK(
-			types_and_sizes(request.wire_attributes())
-			== std::vector<type_and_size>{{0x001a, 0}, {0x0019, 4}}
+		CHECK(types_and_sizes(request.wire_attributes())
+			==
+			std::vector<type_and_size>{{0x001a, 0}, {0x0019, 4}}
 		);
 	}
 
@@ -741,13 +741,13 @@ TEST_CASE("attribute/values")
 		buffer[turner::turn::header_size + 4] = std::byte{0x07};
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
-		CHECK(
-			request.read(turner::turn::requested_transport)
-			== failed(turner::errc::unexpected_attribute_value)
+		CHECK(request.read(turner::turn::requested_transport)
+			==
+			failed(turner::errc::unexpected_attribute_value)
 		);
-		CHECK(
-			request.read_or(turner::turn::requested_transport, turner::transport_protocol::udp)
-			== failed(turner::errc::unexpected_attribute_value)
+		CHECK(request.read_or(turner::turn::requested_transport, turner::transport_protocol::udp)
+			==
+			failed(turner::errc::unexpected_attribute_value)
 		);
 	}
 
@@ -797,9 +797,9 @@ TEST_CASE("attribute/values")
 
 		auto ipv6_buffer = make_buffer(turner_test::rfc5769::ipv6_response);
 		const auto ipv6 = read_as<turner::stun, turner::stun::binding.success>(ipv6_buffer);
-		CHECK(
-			ipv6.read(turner::stun::xor_mapped_address)
-			== turner::transport_address{rfc5769_ipv6, rfc5769_port}
+		CHECK(ipv6.read(turner::stun::xor_mapped_address)
+			==
+			turner::transport_address{rfc5769_ipv6, rfc5769_port}
 		);
 	}
 
@@ -869,9 +869,9 @@ TEST_CASE("attribute/values")
 		REQUIRE(service_quality);
 		CHECK(service_quality->stream == turner::msturn::stream_type::audio);
 		CHECK(service_quality->quality == turner::msturn::delivery::best_effort);
-		CHECK(
-			types_and_sizes(request.wire_attributes())
-			== std::vector<type_and_size>{{0x8008, 4}, {0x8055, 4}, {0x0006, 5}}
+		CHECK(types_and_sizes(request.wire_attributes())
+			==
+			std::vector<type_and_size>{{0x8008, 4}, {0x8055, 4}, {0x0006, 5}}
 		);
 	}
 
@@ -883,9 +883,9 @@ TEST_CASE("attribute/values")
 		CHECK(success.read(turner::msturn::lifetime) == 600s);
 		CHECK(success.read(turner::msturn::username) == "alice");
 		CHECK(success.read(turner::msturn::mapped_address) == stun_address);
-		CHECK(
-			success.read(turner::msturn::ms_alternate_mapped_address)
-			== failed(turner::errc::attribute_not_found)
+		CHECK(success.read(turner::msturn::ms_alternate_mapped_address)
+			==
+			failed(turner::errc::attribute_not_found)
 		);
 	}
 
@@ -908,16 +908,16 @@ TEST_CASE("attribute/values")
 	{
 		auto ipv6_buffer = make_buffer(turner_test::msturn_message::allocate_success_ipv6);
 		const auto ipv6 = read_as<turner::msturn, turner::msturn::allocate.success>(ipv6_buffer);
-		CHECK(
-			ipv6.read(turner::msturn::ms_alternate_mapped_address)
-			== turner::transport_address{test_ipv6, stun_port}
+		CHECK(ipv6.read(turner::msturn::ms_alternate_mapped_address)
+			==
+			turner::transport_address{test_ipv6, stun_port}
 		);
 
 		auto ipv4_buffer = make_buffer(turner_test::msturn_message::allocate_success_ipv4_in_ipv6_only);
 		const auto ipv4 = read_as<turner::msturn, turner::msturn::allocate.success>(ipv4_buffer);
-		CHECK(
-			ipv4.read(turner::msturn::ms_alternate_mapped_address)
-			== failed(turner::errc::unexpected_attribute_length)
+		CHECK(ipv4.read(turner::msturn::ms_alternate_mapped_address)
+			==
+			failed(turner::errc::unexpected_attribute_length)
 		);
 	}
 
@@ -939,9 +939,9 @@ TEST_CASE("attribute/values")
 
 		CHECK(request.read(turner::msturn::username) == "");
 		CHECK(request.read(turner::msturn::realm) == "");
-		CHECK(
-			types_and_sizes(request.wire_attributes())
-			== std::vector<type_and_size>{{0x0006, 0}, {0x8008, 4}, {0x0015, 0}}
+		CHECK(types_and_sizes(request.wire_attributes())
+			==
+			std::vector<type_and_size>{{0x0006, 0}, {0x8008, 4}, {0x0015, 0}}
 		);
 	}
 
@@ -1080,9 +1080,9 @@ TEST_CASE("attribute/list")
 		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
-		CHECK(
-			request.unknown(turner::attributes<turner::turn::lifetime>)
-			== turner::attribute_type_list{{0x0019}}
+		CHECK(request.unknown(turner::attributes<turner::turn::lifetime>)
+			==
+			turner::attribute_type_list{{0x0019}}
 		);
 	}
 
@@ -1091,9 +1091,9 @@ TEST_CASE("attribute/list")
 		auto buffer = make_buffer(turner_test::stun_message::binding_request_many_unknown_attributes);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
-		CHECK(
-			request.unknown(turner::attributes<turner::stun::username>)
-			== turner::attribute_type_list{{0x0031, 0x0032, 0x0033, 0x0034}}
+		CHECK(request.unknown(turner::attributes<turner::stun::username>)
+			==
+			turner::attribute_type_list{{0x0031, 0x0032, 0x0033, 0x0034}}
 		);
 	}
 }

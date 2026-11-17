@@ -223,6 +223,12 @@ struct message_of<method_type<Protocol, Method, Classes>>
 	using type = message_type<Protocol, Method, initiating(Classes), Classes>;
 };
 
+template <typename T>
+constexpr message_class class_of{};
+
+template <typename Protocol, uint16_t Method, message_class Class, message_class Classes>
+constexpr message_class class_of<message_type<Protocol, Method, Class, Classes>> = Class;
+
 } // namespace __method
 
 /**

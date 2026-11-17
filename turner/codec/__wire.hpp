@@ -7,6 +7,7 @@
  */
 
 #include <pal/packed_struct.hpp>
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 
@@ -32,5 +33,11 @@ constexpr size_t align_up (size_t size, size_t alignment) noexcept
 {
 	return (size + alignment - 1) & ~(alignment - 1);
 }
+
+template <typename Protocol>
+constexpr size_t attributes_offset = (std::max)(
+	Protocol::header_size,
+	Protocol::cookie_offset + Protocol::cookie.size()
+);
 
 } // namespace turner::__wire
