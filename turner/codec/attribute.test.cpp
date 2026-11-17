@@ -3,10 +3,14 @@
 #include <turner/codec/error.hpp>
 #include <turner/codec/msturn.hpp>
 #include <turner/codec/protocol.hpp>
+#include <turner/codec/protocol_error.hpp>
 #include <turner/codec/reader.hpp>
 #include <turner/codec/stun.hpp>
 #include <turner/codec/turn.hpp>
 #include <turner/codec/value.hpp>
+#include <pal/net/ip/address_v4.hpp>
+#include <pal/net/ip/address_v6.hpp>
+#include <pal/net/ip/port_type.hpp>
 #include <pal/result.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -29,49 +33,111 @@ namespace
 
 using namespace std::chrono_literals;
 
+static_assert(turner::stun::mapped_address.type == 0x0001);
 static_assert(turner::stun::username.type == 0x0006);
+static_assert(turner::stun::error_code.type == 0x0009);
+static_assert(turner::stun::unknown_attributes.type == 0x000a);
 static_assert(turner::stun::realm.type == 0x0014);
 static_assert(turner::stun::nonce.type == 0x0015);
+static_assert(turner::stun::password_algorithm.type == 0x001d);
+static_assert(turner::stun::userhash.type == 0x001e);
+static_assert(turner::stun::xor_mapped_address.type == 0x0020);
+static_assert(turner::stun::password_algorithms.type == 0x8002);
+static_assert(turner::stun::alternate_domain.type == 0x8003);
 static_assert(turner::stun::software.type == 0x8022);
+static_assert(turner::stun::alternate_server.type == 0x8023);
+static_assert(turner::turn::channel_number.type == 0x000c);
 static_assert(turner::turn::lifetime.type == 0x000d);
+static_assert(turner::turn::xor_peer_address.type == 0x0012);
 static_assert(turner::turn::data.type == 0x0013);
+static_assert(turner::turn::xor_relayed_address.type == 0x0016);
 static_assert(turner::turn::requested_address_family.type == 0x0017);
 static_assert(turner::turn::requested_transport.type == 0x0019);
 static_assert(turner::turn::dont_fragment.type == 0x001a);
-static_assert(turner::turn::reservation_token.type == 0x0022);
 static_assert(turner::turn::additional_address_family.type == 0x8000);
+static_assert(turner::turn::address_error_code.type == 0x8001);
+static_assert(turner::msturn::mapped_address.type == 0x0001);
 static_assert(turner::msturn::username.type == 0x0006);
+static_assert(turner::msturn::error_code.type == 0x0009);
+static_assert(turner::msturn::unknown_attributes.type == 0x000a);
 static_assert(turner::msturn::lifetime.type == 0x000d);
+static_assert(turner::msturn::alternate_server.type == 0x000e);
 static_assert(turner::msturn::bandwidth.type == 0x0010);
+static_assert(turner::msturn::destination_address.type == 0x0011);
+static_assert(turner::msturn::remote_address.type == 0x0012);
 static_assert(turner::msturn::data.type == 0x0013);
 static_assert(turner::msturn::nonce.type == 0x0014);
 static_assert(turner::msturn::realm.type == 0x0015);
 static_assert(turner::msturn::requested_address_family.type == 0x0017);
+static_assert(turner::msturn::ms_version.type == 0x8008);
+static_assert(turner::msturn::xor_mapped_address.type == 0x8020);
+static_assert(turner::msturn::ms_alternate_host_name.type == 0x8032);
+static_assert(turner::msturn::app_id.type == 0x8037);
+static_assert(turner::msturn::secure_tag.type == 0x8039);
+static_assert(turner::msturn::ms_sequence_number.type == 0x8050);
+static_assert(turner::msturn::ms_service_quality.type == 0x8055);
+static_assert(turner::msturn::ms_alternate_mapped_address.type == 0x8090);
+static_assert(turner::msturn::multiplexed_session_id.type == 0x8095);
 
 template <auto Attribute, typename Protocol, typename Value>
 concept declared_as = std::same_as<typename decltype(Attribute)::protocol_type, Protocol>
 	&& std::same_as<typename decltype(Attribute)::value_type, Value>
 ;
 
+static_assert(declared_as<turner::stun::mapped_address, turner::stun, turner::endpoint_value>);
 static_assert(declared_as<turner::stun::username, turner::stun, turner::string_value<508>>);
+static_assert(declared_as<turner::stun::error_code, turner::stun, turner::error_code_value<763>>);
+static_assert(declared_as<turner::stun::unknown_attributes, turner::stun, turner::unknown_attributes_value>);
 static_assert(declared_as<turner::stun::realm, turner::stun, turner::string_value<763>>);
 static_assert(declared_as<turner::stun::nonce, turner::stun, turner::string_value<763>>);
+static_assert(declared_as<turner::stun::password_algorithm, turner::stun, turner::password_algorithm_value>);
+static_assert(declared_as<turner::stun::userhash, turner::stun, turner::bytes_value<32>>);
+static_assert(declared_as<turner::stun::xor_mapped_address, turner::stun, turner::xor_endpoint_value>);
+static_assert(declared_as<turner::stun::password_algorithms, turner::stun, turner::password_algorithms_value>);
+static_assert(declared_as<turner::stun::alternate_domain, turner::stun, turner::string_value<255>>);
 static_assert(declared_as<turner::stun::software, turner::stun, turner::string_value<763>>);
+static_assert(declared_as<turner::stun::alternate_server, turner::stun, turner::endpoint_value>);
 static_assert(declared_as<turner::turn::username, turner::stun, turner::string_value<508>>);
+static_assert(declared_as<turner::turn::channel_number, turner::turn, turner::channel_number_value>);
 static_assert(declared_as<turner::turn::lifetime, turner::turn, turner::seconds_value>);
+static_assert(declared_as<turner::turn::xor_peer_address, turner::turn, turner::xor_endpoint_value>);
 static_assert(declared_as<turner::turn::data, turner::turn, turner::bytes_value<>>);
+static_assert(declared_as<turner::turn::xor_relayed_address, turner::turn, turner::xor_endpoint_value>);
 static_assert(declared_as<turner::turn::requested_address_family, turner::turn, turner::address_family_value>);
 static_assert(declared_as<turner::turn::requested_transport, turner::turn, turner::transport_protocol_value>);
 static_assert(declared_as<turner::turn::dont_fragment, turner::turn, turner::flag_value>);
-static_assert(declared_as<turner::turn::reservation_token, turner::turn, turner::bytes_value<8>>);
 static_assert(declared_as<turner::turn::additional_address_family, turner::turn, turner::address_family_value>);
+static_assert(declared_as<turner::turn::address_error_code, turner::turn, turner::address_error_code_value>);
+static_assert(declared_as<turner::msturn::mapped_address, turner::msturn, turner::endpoint_value>);
 static_assert(declared_as<turner::msturn::username, turner::msturn, turner::string_value<>>);
+static_assert(declared_as<turner::msturn::error_code, turner::msturn, turner::msturn::error_code_value>);
+static_assert(
+	declared_as<turner::msturn::unknown_attributes, turner::msturn, turner::msturn::unknown_attributes_value>
+);
 static_assert(declared_as<turner::msturn::lifetime, turner::msturn, turner::seconds_value>);
+static_assert(declared_as<turner::msturn::alternate_server, turner::msturn, turner::endpoint_value>);
 static_assert(declared_as<turner::msturn::bandwidth, turner::msturn, turner::uint32_value>);
+static_assert(declared_as<turner::msturn::destination_address, turner::msturn, turner::endpoint_value>);
+static_assert(declared_as<turner::msturn::remote_address, turner::msturn, turner::endpoint_value>);
 static_assert(declared_as<turner::msturn::data, turner::msturn, turner::bytes_value<>>);
 static_assert(declared_as<turner::msturn::nonce, turner::msturn, turner::string_value<128>>);
 static_assert(declared_as<turner::msturn::realm, turner::msturn, turner::string_value<128>>);
 static_assert(declared_as<turner::msturn::requested_address_family, turner::msturn, turner::address_family_value>);
+static_assert(declared_as<turner::msturn::ms_version, turner::msturn, turner::msturn::protocol_version_value>);
+static_assert(declared_as<turner::msturn::xor_mapped_address, turner::msturn, turner::xor_endpoint_value>);
+static_assert(declared_as<turner::msturn::ms_alternate_host_name, turner::msturn, turner::string_value<128>>);
+static_assert(declared_as<turner::msturn::app_id, turner::msturn, turner::uint32_value>);
+static_assert(declared_as<turner::msturn::secure_tag, turner::msturn, turner::bytes_value<40>>);
+static_assert(
+	declared_as<turner::msturn::ms_sequence_number, turner::msturn, turner::msturn::sequence_number_value>
+);
+static_assert(
+	declared_as<turner::msturn::ms_service_quality, turner::msturn, turner::msturn::service_quality_value>
+);
+static_assert(
+	declared_as<turner::msturn::ms_alternate_mapped_address, turner::msturn, turner::msturn::ipv6_endpoint_value>
+);
+static_assert(declared_as<turner::msturn::multiplexed_session_id, turner::msturn, turner::bytes_value<8>>);
 
 static_assert(turner::usable_with<decltype(turner::stun::username), turner::turn>);
 static_assert(!turner::usable_with<decltype(turner::turn::lifetime), turner::stun>);
@@ -504,6 +570,18 @@ TEMPLATE_TEST_CASE("attribute/reader", "", stun, turn, msturn)
 	}
 }
 
+constexpr auto test_ipv4 = pal::net::ip::make_address_v4(0xc000'0201);
+constexpr pal::net::ip::port_type stun_port{3478};
+constexpr pal::net::ip::port_type rfc5769_port{32853};
+constexpr auto rfc5769_ipv6 = pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
+	0x20, 0x01, 0x0d, 0xb8, 0x12, 0x34, 0x56, 0x78, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+});
+constexpr auto test_ipv6 = pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
+	0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+});
+constexpr turner::transport_address rfc5769_address{test_ipv4, rfc5769_port};
+constexpr turner::transport_address stun_address{test_ipv4, stun_port};
+
 TEST_CASE("attribute/values")
 {
 	SECTION("stun: rfc5769 request")
@@ -613,7 +691,7 @@ TEST_CASE("attribute/values")
 		CHECK(equal(*data, "hello"));
 		CHECK(data->data() == buffer.data() + 36);
 
-		CHECK(indication.read(turner::turn::reservation_token) == failed(turner::errc::attribute_not_found));
+		CHECK(indication.read(turner::turn::userhash) == failed(turner::errc::attribute_not_found));
 	}
 
 	SECTION("turn: stun attributes")
@@ -623,6 +701,45 @@ TEST_CASE("attribute/values")
 
 		CHECK(error.read(turner::turn::realm) == "example.org");
 		CHECK(error.read(turner::stun::nonce) == "nonce");
+
+		const auto error_code = error.read(turner::turn::error_code);
+		CHECK(error_code == turner::protocol_errc::unauthorized);
+		REQUIRE(error_code);
+		CHECK(error_code->reason == "Unauthorized");
+	}
+
+	SECTION("stun: rfc5769 xor mapped address")
+	{
+		auto ipv4_buffer = make_buffer(turner_test::rfc5769::ipv4_response);
+		const auto ipv4 = read_as<turner::stun, turner::stun::binding.success>(ipv4_buffer);
+		CHECK(ipv4.read(turner::stun::xor_mapped_address) == rfc5769_address);
+
+		auto ipv6_buffer = make_buffer(turner_test::rfc5769::ipv6_response);
+		const auto ipv6 = read_as<turner::stun, turner::stun::binding.success>(ipv6_buffer);
+		CHECK(
+			ipv6.read(turner::stun::xor_mapped_address)
+			== turner::transport_address{rfc5769_ipv6, rfc5769_port}
+		);
+	}
+
+	SECTION("turn: addresses")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::allocate_success);
+		const auto success = read_as<turner::turn, turner::turn::allocate.success>(buffer);
+		CHECK(success.read(turner::turn::xor_relayed_address) == rfc5769_address);
+		CHECK(success.read(turner::turn::xor_mapped_address) == rfc5769_address);
+
+		auto indication_buffer = make_buffer(turner_test::turn_message::data_indication);
+		const auto indication = read_as<turner::turn, turner::turn::data_indication>(indication_buffer);
+		CHECK(indication.read(turner::turn::xor_peer_address) == rfc5769_address);
+	}
+
+	SECTION("turn: channel bind")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::channel_bind_request);
+		const auto request = read_as<turner::turn, turner::turn::channel_bind>(buffer);
+		CHECK(request.read(turner::turn::channel_number) == 0x4000);
+		CHECK(request.read(turner::turn::xor_peer_address) == rfc5769_address);
 	}
 
 	SECTION("turn: repeated fixed-size attribute")
@@ -665,6 +782,12 @@ TEST_CASE("attribute/values")
 		CHECK(request.read(turner::msturn::lifetime) == failed(turner::errc::attribute_not_found));
 		CHECK(request.read(turner::msturn::bandwidth) == failed(turner::errc::attribute_not_found));
 		CHECK(request.read_or(turner::msturn::bandwidth, 100) == 100U);
+		CHECK(request.read(turner::msturn::ms_version) == turner::msturn::protocol_version::v4);
+
+		const auto service_quality = request.read(turner::msturn::ms_service_quality);
+		REQUIRE(service_quality);
+		CHECK(service_quality->stream == turner::msturn::stream_type::audio);
+		CHECK(service_quality->quality == turner::msturn::delivery::best_effort);
 		CHECK(
 			types_and_sizes(request.wire_attributes())
 			== std::vector<type_and_size>{{0x8008, 4}, {0x8055, 4}, {0x0006, 5}}
@@ -678,6 +801,11 @@ TEST_CASE("attribute/values")
 
 		CHECK(success.read(turner::msturn::lifetime) == 600s);
 		CHECK(success.read(turner::msturn::username) == "alice");
+		CHECK(success.read(turner::msturn::mapped_address) == stun_address);
+		CHECK(
+			success.read(turner::msturn::ms_alternate_mapped_address)
+			== failed(turner::errc::attribute_not_found)
+		);
 	}
 
 	SECTION("msturn: allocate error")
@@ -687,6 +815,40 @@ TEST_CASE("attribute/values")
 
 		CHECK(error.read(turner::msturn::nonce) == "nonce");
 		CHECK(error.read(turner::msturn::realm) == "example.org");
+		CHECK(error.read(turner::msturn::ms_version) == turner::msturn::protocol_version::v4);
+
+		const auto error_code = error.read(turner::msturn::error_code);
+		CHECK(error_code == turner::protocol_errc::unauthorized);
+		REQUIRE(error_code);
+		CHECK(error_code->reason == "Unauthorized");
+	}
+
+	SECTION("msturn: ipv6 only address")
+	{
+		auto ipv6_buffer = make_buffer(turner_test::msturn_message::allocate_success_ipv6);
+		const auto ipv6 = read_as<turner::msturn, turner::msturn::allocate.success>(ipv6_buffer);
+		CHECK(
+			ipv6.read(turner::msturn::ms_alternate_mapped_address)
+			== turner::transport_address{test_ipv6, stun_port}
+		);
+
+		auto ipv4_buffer = make_buffer(turner_test::msturn_message::allocate_success_ipv4_in_ipv6_only);
+		const auto ipv4 = read_as<turner::msturn, turner::msturn::allocate.success>(ipv4_buffer);
+		CHECK(
+			ipv4.read(turner::msturn::ms_alternate_mapped_address)
+			== failed(turner::errc::unexpected_attribute_length)
+		);
+	}
+
+	SECTION("msturn: addresses")
+	{
+		auto send_buffer = make_buffer(turner_test::msturn_message::send_request);
+		const auto send = read_as<turner::msturn, turner::msturn::send_request>(send_buffer);
+		CHECK(send.read(turner::msturn::destination_address) == stun_address);
+
+		auto data_buffer = make_buffer(turner_test::msturn_message::data_indication);
+		const auto data = read_as<turner::msturn, turner::msturn::data_indication>(data_buffer);
+		CHECK(data.read(turner::msturn::remote_address) == stun_address);
 	}
 
 	SECTION("msturn: empty values")

@@ -210,6 +210,17 @@ struct flag_value
 	}
 };
 
+namespace __value
+{
+
+template <auto... Valid, typename T>
+constexpr bool one_of (T value) noexcept
+{
+	return ((value == Valid) || ...);
+}
+
+} // namespace __value
+
 /// One byte enumeration \a Enum followed by three reserved bytes. Only \a Valid values are read successfully.
 template <typename Enum, Enum... Valid>
 	requires(sizeof(Enum) == 1)
@@ -236,7 +247,7 @@ struct enum_value
 		std::span<const std::byte> value) noexcept
 	{
 		const auto native = static_cast<Enum>(value[0]);
-		if (((native == Valid) || ...))
+		if (__value::one_of<Valid...>(native))
 		{
 			return native;
 		}

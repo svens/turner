@@ -2,7 +2,10 @@
 #include <turner/codec/value.hpp>
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/msturn.hpp>
 #include <turner/codec/protocol_error.hpp>
+#include <turner/codec/stun.hpp>
+#include <turner/codec/turn.hpp>
 #include <pal/net/ip/address_v4.hpp>
 #include <pal/net/ip/address_v6.hpp>
 #include <pal/net/ip/port_type.hpp>
@@ -332,6 +335,160 @@ struct unknown_attributes
 	};
 };
 
+struct ipv6_endpoint
+{
+	using value_type = turner::msturn::ipv6_endpoint_value;
+	using native_type = turner::transport_address;
+	static constexpr size_t min_size = 20;
+	static constexpr size_t max_size = 20;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00020d96" "20010db8" "00000000" "00000000" "00000001", {ipv6, stun_port}},
+	};
+};
+
+struct password_algorithm
+{
+	using value_type = turner::password_algorithm_value;
+	using native_type = turner::password_algorithm;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 4;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00010000", turner::password_algorithm::md5},
+		{"00020000", turner::password_algorithm::sha256},
+	};
+};
+
+struct password_algorithms
+{
+	using value_type = turner::password_algorithms_value;
+	using native_type = turner::password_algorithms;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 16;
+
+	using algorithm = turner::password_algorithm;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00010000", {{algorithm::md5}}},
+		{"00020000" "00010000", {{algorithm::sha256, algorithm::md5}}},
+		{"00030000" "00020000", {{static_cast<algorithm>(3), algorithm::sha256}}},
+	};
+};
+
+struct channel_number
+{
+	using value_type = turner::channel_number_value;
+	using native_type = uint16_t;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 4;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"40000000", 0x4000},
+		{"4fff0000", 0x4fff},
+	};
+};
+
+struct address_error_code
+{
+	using value_type = turner::address_error_code_value;
+	using native_type = turner::address_error;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 4 + 763;
+
+	using errc = turner::protocol_errc;
+	using family = turner::address_family;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"01000428", {.family = family::v4, .error = {errc::address_family_not_supported, ""}}},
+		{"02000508" "4f7574", {.family = family::v6, .error = {errc::insufficient_capacity, "Out"}}},
+	};
+};
+
+struct msturn_error_code
+{
+	using value_type = turner::msturn::error_code_value;
+	using native_type = turner::protocol_error;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 0xfffc;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00000300", {turner::protocol_errc::try_alternate, ""}},
+		{"00000401" "556e6175" "74686f72" "697a6564", {turner::protocol_errc::unauthorized, "Unauthorized"}},
+	};
+};
+
+struct msturn_unknown_attributes
+{
+	using value_type = turner::msturn::unknown_attributes_value;
+	using native_type = turner::unknown_attributes;
+	static constexpr size_t min_size = 2;
+	static constexpr size_t max_size = 0xfffe;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"000a" "8000", {{0x000a, 0x8000}}},
+		{"000a" "8000" "0001" "c001", {{0x000a, 0x8000, 0x0001, 0xc001}}},
+	};
+};
+
+struct msturn_protocol_version
+{
+	using value_type = turner::msturn::protocol_version_value;
+	using native_type = turner::msturn::protocol_version;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 4;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00000001", turner::msturn::protocol_version::v1},
+		{"00000006", turner::msturn::protocol_version::v6},
+		{"00000007", static_cast<turner::msturn::protocol_version>(7)},
+	};
+};
+
+static_assert(turner::msturn::protocol_version::v6 >= turner::msturn::protocol_version::with_ipv6);
+static_assert(turner::msturn::protocol_version::v3 < turner::msturn::protocol_version::with_ipv6);
+
+struct msturn_service_quality
+{
+	using value_type = turner::msturn::service_quality_value;
+	using native_type = turner::msturn::service_quality;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 4;
+
+	using stream = turner::msturn::stream_type;
+	using delivery = turner::msturn::delivery;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00010000", {.stream = stream::audio, .quality = delivery::best_effort}},
+		{"00040001", {.stream = stream::data, .quality = delivery::reliable}},
+		{"00090007", {.stream = static_cast<stream>(9), .quality = static_cast<delivery>(7)}},
+	};
+};
+
+struct msturn_sequence_number
+{
+	using value_type = turner::msturn::sequence_number_value;
+	using native_type = turner::msturn::sequence_number;
+	static constexpr size_t min_size = 24;
+	static constexpr size_t max_size = 24;
+
+	static constexpr auto connection_id = turner_test::bytes("0102030405060708090a0b0c0d0e0f1011121314");
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"01020304" "05060708" "090a0b0c" "0d0e0f10" "11121314" "00000005", {connection_id, 5}},
+	};
+};
+
 constexpr std::span<const std::byte> no_message;
 constexpr std::byte guard{0xa5};
 
@@ -351,6 +508,12 @@ bool same (const turner::protocol_error &a, const turner::protocol_error &b)
 {
 	return a.code == b.code && a.reason == b.reason;
 }
+
+bool same (const turner::address_error &a, const turner::address_error &b)
+{
+	return a.family == b.family && same(a.error, b.error);
+}
+
 
 template <typename Value>
 std::vector<std::byte> written (
@@ -397,7 +560,17 @@ TEMPLATE_TEST_CASE("value", "",
 	xor_endpoint,
 	error_code,
 	unlimited_error_code,
-	unknown_attributes)
+	unknown_attributes,
+	ipv6_endpoint,
+	password_algorithm,
+	password_algorithms,
+	channel_number,
+	address_error_code,
+	msturn_error_code,
+	msturn_unknown_attributes,
+	msturn_protocol_version,
+	msturn_service_quality,
+	msturn_sequence_number)
 {
 	using value_type = typename TestType::value_type;
 
@@ -668,6 +841,113 @@ TEST_CASE("value")
 	{
 		CHECK_FALSE(turner::unknown_attributes{});
 		CHECK(turner::unknown_attributes{{0x000a}});
+	}
+
+	SECTION("password algorithm: read rejects unknown algorithm or parameters")
+	{
+		const auto hex = GENERATE("00000000"sv, "00030000"sv, "00010004"sv, "00020001"sv);
+		CAPTURE(hex);
+		const auto wire = turner_test::to_bytes(hex);
+		CHECK(
+			turner::password_algorithm_value::read(no_message, wire)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		);
+	}
+
+	SECTION("password algorithms: read rejects parameters or partial entry")
+	{
+		const auto parameters = turner_test::to_bytes("00020000" "00010004");
+		CHECK(
+			turner::password_algorithms_value::read(no_message, parameters)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		);
+		const auto partial = turner_test::to_bytes("00020000" "0001");
+		CHECK(
+			turner::password_algorithms_value::read(no_message, partial)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_length)
+		);
+	}
+
+	SECTION("password algorithms: construction limited to capacity")
+	{
+		using algorithm = turner::password_algorithm;
+		static_assert(std::constructible_from<turner::password_algorithms, const algorithm (&)[4]>);
+		static_assert(!std::constructible_from<turner::password_algorithms, const algorithm (&)[5]>);
+		static_assert(!std::is_default_constructible_v<turner::password_algorithms>);
+	}
+
+	SECTION("channel number: read rejects number out of range")
+	{
+		const auto hex = GENERATE("00000000"sv, "3fff0000"sv, "50000000"sv, "ffff0000"sv);
+		CAPTURE(hex);
+		const auto wire = turner_test::to_bytes(hex);
+		CHECK(
+			turner::channel_number_value::read(no_message, wire)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		);
+	}
+
+	SECTION("channel number: read ignores reserved bytes")
+	{
+		const auto wire = turner_test::to_bytes("4000ffff");
+		CHECK(turner::channel_number_value::read(no_message, wire) == 0x4000);
+	}
+
+	SECTION("address error code: read rejects invalid family or code")
+	{
+		const auto hex = GENERATE("00000428"sv, "03000428"sv, "01000228"sv, "01000464"sv);
+		CAPTURE(hex);
+		const auto wire = turner_test::to_bytes(hex);
+		CHECK(
+			turner::address_error_code_value::read(no_message, wire)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		);
+	}
+
+	SECTION("address error code: read ignores reserved bits")
+	{
+		const auto wire = turner_test::to_bytes("02fffd08");
+		const auto value = turner::address_error_code_value::read(no_message, wire);
+		REQUIRE(value);
+		CHECK(same(*value, {turner::address_family::v6, {turner::protocol_errc::insufficient_capacity, ""}}));
+	}
+
+	SECTION("msturn error code: write pads reason with spaces")
+	{
+		CHECK(
+			written<turner::msturn::error_code_value>(turner::protocol_errc::stale_nonce)
+			== with_guard("00000426" "5374616c" "65204e6f" "6e636520")
+		);
+		CHECK(
+			written<turner::msturn::error_code_value>(turner::protocol_errc::forbidden)
+			== with_guard("00000403" "466f7262" "69646465" "6e202020")
+		);
+	}
+
+	SECTION("msturn error code: read accepts unpadded reason")
+	{
+		const auto wire = turner_test::to_bytes("00000403" "466f7262" "69646465" "6e");
+		const auto value = turner::msturn::error_code_value::read(no_message, wire);
+		REQUIRE(value);
+		CHECK(same(*value, {turner::protocol_errc::forbidden, "Forbidden"}));
+	}
+
+	SECTION("msturn unknown attributes: write repeats last type when odd")
+	{
+		CHECK(written<turner::msturn::unknown_attributes_value>({{0x000a}}) == with_guard("000a" "000a"));
+		CHECK(
+			written<turner::msturn::unknown_attributes_value>({{0x000a, 0x8000, 0x0001}})
+			== with_guard("000a" "8000" "0001" "0001")
+		);
+	}
+
+	SECTION("msturn unknown attributes: read accepts unpadded list")
+	{
+		const auto wire = turner_test::to_bytes("000a");
+		CHECK(
+			turner::msturn::unknown_attributes_value::read(no_message, wire)
+			== turner::unknown_attributes{{0x000a}}
+		);
 	}
 }
 

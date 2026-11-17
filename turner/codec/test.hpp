@@ -241,6 +241,18 @@ inline constexpr auto allocate_success = bytes(
 	"00060005" "616c6963" "65"
 );
 
+inline constexpr auto allocate_success_ipv6 = bytes(
+	"01030020" "2112a442" "01020304" "05060708" "090a0b0c"
+	"000f0004" "72c64bc6"
+	"80900014" "00020d96" "20010db8" "00000000" "00000000" "00000001"
+);
+
+inline constexpr auto allocate_success_ipv4_in_ipv6_only = bytes(
+	"01030014" "2112a442" "01020304" "05060708" "090a0b0c"
+	"000f0004" "72c64bc6"
+	"80900008" "00010d96" "c0000201"
+);
+
 inline constexpr auto allocate_error = bytes(
 	"0113003c" "2112a442" "01020304" "05060708" "090a0b0c"
 	"000f0004" "72c64bc6"
