@@ -221,14 +221,14 @@ struct message_size_value
 	static constexpr size_t min_size = 0;
 	static constexpr size_t max_size = 0xffff;
 
-	static pal::result<native_type> read (std::span<const std::byte> message, std::span<const std::byte>) noexcept
-	{
-		return message.size();
-	}
-
 	static size_t size (const native_type &) noexcept
 	{
 		return 0;
+	}
+
+	static pal::result<native_type> read (std::span<const std::byte> message, std::span<const std::byte>) noexcept
+	{
+		return message.size();
 	}
 
 	static void write (std::span<const std::byte>, std::span<std::byte>, const native_type &) noexcept

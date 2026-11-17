@@ -29,8 +29,8 @@ concept attribute_value = requires(
 {
 	{ T::min_size } -> std::convertible_to<size_t>;
 	{ T::max_size } -> std::convertible_to<size_t>;
-	{ T::read(message, value) } noexcept -> std::same_as<pal::result<typename T::native_type>>;
 	{ T::size(native) } noexcept -> std::same_as<size_t>;
+	{ T::read(message, value) } noexcept -> std::same_as<pal::result<typename T::native_type>>;
 	{ T::write(message, out, native) } noexcept -> std::same_as<void>;
 };
 

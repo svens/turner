@@ -1,7 +1,9 @@
 #include <turner/codec/protocol_error.hpp>
 #include <turner/codec/error.hpp>
+#include <pal/result.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <concepts>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -14,6 +16,7 @@ static_assert(std::to_underlying(turner::protocol_errc::unauthorized) == 401);
 static_assert(std::to_underlying(turner::protocol_errc::unknown_attribute) == 420);
 static_assert(std::to_underlying(turner::protocol_errc::stale_nonce) == 438);
 static_assert(std::to_underlying(turner::protocol_errc::insufficient_capacity) == 508);
+static_assert(turner::reason_phrase(turner::protocol_errc::stale_nonce) == "Stale Nonce");
 
 TEST_CASE("protocol_error")
 {
@@ -30,6 +33,50 @@ TEST_CASE("protocol_error")
 		CHECK(ec.message() != "unknown");
 		CHECK(ec.category() == turner::protocol_error_category());
 		CHECK(ec.category().name() == std::string{"turner::protocol"});
+	}
+
+	SECTION("reason_phrase")
+	{
+		const auto e = GENERATE(values({__turner_protocol_errc(__turner_protocol_errc_value)}));
+		const std::error_code ec = e;
+		CAPTURE(ec);
+		CHECK(turner::reason_phrase(e) == ec.message());
+	}
+
+	SECTION("reason_phrase: unknown")
+	{
+		CHECK(turner::reason_phrase(static_cast<turner::protocol_errc>(499)).empty());
+	}
+
+	SECTION("protocol_error")
+	{
+		constexpr turner::protocol_error bare = turner::protocol_errc::unauthorized;
+		static_assert(bare.code == turner::protocol_errc::unauthorized);
+		static_assert(bare.reason == "Unauthorized");
+
+		constexpr turner::protocol_error unknown = static_cast<turner::protocol_errc>(499);
+		static_assert(unknown.reason.empty());
+
+		constexpr turner::protocol_error custom{turner::protocol_errc::unauthorized, "Go away"};
+		static_assert(custom.code == turner::protocol_errc::unauthorized);
+		static_assert(custom.reason == "Go away");
+
+		static_assert(!std::equality_comparable<turner::protocol_error>);
+		static_assert(custom == turner::protocol_errc::unauthorized);
+		static_assert(turner::protocol_errc::unauthorized == custom);
+		static_assert(custom != turner::protocol_errc::stale_nonce);
+		static_assert(turner::protocol_errc::stale_nonce != custom);
+	}
+
+	SECTION("protocol_error: result compares code only")
+	{
+		const pal::result<turner::protocol_error> result{
+			std::in_place,
+			turner::protocol_errc::stale_nonce,
+			"nonce expired",
+		};
+		CHECK(result == turner::protocol_errc::stale_nonce);
+		CHECK(result != turner::protocol_errc::unauthorized);
 	}
 
 	SECTION("message")

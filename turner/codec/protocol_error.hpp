@@ -6,6 +6,7 @@
  */
 
 #include <cstdint>
+#include <string_view>
 #include <system_error>
 
 namespace turner
@@ -38,6 +39,48 @@ enum class protocol_errc: uint16_t
 #define __turner_protocol_errc_enum(Value, Code, Message) Code = (Value),
 	__turner_protocol_errc(__turner_protocol_errc_enum)
 #undef __turner_protocol_errc_enum
+};
+
+/// Return reason phrase of \a code, or empty if \a code is unknown
+constexpr std::string_view reason_phrase (protocol_errc code) noexcept
+{
+	switch (code)
+	{
+#define __turner_protocol_errc_case(Value, Code, Message) case protocol_errc::Code: return Message;
+		__turner_protocol_errc(__turner_protocol_errc_case)
+#undef __turner_protocol_errc_case
+	}
+	return {};
+}
+
+/// ERROR-CODE attribute native value. Reason refers to bytes in message when read.
+struct protocol_error
+{
+	/// Error code
+	protocol_errc code;
+
+	/// Reason phrase
+	std::string_view reason;
+
+	/// Construct with \a error and its reason_phrase()
+	constexpr protocol_error (protocol_errc error) noexcept
+		: code{error}
+		, reason{reason_phrase(error)}
+	{
+	}
+
+	/// Construct with \a error and \a phrase
+	constexpr protocol_error (protocol_errc error, std::string_view phrase) noexcept
+		: code{error}
+		, reason{phrase}
+	{
+	}
+
+	/// Return true if \a a has code \a b, regardless of reason
+	friend constexpr bool operator== (const protocol_error &a, protocol_errc b) noexcept
+	{
+		return a.code == b;
+	}
 };
 
 /// Return protocol error category. The \c name() virtual function returns "turner::protocol".

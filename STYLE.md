@@ -46,7 +46,8 @@ Rules covering cases the baseline does not.
 
 ### 2.4 Includes
 
-1. Header: `#pragma once`, file comment, then includes. A `.cpp` includes its own header first.
+1. Header: `#pragma once`, file comment, then includes. A `.cpp` includes its own header first. A `.test.cpp` that
+   uses its module's `test.hpp` includes that before anything else.
 2. Order: turner, then pal, then standard, no blank line between; module-local before rest of turner; alphabetical
    within a group.
 3. Include a header for each symbol used directly, and only those. Rely on types an interface you use guarantees (e.g.

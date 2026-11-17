@@ -1,4 +1,5 @@
 #include <turner/codec/protocol_error.hpp>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -10,13 +11,14 @@ namespace
 
 constexpr std::string_view as_view (int ec) noexcept
 {
-	switch (ec)
+	if (0 <= ec && ec <= std::numeric_limits<uint16_t>::max())
 	{
-#define __turner_protocol_errc_case(Value, Code, Message) case Value: return Message;
-		__turner_protocol_errc(__turner_protocol_errc_case)
-#undef __turner_protocol_errc_case
-		default: return "unknown";
+		if (const auto phrase = reason_phrase(static_cast<protocol_errc>(ec)); !phrase.empty())
+		{
+			return phrase;
+		}
 	}
+	return "unknown";
 }
 
 } // namespace

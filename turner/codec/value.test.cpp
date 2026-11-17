@@ -2,6 +2,11 @@
 #include <turner/codec/value.hpp>
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/protocol_error.hpp>
+#include <pal/net/ip/address_v4.hpp>
+#include <pal/net/ip/address_v6.hpp>
+#include <pal/net/ip/port_type.hpp>
+#include <pal/net/ip/udp.hpp>
 #include <pal/result.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -28,8 +33,8 @@ struct valid_value
 	using native_type = int;
 	static constexpr size_t min_size = 1;
 	static constexpr size_t max_size = 1;
-	static pal::result<int> read (std::span<const std::byte>, std::span<const std::byte>) noexcept;
 	static size_t size (const int &) noexcept;
+	static pal::result<int> read (std::span<const std::byte>, std::span<const std::byte>) noexcept;
 	static void write (std::span<const std::byte>, std::span<std::byte>, const int &) noexcept;
 };
 
@@ -43,16 +48,6 @@ struct without_max_size: valid_value
 	static void max_size () = delete;
 };
 
-struct with_throwing_read: valid_value
-{
-	static pal::result<int> read (std::span<const std::byte>, std::span<const std::byte>);
-};
-
-struct with_other_read_result: valid_value
-{
-	static int read (std::span<const std::byte>, std::span<const std::byte>) noexcept;
-};
-
 struct with_throwing_size: valid_value
 {
 	static size_t size (const int &);
@@ -61,6 +56,16 @@ struct with_throwing_size: valid_value
 struct with_other_size_result: valid_value
 {
 	static int size (const int &) noexcept;
+};
+
+struct with_throwing_read: valid_value
+{
+	static pal::result<int> read (std::span<const std::byte>, std::span<const std::byte>);
+};
+
+struct with_other_read_result: valid_value
+{
+	static int read (std::span<const std::byte>, std::span<const std::byte>) noexcept;
 };
 
 struct with_throwing_write: valid_value
@@ -81,10 +86,10 @@ struct without_write: valid_value
 static_assert(turner::attribute_value<valid_value>);
 static_assert(!turner::attribute_value<without_min_size>);
 static_assert(!turner::attribute_value<without_max_size>);
-static_assert(!turner::attribute_value<with_throwing_read>);
-static_assert(!turner::attribute_value<with_other_read_result>);
 static_assert(!turner::attribute_value<with_throwing_size>);
 static_assert(!turner::attribute_value<with_other_size_result>);
+static_assert(!turner::attribute_value<with_throwing_read>);
+static_assert(!turner::attribute_value<with_other_read_result>);
 static_assert(!turner::attribute_value<with_throwing_write>);
 static_assert(!turner::attribute_value<with_other_write_result>);
 static_assert(!turner::attribute_value<without_write>);
@@ -244,6 +249,89 @@ struct transport_protocol
 	};
 };
 
+constexpr pal::net::ip::port_type stun_port{3478};
+constexpr auto ipv4 = pal::net::ip::make_address_v4(0xc000'0201);
+constexpr auto ipv6 = pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
+	0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+});
+
+struct endpoint
+{
+	using value_type = turner::endpoint_value;
+	using native_type = turner::transport_address;
+	static constexpr size_t min_size = 8;
+	static constexpr size_t max_size = 20;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00010d96" "c0000201", {ipv4, stun_port}},
+		{"00020d96" "20010db8" "00000000" "00000000" "00000001", {ipv6, stun_port}},
+	};
+};
+
+struct xor_endpoint
+{
+	using value_type = turner::xor_endpoint_value;
+	using native_type = turner::transport_address;
+	static constexpr size_t min_size = 8;
+	static constexpr size_t max_size = 20;
+
+	static constexpr std::string_view message = "0101003c" "2112a442" "b7e7a701" "bc34d686" "fa87dfae";
+
+	static constexpr pal::net::ip::port_type rfc5769_port{32853};
+	static constexpr auto rfc5769_ipv6 = pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
+		0x20, 0x01, 0x0d, 0xb8, 0x12, 0x34, 0x56, 0x78, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+	});
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"0001a147" "e112a643", {ipv4, rfc5769_port}},
+		{"0002a147" "0113a9fa" "a5d3f179" "bc25f4b5" "bed2b9d9", {rfc5769_ipv6, rfc5769_port}},
+	};
+};
+
+struct error_code
+{
+	using value_type = turner::error_code_value<>;
+	using native_type = turner::protocol_error;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 4 + 763;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00000401" "556e6175" "74686f72" "697a6564", {turner::protocol_errc::unauthorized, "Unauthorized"}},
+		{"00000300", {turner::protocol_errc::try_alternate, ""}},
+		{"00000663" "78", {static_cast<turner::protocol_errc>(699), "x"}},
+	};
+};
+
+struct unlimited_error_code
+{
+	using value_type = turner::error_code_value<0xffff - 4>;
+	using native_type = turner::protocol_error;
+	static constexpr size_t min_size = 4;
+	static constexpr size_t max_size = 0xffff;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"00000426" "5374616c" "65204e6f" "6e6365", {turner::protocol_errc::stale_nonce, "Stale Nonce"}},
+	};
+};
+
+struct unknown_attributes
+{
+	using value_type = turner::unknown_attributes_value;
+	using native_type = turner::unknown_attributes;
+	static constexpr size_t min_size = 2;
+	static constexpr size_t max_size = 0xfffe;
+
+	static constexpr sample<value_type> samples[] =
+	{
+		{"000a", {{0x000a}}},
+		{"000a" "8000" "0001" "c001", {{0x000a, 0x8000, 0x0001, 0xc001}}},
+	};
+};
+
 constexpr std::span<const std::byte> no_message;
 constexpr std::byte guard{0xa5};
 
@@ -259,12 +347,32 @@ bool same (std::span<const std::byte, Extent> a, std::span<const std::byte, Exte
 	return std::ranges::equal(a, b);
 }
 
+bool same (const turner::protocol_error &a, const turner::protocol_error &b)
+{
+	return a.code == b.code && a.reason == b.reason;
+}
+
 template <typename Value>
-std::vector<std::byte> written (const typename Value::native_type &native)
+std::vector<std::byte> written (
+	const typename Value::native_type &native,
+	std::span<const std::byte> message = no_message)
 {
 	std::vector<std::byte> out(Value::size(native) + 1, guard);
-	Value::write(no_message, std::span{out}.first(out.size() - 1), native);
+	Value::write(message, std::span{out}.first(out.size() - 1), native);
 	return out;
+}
+
+template <typename T>
+std::vector<std::byte> message_of ()
+{
+	if constexpr (requires { T::message; })
+	{
+		return turner_test::to_bytes(T::message);
+	}
+	else
+	{
+		return {};
+	}
 }
 
 std::vector<std::byte> with_guard (std::string_view hex)
@@ -284,7 +392,12 @@ TEMPLATE_TEST_CASE("value", "",
 	fixed_bytes,
 	flag,
 	address_family,
-	transport_protocol)
+	transport_protocol,
+	endpoint,
+	xor_endpoint,
+	error_code,
+	unlimited_error_code,
+	unknown_attributes)
 {
 	using value_type = typename TestType::value_type;
 
@@ -296,6 +409,7 @@ TEMPLATE_TEST_CASE("value", "",
 	const auto s = GENERATE(from_range(TestType::samples));
 	CAPTURE(s.wire);
 	const auto wire = turner_test::to_bytes(s.wire);
+	const auto message = message_of<TestType>();
 
 	SECTION("sample fits size limits")
 	{
@@ -303,21 +417,21 @@ TEMPLATE_TEST_CASE("value", "",
 		CHECK(wire.size() <= value_type::max_size);
 	}
 
-	SECTION("read")
-	{
-		const auto native = value_type::read(no_message, wire);
-		REQUIRE(native);
-		CHECK(same(*native, s.native));
-	}
-
 	SECTION("size")
 	{
 		CHECK(value_type::size(s.native) == wire.size());
 	}
 
+	SECTION("read")
+	{
+		const auto native = value_type::read(message, wire);
+		REQUIRE(native);
+		CHECK(same(*native, s.native));
+	}
+
 	SECTION("write")
 	{
-		CHECK(written<value_type>(s.native) == with_guard(s.wire));
+		CHECK(written<value_type>(s.native, message) == with_guard(s.wire));
 	}
 }
 
@@ -389,6 +503,171 @@ TEST_CASE("value")
 		std::vector<std::byte> out(5, guard);
 		turner::address_family_value::write(no_message, std::span{out}.first(4), turner::address_family::v6);
 		CHECK(out == with_guard("02000000"));
+	}
+
+	SECTION("transport_address: from endpoint")
+	{
+		const pal::net::ip::udp::endpoint v4{ipv4, stun_port};
+		const turner::transport_address from_v4 = v4;
+		CHECK(from_v4 == turner::transport_address{ipv4, stun_port});
+
+		const pal::net::ip::udp::endpoint v6{ipv6, stun_port};
+		const turner::transport_address from_v6 = v6;
+		CHECK(from_v6 == turner::transport_address{ipv6, stun_port});
+	}
+
+	SECTION("endpoint: read rejects length other than IPv4 or IPv6")
+	{
+		const auto hex = GENERATE(
+			"00010d96" "c0000201" "00"sv,
+			"00010d96" "c0000201" "00000000"sv,
+			"00020d96" "20010db8" "00000000" "00000000" "000000"sv
+		);
+		CAPTURE(hex);
+		const auto wire = turner_test::to_bytes(hex);
+		const auto message = message_of<xor_endpoint>();
+		const auto expected = turner::make_unexpected(turner::errc::unexpected_attribute_length);
+		CHECK(turner::endpoint_value::read(no_message, wire) == expected);
+		CHECK(turner::xor_endpoint_value::read(message, wire) == expected);
+	}
+
+	SECTION("endpoint: read rejects family not matching length")
+	{
+		const auto hex = GENERATE(
+			"00000d96" "c0000201"sv,
+			"00020d96" "c0000201"sv,
+			"00030d96" "c0000201"sv,
+			"00010d96" "20010db8" "00000000" "00000000" "00000001"sv,
+			"00030d96" "20010db8" "00000000" "00000000" "00000001"sv
+		);
+		CAPTURE(hex);
+		const auto wire = turner_test::to_bytes(hex);
+		const auto message = message_of<xor_endpoint>();
+		const auto expected = turner::make_unexpected(turner::errc::unexpected_attribute_value);
+		CHECK(turner::endpoint_value::read(no_message, wire) == expected);
+		CHECK(turner::xor_endpoint_value::read(message, wire) == expected);
+	}
+
+	SECTION("endpoint: read ignores reserved byte")
+	{
+		const auto wire = turner_test::to_bytes("ff010d96" "c0000201");
+		CHECK(turner::endpoint_value::read(no_message, wire) == turner::transport_address{ipv4, stun_port});
+
+		const auto xor_wire = turner_test::to_bytes("ff01a147" "e112a643");
+		CHECK(
+			turner::xor_endpoint_value::read(message_of<xor_endpoint>(), xor_wire)
+			== turner::transport_address{ipv4, xor_endpoint::rfc5769_port}
+		);
+	}
+
+	SECTION("endpoint: write ignores IPv6 scope ID")
+	{
+		const auto scoped = pal::net::ip::make_address_v6(ipv6.to_bytes(), 7);
+		CHECK(
+			written<turner::endpoint_value>({scoped, stun_port})
+			== with_guard("00020d96" "20010db8" "00000000" "00000000" "00000001")
+		);
+	}
+
+	SECTION("xor endpoint: MS-TURN IPv4 transaction ID")
+	{
+		const auto message = turner_test::to_bytes("00010000" "aabbccdd" "00000000" "00000000" "00000000");
+		const auto hex = "0001bb99" "bb99ff99"sv;
+		const turner::transport_address native
+		{
+			pal::net::ip::make_address_v4(0x1122'3344),
+			pal::net::ip::port_type{0x1122},
+		};
+		CHECK(turner::xor_endpoint_value::read(message, turner_test::to_bytes(hex)) == native);
+		CHECK(written<turner::xor_endpoint_value>(native, message) == with_guard(hex));
+	}
+
+	SECTION("xor endpoint: MS-TURN IPv6 transaction ID")
+	{
+		const auto message = turner_test::to_bytes("00010000" "11223344" "55667788" "99aabbcc" "ddeeff00");
+		const auto hex = "00025577" "31233efc" "444444cc" "cccccc44" "444444cc"sv;
+		const turner::transport_address native
+		{
+			pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
+				0x20, 0x01, 0x0d, 0xb8, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc,
+			}),
+			pal::net::ip::port_type{0x4455},
+		};
+		CHECK(turner::xor_endpoint_value::read(message, turner_test::to_bytes(hex)) == native);
+		CHECK(written<turner::xor_endpoint_value>(native, message) == with_guard(hex));
+	}
+
+	SECTION("error code: read rejects class or number out of range")
+	{
+		const auto hex = GENERATE("00000000"sv, "00000200"sv, "00000700"sv, "00000464"sv, "000004ff"sv);
+		CAPTURE(hex);
+		const auto wire = turner_test::to_bytes(hex);
+		CHECK(
+			turner::error_code_value<>::read(no_message, wire)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_value)
+		);
+	}
+
+	SECTION("error code: read ignores reserved bits")
+	{
+		const auto wire = turner_test::to_bytes("fffffc01");
+		const auto value = turner::error_code_value<>::read(no_message, wire);
+		REQUIRE(value);
+		CHECK(same(*value, {turner::protocol_errc::unauthorized, ""}));
+	}
+
+	SECTION("error code: write bare code with its reason phrase")
+	{
+		CHECK(
+			written<turner::error_code_value<>>(turner::protocol_errc::stale_nonce)
+			== with_guard("00000426" "5374616c" "65204e6f" "6e6365")
+		);
+	}
+
+	SECTION("error code: read refers to input")
+	{
+		const auto wire = turner_test::to_bytes("00000401" "556e6175" "74686f72" "697a6564");
+		const auto value = turner::error_code_value<>::read(no_message, wire);
+		REQUIRE(value);
+		CHECK(static_cast<const void *>(value->reason.data()) == wire.data() + 4);
+	}
+
+	SECTION("unknown attributes: read rejects odd length")
+	{
+		const auto wire = turner_test::to_bytes("000a00");
+		CHECK(
+			turner::unknown_attributes_value::read(no_message, wire)
+			== turner::make_unexpected(turner::errc::unexpected_attribute_length)
+		);
+	}
+
+	SECTION("unknown attributes: read drops types beyond capacity")
+	{
+		const auto wire = turner_test::to_bytes("0001" "0002" "0003" "0004" "0005");
+		CHECK(
+			turner::unknown_attributes_value::read(no_message, wire)
+			== turner::unknown_attributes{{1, 2, 3, 4}}
+		);
+	}
+
+	SECTION("unknown attributes: construction limited to capacity")
+	{
+		static_assert(std::constructible_from<turner::unknown_attributes, const uint16_t (&)[4]>);
+		static_assert(!std::constructible_from<turner::unknown_attributes, const uint16_t (&)[5]>);
+	}
+
+	SECTION("unknown attributes: push_back beyond capacity is dropped")
+	{
+		turner::unknown_attributes types{{1, 2, 3, 4}};
+		types.push_back(5);
+		CHECK(types.size() == turner::unknown_attributes::capacity);
+		CHECK(types == turner::unknown_attributes{{1, 2, 3, 4}});
+	}
+
+	SECTION("unknown attributes: true when not empty")
+	{
+		CHECK_FALSE(turner::unknown_attributes{});
+		CHECK(turner::unknown_attributes{{0x000a}});
 	}
 }
 
