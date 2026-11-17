@@ -324,7 +324,7 @@ struct unlimited_error_code
 struct unknown_attributes
 {
 	using value_type = turner::unknown_attributes_value;
-	using native_type = turner::unknown_attributes;
+	using native_type = turner::attribute_type_list;
 	static constexpr size_t min_size = 2;
 	static constexpr size_t max_size = 0xfffe;
 
@@ -427,7 +427,7 @@ struct msturn_error_code
 struct msturn_unknown_attributes
 {
 	using value_type = turner::msturn::unknown_attributes_value;
-	using native_type = turner::unknown_attributes;
+	using native_type = turner::attribute_type_list;
 	static constexpr size_t min_size = 2;
 	static constexpr size_t max_size = 0xfffe;
 
@@ -819,28 +819,28 @@ TEST_CASE("value")
 		const auto wire = turner_test::to_bytes("0001" "0002" "0003" "0004" "0005");
 		CHECK(
 			turner::unknown_attributes_value::read(no_message, wire)
-			== turner::unknown_attributes{{1, 2, 3, 4}}
+			== turner::attribute_type_list{{1, 2, 3, 4}}
 		);
 	}
 
 	SECTION("unknown attributes: construction limited to capacity")
 	{
-		static_assert(std::constructible_from<turner::unknown_attributes, const uint16_t (&)[4]>);
-		static_assert(!std::constructible_from<turner::unknown_attributes, const uint16_t (&)[5]>);
+		static_assert(std::constructible_from<turner::attribute_type_list, const uint16_t (&)[4]>);
+		static_assert(!std::constructible_from<turner::attribute_type_list, const uint16_t (&)[5]>);
 	}
 
 	SECTION("unknown attributes: push_back beyond capacity is dropped")
 	{
-		turner::unknown_attributes types{{1, 2, 3, 4}};
+		turner::attribute_type_list types{{1, 2, 3, 4}};
 		types.push_back(5);
-		CHECK(types.size() == turner::unknown_attributes::capacity);
-		CHECK(types == turner::unknown_attributes{{1, 2, 3, 4}});
+		CHECK(types.size() == turner::attribute_type_list::capacity);
+		CHECK(types == turner::attribute_type_list{{1, 2, 3, 4}});
 	}
 
 	SECTION("unknown attributes: true when not empty")
 	{
-		CHECK_FALSE(turner::unknown_attributes{});
-		CHECK(turner::unknown_attributes{{0x000a}});
+		CHECK_FALSE(turner::attribute_type_list{});
+		CHECK(turner::attribute_type_list{{0x000a}});
 	}
 
 	SECTION("password algorithm: read rejects unknown algorithm or parameters")
@@ -946,7 +946,7 @@ TEST_CASE("value")
 		const auto wire = turner_test::to_bytes("000a");
 		CHECK(
 			turner::msturn::unknown_attributes_value::read(no_message, wire)
-			== turner::unknown_attributes{{0x000a}}
+			== turner::attribute_type_list{{0x000a}}
 		);
 	}
 }

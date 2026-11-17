@@ -23,6 +23,11 @@ static_assert(pal::packed_struct<type_and_length>);
 
 inline constexpr uint16_t type_reserved_bits = 0b1100'0000'0000'0000;
 
+constexpr bool comprehension_required (uint16_t attribute_type) noexcept
+{
+	return attribute_type < 0x8000;
+}
+
 constexpr size_t align_up (size_t size, size_t alignment) noexcept
 {
 	return (size + alignment - 1) & ~(alignment - 1);

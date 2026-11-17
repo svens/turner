@@ -107,6 +107,24 @@ inline constexpr auto binding_indication = bytes(
 	"00110000" "2112a442" "01020304" "05060708" "090a0b0c"
 );
 
+inline constexpr auto binding_request_unknown_attributes = bytes(
+	"00010028" "2112a442" "01020304" "05060708" "090a0b0c"
+	"00240004" "6e0001ff"
+	"80290008" "932ff9b1" "51263b36"
+	"00060004" "6576746a"
+	"00250000"
+	"00240004" "6e0001ff"
+);
+
+inline constexpr auto binding_request_many_unknown_attributes = bytes(
+	"00010014" "2112a442" "01020304" "05060708" "090a0b0c"
+	"00310000"
+	"00320000"
+	"00330000"
+	"00340000"
+	"00350000"
+);
+
 inline constexpr auto binding_error = bytes(
 	"01110014" "2112a442" "01020304" "05060708" "090a0b0c"
 	"00090010" "00000401" "556e6175" "74686f72" "697a6564"

@@ -145,7 +145,7 @@ struct msturn
 	struct unknown_attributes_value
 	{
 		/// Native value type
-		using native_type = turner::unknown_attributes;
+		using native_type = attribute_type_list;
 
 		/// Minimum value size on wire
 		static constexpr size_t min_size = turner::unknown_attributes_value::min_size;

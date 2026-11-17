@@ -1,4 +1,5 @@
 #include <turner/codec/test.hpp>
+#include <turner/codec/__wire.hpp>
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/error.hpp>
 #include <turner/codec/msturn.hpp>
@@ -24,6 +25,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -142,6 +144,85 @@ static_assert(declared_as<turner::msturn::multiplexed_session_id, turner::msturn
 static_assert(turner::usable_with<decltype(turner::stun::username), turner::turn>);
 static_assert(!turner::usable_with<decltype(turner::turn::lifetime), turner::stun>);
 static_assert(!turner::usable_with<decltype(turner::msturn::lifetime), turner::turn>);
+
+template <auto List>
+using list_type = std::remove_cvref_t<decltype(List)>;
+
+constexpr auto stun_list = turner::attributes<turner::stun::username, turner::stun::realm>;
+constexpr auto turn_list = turner::attributes<stun_list, turner::turn::lifetime>;
+
+static_assert(std::same_as<list_type<stun_list>::protocol_type, turner::stun>);
+static_assert(std::same_as<list_type<turn_list>::protocol_type, turner::turn>);
+static_assert(
+	std::same_as<
+		list_type<turn_list>,
+		list_type<turner::attributes<turner::stun::username, turner::stun::realm, turner::turn::lifetime>>
+	>
+);
+static_assert(
+	!std::same_as<
+		list_type<turner::attributes<turner::stun::username, turner::stun::realm>>,
+		list_type<turner::attributes<turner::stun::realm, turner::stun::username>>
+	>
+);
+static_assert(turner::usable_with<list_type<stun_list>, turner::turn>);
+static_assert(turner::usable_with<list_type<turn_list>, turner::turn>);
+static_assert(!turner::usable_with<list_type<turn_list>, turner::stun>);
+static_assert(!turner::usable_with<list_type<turn_list>, turner::msturn>);
+
+template <auto... Entry>
+concept listable = requires
+{
+	turner::attributes<Entry...>;
+};
+
+static_assert(listable<turner::turn::lifetime>);
+static_assert(listable<turner::turn::lifetime, stun_list>);
+static_assert(!listable<>);
+static_assert(!listable<42>);
+static_assert(!listable<turner::turn::lifetime, turner::turn::lifetime>);
+static_assert(!listable<stun_list, turner::stun::realm>);
+static_assert(!listable<turner::turn::lifetime, turner::msturn::bandwidth>);
+static_assert(!listable<turner::stun::software, turner::msturn::bandwidth>);
+static_assert(!listable<turner::turn::lifetime, turner::stun::username, turner::msturn::bandwidth>);
+static_assert(!listable<turner::turn::allocate>);
+
+static_assert(turner::__wire::comprehension_required(0x0000));
+static_assert(turner::__wire::comprehension_required(0x7fff));
+static_assert(!turner::__wire::comprehension_required(0x8000));
+static_assert(!turner::__wire::comprehension_required(0xffff));
+
+static_assert(
+	std::same_as<
+		turner::message_reader<turner::turn::allocate>::attribute_values<turn_list>,
+		std::tuple<
+			pal::result<std::string_view>,
+			pal::result<std::string_view>,
+			pal::result<std::chrono::seconds>
+		>
+	>
+);
+
+template <auto Entity, auto List>
+concept can_read_list = requires(const turner::message_reader<Entity> &reader)
+{
+	reader.read(List);
+};
+
+template <auto Entity, auto List>
+concept can_report_unknown = requires(const turner::message_reader<Entity> &reader)
+{
+	reader.unknown(List);
+};
+
+static_assert(can_read_list<turner::turn::allocate, turn_list>);
+static_assert(can_read_list<turner::turn::allocate, stun_list>);
+static_assert(!can_read_list<turner::stun::binding.request, turn_list>);
+static_assert(!can_read_list<turner::msturn::allocate, stun_list>);
+static_assert(can_report_unknown<turner::turn::allocate, turn_list>);
+static_assert(can_report_unknown<turner::turn::allocate, stun_list>);
+static_assert(!can_report_unknown<turner::stun::binding.request, turn_list>);
+static_assert(!can_report_unknown<turner::msturn::allocate, stun_list>);
 
 template <auto Entity, auto Attribute>
 concept can_read = requires(const turner::message_reader<Entity> &reader)
@@ -873,6 +954,147 @@ TEST_CASE("attribute/values")
 		REQUIRE(data);
 		CHECK(equal(*data, "abc"));
 		CHECK(request.read(turner::msturn::username) == "alice");
+	}
+}
+
+TEST_CASE("attribute/list")
+{
+	SECTION("read: present and missing")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::allocate_success);
+		const auto success = read_as<turner::turn, turner::turn::allocate.success>(buffer);
+
+		constexpr auto list = turner::attributes<
+			turner::turn::xor_relayed_address,
+			turner::turn::lifetime,
+			turner::turn::username,
+			turner::turn::xor_mapped_address
+		>;
+		const auto [relayed, lifetime, username, mapped] = success.read(list);
+		CHECK(relayed == rfc5769_address);
+		CHECK(lifetime == 600s);
+		CHECK(username == failed(turner::errc::attribute_not_found));
+		CHECK(mapped == rfc5769_address);
+	}
+
+	SECTION("read: first occurrence")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::refresh_request_repeated_lifetime);
+		const auto request = read_as<turner::turn, turner::turn::refresh>(buffer);
+
+		constexpr auto list = turner::attributes<
+			turner::turn::software,
+			turner::turn::lifetime,
+			turner::turn::realm,
+			turner::turn::data
+		>;
+		const auto [software, lifetime, realm, data] = request.read(list);
+		CHECK(software == "test");
+		CHECK(lifetime == 10s);
+		CHECK(realm == failed(turner::errc::attribute_not_found));
+		REQUIRE(data);
+		CHECK(equal(*data, "\x01\x02\x03\x04"));
+	}
+
+	SECTION("read: single attribute list")
+	{
+		auto buffer = make_buffer(turner_test::rfc5769::request);
+		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
+
+		const auto [username] = request.read(turner::attributes<turner::stun::username>);
+		CHECK(username == "evtj:h6vY");
+	}
+
+	SECTION("read: nested list")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::allocate_error);
+		const auto error = read_as<turner::turn, turner::turn::allocate.error>(buffer);
+
+		const auto [username, realm, lifetime] = error.read(turn_list);
+		CHECK(username == failed(turner::errc::attribute_not_found));
+		CHECK(realm == "example.org");
+		CHECK(lifetime == failed(turner::errc::attribute_not_found));
+	}
+
+	SECTION("read: malformed first occurrence")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::refresh_request_malformed_lifetime_first);
+		const auto request = read_as<turner::turn, turner::turn::refresh>(buffer);
+
+		constexpr auto list = turner::attributes<turner::turn::lifetime, turner::turn::realm>;
+		const auto [lifetime, realm] = request.read(list);
+		CHECK(lifetime == failed(turner::errc::unexpected_attribute_length));
+		CHECK(realm == failed(turner::errc::attribute_not_found));
+	}
+
+	SECTION("read: flag")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::allocate_request_dont_fragment);
+		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
+
+		constexpr auto list = turner::attributes<
+			turner::turn::dont_fragment,
+			turner::turn::requested_transport
+		>;
+		const auto [dont_fragment, transport] = request.read(list);
+		CHECK(dont_fragment);
+		CHECK(transport == turner::transport_protocol::udp);
+	}
+
+	SECTION("read: msturn")
+	{
+		auto buffer = make_buffer(turner_test::msturn_message::allocate_request);
+		const auto request = read_as<turner::msturn, turner::msturn::allocate>(buffer);
+
+		constexpr auto list = turner::attributes<
+			turner::msturn::username,
+			turner::msturn::ms_version,
+			turner::msturn::lifetime
+		>;
+		const auto [username, version, lifetime] = request.read(list);
+		CHECK(username == "alice");
+		CHECK(version == turner::msturn::protocol_version::v4);
+		CHECK(lifetime == failed(turner::errc::attribute_not_found));
+	}
+
+	SECTION("unknown: comprehension-required types not listed, each once")
+	{
+		auto buffer = make_buffer(turner_test::stun_message::binding_request_unknown_attributes);
+		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
+
+		const auto unknown = request.unknown(turner::attributes<turner::stun::username>);
+		CHECK(unknown == turner::attribute_type_list{{0x0024, 0x0025}});
+		CHECK(unknown);
+	}
+
+	SECTION("unknown: all known")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
+		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
+
+		CHECK_FALSE(request.unknown(turner::attributes<turner::turn::requested_transport>));
+	}
+
+	SECTION("unknown: declared but not listed")
+	{
+		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
+		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
+
+		CHECK(
+			request.unknown(turner::attributes<turner::turn::lifetime>)
+			== turner::attribute_type_list{{0x0019}}
+		);
+	}
+
+	SECTION("unknown: types beyond capacity are dropped")
+	{
+		auto buffer = make_buffer(turner_test::stun_message::binding_request_many_unknown_attributes);
+		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
+
+		CHECK(
+			request.unknown(turner::attributes<turner::stun::username>)
+			== turner::attribute_type_list{{0x0031, 0x0032, 0x0033, 0x0034}}
+		);
 	}
 }
 

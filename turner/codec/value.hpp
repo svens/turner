@@ -522,8 +522,8 @@ private:
 	using reason_value = string_value<MaxReason>;
 };
 
-/// UNKNOWN-ATTRIBUTES attribute native value: attribute types, at most \ref capacity of them
-class unknown_attributes
+/// Attribute types (host byte order), at most \ref capacity of them. UNKNOWN-ATTRIBUTES attribute native value.
+class attribute_type_list
 {
 public:
 
@@ -534,12 +534,12 @@ public:
 	using const_iterator = std::array<uint16_t, capacity>::const_iterator;
 
 	/// Construct with no attribute types
-	constexpr unknown_attributes () noexcept = default;
+	constexpr attribute_type_list () noexcept = default;
 
 	/// Construct with \a types, at most \ref capacity of them
 	template <size_t N>
 		requires(N <= capacity)
-	constexpr unknown_attributes (const uint16_t (&types)[N]) noexcept
+	constexpr attribute_type_list (const uint16_t (&types)[N]) noexcept
 	{
 		for (const auto type: types)
 		{
@@ -581,7 +581,10 @@ public:
 	}
 
 	/// Return true if \a a and \a b have same attribute types in same order
-	friend constexpr bool operator== (const unknown_attributes &a, const unknown_attributes &b) noexcept = default;
+	friend constexpr bool operator== (
+		const attribute_type_list &a,
+		const attribute_type_list &b
+	) noexcept = default;
 
 private:
 
@@ -589,11 +592,11 @@ private:
 	size_t size_ = 0;
 };
 
-/// Attribute types in network byte order. Types beyond unknown_attributes::capacity are dropped on read.
+/// Attribute types in network byte order. Types beyond attribute_type_list::capacity are dropped on read.
 struct unknown_attributes_value
 {
 	/// Native value type
-	using native_type = unknown_attributes;
+	using native_type = attribute_type_list;
 
 	/// Minimum value size on wire
 	static constexpr size_t min_size = sizeof(uint16_t);
@@ -618,7 +621,7 @@ struct unknown_attributes_value
 		}
 
 		native_type native;
-		const auto kept = (std::min)(value.size(), unknown_attributes::capacity * sizeof(uint16_t));
+		const auto kept = (std::min)(value.size(), attribute_type_list::capacity * sizeof(uint16_t));
 		for (auto rest = value.first(kept); !rest.empty(); rest = rest.subspan(sizeof(uint16_t)))
 		{
 			const auto &type = pal::packed_as<pal::big_endian<uint16_t>>(rest.first<sizeof(uint16_t)>());

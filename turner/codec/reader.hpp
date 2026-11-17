@@ -10,6 +10,7 @@
 #include <turner/codec/error.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol.hpp>
+#include <turner/codec/value.hpp>
 #include <pal/packed_struct.hpp>
 #include <pal/result.hpp>
 #include <algorithm>
@@ -19,7 +20,9 @@
 #include <optional>
 #include <ranges>
 #include <span>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace turner
 {
@@ -58,6 +61,56 @@ template <attribute_value Value>
 		return make_unexpected(errc::unexpected_attribute_length);
 	}
 	return Value::read(message, value);
+}
+
+template <typename List>
+struct list_values;
+
+template <typename... Attribute>
+struct list_values<attribute_list<Attribute...>>
+{
+	using type = std::tuple<pal::result<typename Attribute::value_type::native_type>...>;
+};
+
+template <typename... Attribute, typename Attributes, size_t... I>
+[[nodiscard]] typename list_values<attribute_list<Attribute...>>::type read_list (
+	attribute_list<Attribute...>,
+	std::span<const std::byte> message,
+	Attributes attributes,
+	std::index_sequence<I...>) noexcept
+{
+	using types = std::tuple<Attribute...>;
+
+	typename list_values<attribute_list<Attribute...>>::type values{
+		(static_cast<void>(I), make_unexpected(errc::attribute_not_found))...
+	};
+	bool seen[sizeof...(I)]{};
+	size_t remaining = sizeof...(I);
+
+	for (const auto attribute: attributes)
+	{
+		const auto read_first = [&]<size_t N>(std::integral_constant<size_t, N>) noexcept
+		{
+			using type = std::tuple_element_t<N, types>;
+			if (attribute.type != type::type)
+			{
+				return false;
+			}
+			if (!seen[N])
+			{
+				seen[N] = true;
+				std::get<N>(values) = read_value<typename type::value_type>(message, attribute.value);
+				--remaining;
+			}
+			return true;
+		};
+		static_cast<void>((read_first(std::integral_constant<size_t, I>{}) || ...));
+		if (remaining == 0)
+		{
+			break;
+		}
+	}
+	return values;
 }
 
 } // namespace __reader
@@ -169,6 +222,10 @@ public:
 	template <auto Attribute>
 	using attribute_value_range = std::ranges::subrange<attribute_value_iterator<Attribute>>;
 
+	/// Tuple of results of reading attributes of \a List, in list order: what read(list) returns
+	template <auto List>
+	using attribute_values = typename __reader::list_values<std::remove_cvref_t<decltype(List)>>::type;
+
 	/// Return message attributes as they appear in message, in message order
 	[[nodiscard]] std::ranges::subrange<wire_attribute_iterator> wire_attributes () const noexcept
 	{
@@ -234,6 +291,44 @@ public:
 			iterator{attributes, message()},
 			iterator{{attributes.end(), attributes.end()}, message()},
 		};
+	}
+
+	/// Return values of first occurrence of each attribute of \a list, in list order, reading message once.
+	/// Each element is what read() returns for its attribute.
+	template <typename... Attribute>
+		requires usable_with<attribute_list<Attribute...>, protocol_type>
+	[[nodiscard]] attribute_values<attribute_list<Attribute...>{}> read (
+		attribute_list<Attribute...> list) const noexcept
+	{
+		return __reader::read_list(
+			list,
+			message(),
+			wire_attributes(),
+			std::make_index_sequence<sizeof...(Attribute)>{}
+		);
+	}
+
+	/// Return comprehension-required attribute types present in message but not listed in given list, each
+	/// once, in message order. Types beyond attribute_type_list::capacity are dropped.
+	template <typename... Attribute>
+		requires usable_with<attribute_list<Attribute...>, protocol_type>
+	[[nodiscard]] attribute_type_list unknown (attribute_list<Attribute...>) const noexcept
+	{
+		attribute_type_list types;
+		for (const auto attribute: wire_attributes())
+		{
+			if (types.size() == attribute_type_list::capacity)
+			{
+				break;
+			}
+			if (__wire::comprehension_required(attribute.type)
+				&& !__attribute_list::contains<Attribute...>(attribute.type)
+				&& std::ranges::find(types, attribute.type) == types.end())
+			{
+				types.push_back(attribute.type);
+			}
+		}
+		return types;
 	}
 
 private:
