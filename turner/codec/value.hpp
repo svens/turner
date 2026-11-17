@@ -360,7 +360,7 @@ struct message_key
 
 inline pal::net::ip::port_type xor_with (pal::net::ip::port_type port, xor_key_type key) noexcept
 {
-	const auto mask = pal::packed_as<pal::big_endian<uint16_t>>(key.first<sizeof(uint16_t)>()).value();
+	const auto mask = (std::to_integer<uint16_t>(key[0]) << 8) | std::to_integer<uint16_t>(key[1]);
 	return static_cast<pal::net::ip::port_type>(std::to_underlying(port) ^ mask);
 }
 

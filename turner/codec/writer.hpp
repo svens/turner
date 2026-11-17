@@ -25,6 +25,15 @@ namespace turner
 namespace __writer
 {
 
+inline void write_type_and_length (std::span<std::byte> bytes, uint16_t type, size_t length) noexcept
+{
+	pal::packed_as<__wire::type_and_length>(bytes.first<sizeof(__wire::type_and_length)>()) =
+	{
+		.type = type,
+		.length = static_cast<uint16_t>(length),
+	};
+}
+
 template <typename Protocol>
 void write_header (
 	std::span<std::byte> message,
@@ -32,11 +41,7 @@ void write_header (
 	const typename Protocol::transaction_id &transaction_id) noexcept
 {
 	using id_type = typename Protocol::transaction_id;
-	pal::packed_as<__wire::type_and_length>(message.first<sizeof(__wire::type_and_length)>()) =
-	{
-		.type = type,
-		.length = 0,
-	};
+	write_type_and_length(message, type, 0);
 	std::ranges::copy(
 		Protocol::cookie,
 		message.subspan<Protocol::cookie_offset, Protocol::cookie.size()>().begin()
@@ -44,19 +49,11 @@ void write_header (
 	std::ranges::copy(transaction_id, message.subspan<Protocol::transaction_id_offset, sizeof(id_type)>().begin());
 }
 
-inline void write_attribute_header (std::span<std::byte> attribute, uint16_t type, size_t length) noexcept
-{
-	pal::packed_as<__wire::type_and_length>(attribute.first<sizeof(__wire::type_and_length)>()) =
-	{
-		.type = type,
-		.length = static_cast<uint16_t>(length),
-	};
-}
-
 } // namespace __writer
 
 /// Writer of message of type \a Message (message_type) into caller's buffer. First failure is kept: later
-/// writes do nothing and finish() reports it.
+/// writes do nothing and finish() reports it. Response writers come from basic_message_reader::to_success()
+/// and basic_message_reader::to_error().
 template <typename Message>
 class basic_message_writer
 {
@@ -129,6 +126,12 @@ private:
 	size_t size_ = __wire::attributes_offset<protocol_type>;
 	errc error_{};
 
+	explicit basic_message_writer (std::span<std::byte> buffer) noexcept
+		: buffer_{buffer.first((std::min)(buffer.size(), max_message_size))}
+	{
+		__writer::write_type_and_length(buffer_, Message::type, 0);
+	}
+
 	void fail (errc error) noexcept
 	{
 		if (error_ == errc{})
@@ -157,11 +160,14 @@ private:
 		}
 
 		const auto attribute = buffer_.subspan(size_, attribute_header_size + padded_length);
-		__writer::write_attribute_header(attribute, type, length);
+		__writer::write_type_and_length(attribute, type, length);
 		V::write(buffer_.first(size_), attribute.subspan(attribute_header_size, length), value);
 		std::ranges::fill(attribute.subspan(attribute_header_size + length), std::byte{});
 		size_ += attribute_header_size + padded_length;
 	}
+
+	template <typename>
+	friend class basic_message_reader;
 };
 
 /// Writer of message that \a Entity denotes: message, or method with single initiating class

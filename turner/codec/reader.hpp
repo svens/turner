@@ -10,7 +10,9 @@
 #include <turner/codec/error.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol.hpp>
+#include <turner/codec/protocol_error.hpp>
 #include <turner/codec/value.hpp>
+#include <turner/codec/writer.hpp>
 #include <pal/packed_struct.hpp>
 #include <pal/result.hpp>
 #include <algorithm>
@@ -44,6 +46,11 @@ const typename Protocol::transaction_id &transaction_id (std::span<std::byte> bu
 	using id_type = typename Protocol::transaction_id;
 	return pal::packed_as<id_type>(buffer.subspan<Protocol::transaction_id_offset, sizeof(id_type)>());
 }
+
+template <typename Request, message_class Class>
+using response_writer = basic_message_writer<
+	message_type<typename Request::protocol_type, Request::method, Class, Request::classes>
+>;
 
 template <attribute_value Value>
 [[nodiscard]] pal::result<typename Value::native_type> read_value (
@@ -195,7 +202,7 @@ public:
 	/// Protocol that defines the message
 	using protocol_type = typename Message::protocol_type;
 
-	/// Return message transaction ID. Reference is valid while message buffer content is.
+	/// Return message transaction ID. Reference is valid while its bytes in the buffer are unchanged.
 	[[nodiscard]] const typename protocol_type::transaction_id &transaction_id () const noexcept
 	{
 		return __reader::transaction_id<protocol_type>(buffer_);
@@ -325,6 +332,31 @@ public:
 		return types;
 	}
 
+	/// Return writer of success response built over this request, in whole buffer given to parse: message type
+	/// is replaced and attributes are dropped; Magic Cookie and transaction ID stay. Afterwards parsed_message,
+	/// every reader of this message and every attribute value read from it are dead; only references returned
+	/// by transaction_id() stay valid. For reader in \c std::optional, call as
+	/// \c std::move(*request).to_success().
+	[[nodiscard]] __reader::response_writer<Message, message_class::success> to_success () && noexcept
+		requires(__method::class_of<Message> == message_class::request
+			&& __method::has(Message::classes, message_class::success))
+	{
+		return __reader::response_writer<Message, message_class::success>{buffer_};
+	}
+
+	/// As to_success(), for error response with ERROR-CODE \a error as first attribute. Reason of \a error must
+	/// not refer to bytes of the buffer, and its code must be in range 300 to 699. finish() fails with
+	/// errc::unexpected_attribute_length if reason is too long for protocol, and with errc::buffer_too_small
+	/// if ERROR-CODE does not fit.
+	[[nodiscard]] __reader::response_writer<Message, message_class::error> to_error (
+		const protocol_error &error) && noexcept
+		requires(__method::class_of<Message> == message_class::request
+			&& __method::has(Message::classes, message_class::error))
+	{
+		return __reader::response_writer<Message, message_class::error>{buffer_}
+			.write(protocol_type::error_code, error);
+	}
+
 private:
 
 	std::span<std::byte> buffer_;
@@ -368,7 +400,7 @@ public:
 		return __reader::type_and_length(buffer_).type;
 	}
 
-	/// Return message transaction ID. Reference is valid while message buffer content is.
+	/// Return message transaction ID. Reference is valid while its bytes in the buffer are unchanged.
 	[[nodiscard]] const typename Protocol::transaction_id &transaction_id () const noexcept
 	{
 		return __reader::transaction_id<Protocol>(buffer_);
