@@ -7,6 +7,7 @@
 
 #include <turner/codec/__wire.hpp>
 #include <turner/codec/attribute.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol_error.hpp>
 #include <turner/codec/reader.hpp>
@@ -475,12 +476,58 @@ struct msturn
 	/// \see https://learn.microsoft.com/openspecs/office_protocols/ms-turn/8192de42-81aa-453b-b4f4-77d4889da70e
 	static constexpr auto multiplexed_session_id = attribute<msturn, bytes_value<8>, 0x8095>;
 
+	/// Wire format of Message Integrity, used by message reader and writer
+	class integrity_type
+	{
+		[[nodiscard]] static integrity_algorithm algorithm (
+			std::span<const std::byte> message,
+			size_t attributes_end
+		) noexcept;
+
+		[[nodiscard]] static pal::result<void> verify (
+			__integrity::hmac &key,
+			std::span<const std::byte> message,
+			size_t attributes_end
+		) noexcept;
+
+		static void write (
+			__integrity::hmac &key,
+			std::span<std::byte> message,
+			size_t attribute_offset
+		) noexcept;
+
+		template <typename>
+		friend class basic_message_reader;
+
+		template <typename>
+		friend class basic_message_writer;
+	};
+
+	/// Key of Message Integrity
+	using integrity_key = turner::integrity_key<msturn>;
+
+	/// Create HMAC-SHA1 key from \a credentials: MD5(username ":" realm ":" password). Nonce is not used.
+	///
+	/// \ref realm value is read with its quotes, while credentials realm is expected without them: MS-TURN says
+	/// "value of the Realm attribute", and the draft it defers to for this key removes the quotes.
+	/// \see https://learn.microsoft.com/openspecs/office_protocols/ms-turn/d9dd90bc-5bd3-4daa-89ac-0d70c5a1cb81
+	[[nodiscard]] static pal::result<integrity_key> sha1_key (const integrity_credentials &credentials) noexcept;
+
+	/// Create HMAC-SHA256 key from \a credentials: K = HMAC-SHA256(nonce, password),
+	/// Key = HMAC-SHA256(K, 0x01 "TURN" 0x00 username realm 0x00000100). Key depends on nonce: create new one when
+	/// nonce changes.
+	///
+	/// Credentials realm is expected without quotes: MS-TURN says "value of the Realm attribute" here as well, and
+	/// deployed servers remove the quotes.
+	[[nodiscard]] static pal::result<integrity_key> sha256_key (const integrity_credentials &credentials) noexcept;
+
 	/// Validate message in first \a received bytes of \a buffer. \a buffer is whole I/O buffer: response to the
 	/// message is built in it. \a received must not exceed \a buffer size.
 	///
-	/// Checks message structure only (header, Magic Cookie, attribute layout), not whether message type or
-	/// attributes are known. Fails with errc::incomplete if \a received bytes do not hold whole message.
-	/// Bytes following the message are ignored: use parsed_message::size() to find them.
+	/// Checks message structure only (header, Magic Cookie, attribute layout, Message Integrity length and
+	/// position), not whether message type or attributes are known. Fails with errc::incomplete if \a received
+	/// bytes do not hold whole message. Bytes following the message are ignored: use parsed_message::size() to
+	/// find them.
 	[[nodiscard]] static pal::result<parsed_message<msturn>> parse (
 		std::span<std::byte> buffer,
 		size_t received

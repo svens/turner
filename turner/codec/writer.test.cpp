@@ -2,13 +2,16 @@
 #include <turner/codec/writer.hpp>
 #include <turner/codec/__wire.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/msturn.hpp>
 #include <turner/codec/stun.hpp>
 #include <turner/codec/turn.hpp>
 #include <turner/codec/value.hpp>
+#include <pal/crypto/hash.hpp>
 #include <pal/result.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <algorithm>
 #include <chrono>
 #include <concepts>
@@ -139,6 +142,34 @@ static_assert(
 		pal::result<std::span<const std::byte>>
 	>
 );
+
+template <typename Writer, typename Key>
+concept can_finish_with_key = requires(Writer &&writer, Key &key)
+{
+	{ std::forward<Writer>(writer).finish(key) } noexcept -> std::same_as<pal::result<std::span<const std::byte>>>;
+};
+
+template <typename Writer, typename Key>
+concept can_finish_with_key_and_fingerprint = requires(Writer &&writer, Key &key)
+{
+	{
+		std::forward<Writer>(writer).finish(key, turner::stun::fingerprint)
+	} noexcept -> std::same_as<pal::result<std::span<const std::byte>>>;
+};
+
+static_assert(can_finish_with_key<stun_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key<turn_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key<turn_writer, turner::turn::integrity_key>);
+static_assert(can_finish_with_key<msturn_writer, turner::msturn::integrity_key>);
+static_assert(!can_finish_with_key<turn_writer &, turner::stun::integrity_key>);
+static_assert(!can_finish_with_key<turn_writer, const turner::stun::integrity_key>);
+static_assert(!can_finish_with_key<stun_writer, turner::msturn::integrity_key>);
+static_assert(!can_finish_with_key<turn_writer, turner::msturn::integrity_key>);
+static_assert(!can_finish_with_key<msturn_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key_and_fingerprint<stun_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key_and_fingerprint<turn_writer, turner::stun::integrity_key>);
+static_assert(!can_finish_with_key_and_fingerprint<turn_writer &, turner::stun::integrity_key>);
+static_assert(!can_finish_with_key_and_fingerprint<msturn_writer, turner::msturn::integrity_key>);
 
 struct stun
 {
@@ -482,10 +513,184 @@ TEMPLATE_TEST_CASE("writer", "", stun, turn, msturn)
 			}
 		}
 	}
+
+	SECTION("integrity")
+	{
+		auto sha1 = turner_test::sha1_key<Protocol>();
+		auto sha256 = turner_test::sha256_key<Protocol>();
+
+		const bool use_sha256 = GENERATE(false, true);
+		CAPTURE(use_sha256);
+		auto &key = use_sha256 ? sha256 : sha1;
+		const size_t attribute_size = use_sha256 ? 36 : 24;
+
+		const auto check_verifies = [&](pal::result<std::span<const std::byte>> message)
+		{
+			REQUIRE(message);
+			const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+			const auto expected = use_sha256
+				? turner::integrity_algorithm::sha256
+				: turner::integrity_algorithm::sha1;
+			CHECK(request.integrity() == expected);
+			CHECK(request.verify(key).has_value());
+		};
+
+		SECTION("round trip")
+		{
+			const auto message = writer_type{buffer, TestType::transaction_id}
+				.write(attribute, "abcd")
+				.finish(key);
+			check_verifies(message);
+			REQUIRE(message);
+			CHECK(message->size() == attributes_offset + 8 + attribute_size);
+		}
+
+		SECTION("key reuse")
+		{
+			check_verifies(
+				writer_type{buffer, TestType::transaction_id}
+					.write(attribute, "abcd")
+					.finish(key)
+			);
+			check_verifies(
+				writer_type{buffer, TestType::transaction_id}
+					.write(attribute, "efgh")
+					.finish(key)
+			);
+		}
+
+		SECTION("buffer size")
+		{
+			auto exact = make_buffer(attributes_offset + attribute_size);
+			const auto message = writer_type{exact, TestType::transaction_id}.finish(key);
+			REQUIRE(message);
+			CHECK(message->size() == exact.size());
+
+			auto short_buffer = make_buffer(attributes_offset + attribute_size - 1);
+			CHECK(writer_type{short_buffer, TestType::transaction_id}.finish(key)
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+			check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+		}
+
+		SECTION("header does not fit")
+		{
+			auto small = make_array<attributes_offset - 1>();
+			CHECK(writer_type{small, TestType::transaction_id}
+				.finish(key)
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+			check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+		}
+
+		SECTION("first failure is kept")
+		{
+			CHECK(writer_type{buffer, TestType::transaction_id}.write(attribute, too_long).finish(key)
+				==
+				failed(turner::errc::unexpected_attribute_length)
+			);
+			check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+		}
+
+		if constexpr (requires { TestType::data; })
+		{
+			SECTION("message size limit")
+			{
+				constexpr size_t cookie_size = attributes_offset - Protocol::header_size;
+				const size_t largest_data = TestType::largest_length - cookie_size - 4 - attribute_size;
+				auto large = make_buffer(Protocol::header_size + 0xffff + 16);
+
+				const std::vector<std::byte> largest(largest_data);
+				const auto message = writer_type{large, TestType::transaction_id}
+					.write(TestType::data, largest)
+					.finish(key);
+				check_verifies(message);
+				REQUIRE(message);
+				CHECK(message->size() == Protocol::header_size + TestType::largest_length);
+
+				const std::vector<std::byte> too_large(largest_data + 1);
+				CHECK(writer_type{large, TestType::transaction_id}
+					.write(TestType::data, too_large)
+					.finish(key)
+					==
+					failed(turner::errc::buffer_too_small)
+				);
+
+				if constexpr (has_fingerprint)
+				{
+					const std::vector<std::byte> largest_with_fingerprint(largest_data - 8);
+					const auto with_fingerprint = writer_type{large, TestType::transaction_id}
+						.write(TestType::data, largest_with_fingerprint)
+						.finish(key, Protocol::fingerprint);
+					check_verifies(with_fingerprint);
+					REQUIRE(with_fingerprint);
+					CHECK(with_fingerprint->size()
+						==
+						Protocol::header_size + TestType::largest_length
+					);
+
+					const std::vector<std::byte> beyond_with_fingerprint(largest_data - 7);
+					CHECK(writer_type{large, TestType::transaction_id}
+						.write(TestType::data, beyond_with_fingerprint)
+						.finish(key, Protocol::fingerprint)
+						==
+						failed(turner::errc::buffer_too_small)
+					);
+				}
+			}
+		}
+
+		if constexpr (has_fingerprint)
+		{
+			SECTION("fingerprint")
+			{
+				SECTION("round trip")
+				{
+					const auto message = writer_type{buffer, TestType::transaction_id}
+						.write(attribute, "abcd")
+						.finish(key, Protocol::fingerprint);
+					check_verifies(message);
+					REQUIRE(message);
+					CHECK(message->size() == attributes_offset + 8 + attribute_size + 8);
+				}
+
+				SECTION("buffer size")
+				{
+					auto exact = make_buffer(attributes_offset + attribute_size + 8);
+					const auto message = writer_type{exact, TestType::transaction_id}
+						.finish(key, Protocol::fingerprint);
+					REQUIRE(message);
+					CHECK(message->size() == exact.size());
+
+					auto short_buffer = make_buffer(attributes_offset + attribute_size + 7);
+					CHECK(writer_type{short_buffer, TestType::transaction_id}
+						.finish(key, Protocol::fingerprint)
+						==
+						failed(turner::errc::buffer_too_small)
+					);
+					check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+				}
+
+				SECTION("first failure is kept")
+				{
+					CHECK(writer_type{buffer, TestType::transaction_id}
+						.write(attribute, too_long)
+						.finish(key, Protocol::fingerprint)
+						==
+						failed(turner::errc::unexpected_attribute_length)
+					);
+				}
+			}
+		}
+	}
 }
 
 TEST_CASE("writer/protocol specific")
 {
+	namespace integrity = turner_test::integrity_message;
+
 	auto buffer = make_buffer();
 	std::vector<std::byte> copy;
 
@@ -685,6 +890,104 @@ TEST_CASE("writer/protocol specific")
 			.write(turner::msturn::destination_address, server_address)
 			.finish();
 		CHECK(hex(message) == hex(turner_test::msturn_message::set_active_destination_request));
+	}
+
+	SECTION("stun: integrity")
+	{
+		auto sha1 = turner_test::sha1_key<turner::stun>();
+		auto sha256 = turner_test::sha256_key<turner::stun>();
+		const auto request = [&]
+		{
+			return writer<turner::stun::binding.request>{buffer, stun_id}
+				.write(turner::stun::username, "user");
+		};
+
+		CHECK(hex(request().finish(sha1)) == hex(integrity::stun_sha1));
+		CHECK(hex(request().finish(sha256)) == hex(integrity::stun_sha256));
+		CHECK(hex(request().finish(sha1, turner::stun::fingerprint)) == hex(integrity::stun_sha1_fingerprint));
+		CHECK(hex(request().finish(sha256, turner::stun::fingerprint))
+			==
+			hex(integrity::stun_sha256_fingerprint)
+		);
+	}
+
+	SECTION("stun: integrity with md5 key and sha256")
+	{
+		const auto md5 = pal::crypto::md5_hash::one_shot(std::string_view{"user:realm:pass"});
+		REQUIRE(md5);
+		auto key = turner::stun::integrity_key::sha256(*md5);
+		REQUIRE(key);
+		CHECK(hex(
+				writer<turner::stun::binding.request>{buffer, stun_id}
+					.write(turner::stun::username, "user")
+					.finish(*key)
+			)
+			==
+			hex(integrity::stun_md5_key_sha256)
+		);
+	}
+
+	SECTION("turn: integrity with stun key")
+	{
+		auto key = turner_test::sha1_key<turner::stun>();
+		CHECK(hex(
+				writer<turner::turn::allocate>{buffer, stun_id}
+					.write(turner::turn::requested_transport, turner::transport_protocol::udp)
+					.finish(key)
+			)
+			==
+			hex(integrity::turn_allocate_sha1)
+		);
+	}
+
+	SECTION("msturn: integrity")
+	{
+		auto sha1 = turner_test::sha1_key<turner::msturn>();
+		auto sha256 = turner_test::sha256_key<turner::msturn>();
+		const auto request = [&]
+		{
+			return writer<turner::msturn::allocate>{buffer, msturn_id}
+				.write(turner::msturn::username, integrity::username)
+				.write(turner::msturn::realm, integrity::quoted_realm)
+				.write(turner::msturn::nonce, integrity::nonce);
+		};
+
+		CHECK(hex(request().finish(sha1)) == hex(integrity::msturn_sha1));
+		CHECK(hex(request().finish(sha256)) == hex(integrity::msturn_sha256));
+	}
+
+	SECTION("msturn: integrity hmac input padding")
+	{
+		auto key = turner_test::sha1_key<turner::msturn>();
+		const auto request = [&](size_t username_size)
+		{
+			return writer<turner::msturn::allocate>{buffer, msturn_id}
+				.write(turner::msturn::username, std::string(username_size, 'u'))
+				.finish(key);
+		};
+
+		CHECK(hex(request(32)) == hex(integrity::msturn_covers_64));
+		CHECK(hex(request(33)) == hex(integrity::msturn_covers_65));
+	}
+
+	SECTION("msturn: integrity with nonce longer than hmac block")
+	{
+		const std::string nonce(65, 'n');
+		auto key = turner::msturn::sha256_key({
+			.username = integrity::username,
+			.realm = integrity::realm,
+			.nonce = nonce,
+			.password = integrity::password,
+		});
+		REQUIRE(key);
+		CHECK(hex(
+				writer<turner::msturn::allocate>{buffer, msturn_id}
+					.write(turner::msturn::nonce, nonce)
+					.finish(*key)
+			)
+			==
+			hex(integrity::msturn_long_nonce)
+		);
 	}
 
 	SECTION("msturn: IPv4 below min_size of IPv6-only endpoint")

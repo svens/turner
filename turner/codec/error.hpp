@@ -24,6 +24,7 @@ namespace turner
 	Impl(unexpected_attribute_value, "unexpected attribute value") \
 	Impl(integrity_missing, "integrity missing") \
 	Impl(integrity_mismatch, "integrity mismatch") \
+	Impl(integrity_not_last, "integrity not last") \
 	Impl(buffer_too_small, "buffer too small")
 
 /// Codec errors

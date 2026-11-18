@@ -2,6 +2,7 @@
 #include <turner/codec/reader.hpp>
 #include <turner/codec/__wire.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/msturn.hpp>
 #include <turner/codec/protocol_error.hpp>
@@ -154,6 +155,21 @@ static_assert(
 static_assert(noexcept(std::declval<reader<turner::turn::allocate>>().to_success()));
 static_assert(noexcept(std::declval<reader<turner::turn::allocate>>().to_error(turner::protocol_errc::bad_request)));
 
+template <typename Reader, typename Key>
+concept can_verify = requires(const Reader &request, Key &key)
+{
+	{ request.verify(key) } noexcept -> std::same_as<pal::result<void>>;
+};
+
+static_assert(can_verify<reader<turner::stun::binding.request>, turner::stun::integrity_key>);
+static_assert(can_verify<reader<turner::turn::binding.request>, turner::turn::integrity_key>);
+static_assert(can_verify<reader<turner::turn::allocate>, turner::stun::integrity_key>);
+static_assert(can_verify<reader<turner::msturn::allocate>, turner::msturn::integrity_key>);
+static_assert(!can_verify<reader<turner::stun::binding.request>, turner::msturn::integrity_key>);
+static_assert(!can_verify<reader<turner::turn::allocate>, turner::msturn::integrity_key>);
+static_assert(!can_verify<reader<turner::msturn::allocate>, turner::stun::integrity_key>);
+static_assert(!can_verify<reader<turner::turn::allocate>, const turner::stun::integrity_key>);
+
 struct sample
 {
 	std::string_view name;
@@ -194,6 +210,14 @@ struct stun
 		__turner_test_sample(stun_message, binding_error, 0x0111),
 		__turner_test_sample(stun_message, binding_request_fingerprint, 0x0001),
 		__turner_test_sample(stun_message, binding_request_software_fingerprint, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha1, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha256, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha1_fingerprint, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha256_fingerprint, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha1_sha256, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha1_software, 0x0001),
+		__turner_test_sample(integrity_message, stun_sha1_twice, 0x0001),
+		__turner_test_sample(integrity_message, turn_allocate_sha1, 0x0003),
 		__turner_test_sample(turn_message, allocate_request, 0x0003),
 		__turner_test_sample(turn_message, allocate_request_dont_fragment, 0x0003),
 		__turner_test_sample(turn_message, allocate_success, 0x0103),
@@ -284,6 +308,28 @@ struct stun
 		"80280004" "5b20f9cd"
 	);
 
+	static constexpr auto integrity_length_16 = turner_test::bytes(
+		"00010014" "2112a442" "01020304" "05060708" "090a0b0c"
+		"00080010" "00000000" "00000000" "00000000" "00000000"
+	);
+
+	static constexpr auto integrity_after_fingerprint = turner_test::bytes(
+		"00010020" "2112a442" "01020304" "05060708" "090a0b0c"
+		"80280004" "00000000"
+		"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+	);
+
+	static constexpr auto integrity_sha256_length_20 = turner_test::bytes(
+		"00010018" "2112a442" "01020304" "05060708" "090a0b0c"
+		"001c0014" "00000000" "00000000" "00000000" "00000000" "00000000"
+	);
+
+	static constexpr auto integrity_sha256_after_sha1_length_20 = turner_test::bytes(
+		"00010030" "2112a442" "01020304" "05060708" "090a0b0c"
+		"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+		"001c0014" "00000000" "00000000" "00000000" "00000000" "00000000"
+	);
+
 	static constexpr malformed malformed_messages[] =
 	{
 		__turner_test_malformed(length_misaligned_by_1, unexpected_message_length),
@@ -300,6 +346,10 @@ struct stun
 		__turner_test_malformed(fingerprint_length_3, unexpected_attribute_length),
 		__turner_test_malformed(fingerprint_length_8, unexpected_attribute_length),
 		__turner_test_malformed(fingerprint_mismatch, fingerprint_mismatch),
+		__turner_test_malformed(integrity_after_fingerprint, fingerprint_not_last),
+		__turner_test_malformed(integrity_length_16, unexpected_attribute_length),
+		__turner_test_malformed(integrity_sha256_length_20, unexpected_attribute_length),
+		__turner_test_malformed(integrity_sha256_after_sha1_length_20, unexpected_attribute_length),
 	};
 };
 
@@ -337,6 +387,8 @@ struct msturn
 		__turner_test_sample(msturn_message, set_active_destination_request, 0x0006),
 		__turner_test_sample(msturn_message, set_active_destination_success, 0x0106),
 		__turner_test_sample(msturn_message, set_active_destination_error, 0x0116),
+		__turner_test_sample(integrity_message, msturn_sha1, 0x0003),
+		__turner_test_sample(integrity_message, msturn_sha256, 0x0003),
 	};
 
 	static constexpr auto length_zero = turner_test::bytes(
@@ -385,6 +437,26 @@ struct msturn
 		"0011ffff" "00010d96" "c0000201"
 	);
 
+	static constexpr auto integrity_length_16 = turner_test::bytes(
+		"0006001c" "2112a442" "01020304" "05060708" "090a0b0c"
+		"000f0004" "72c64bc6"
+		"00080010" "00000000" "00000000" "00000000" "00000000"
+	);
+
+	static constexpr auto integrity_not_last = turner_test::bytes(
+		"00060024" "2112a442" "01020304" "05060708" "090a0b0c"
+		"000f0004" "72c64bc6"
+		"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+		"00110000"
+	);
+
+	static constexpr auto integrity_twice = turner_test::bytes(
+		"00060038" "2112a442" "01020304" "05060708" "090a0b0c"
+		"000f0004" "72c64bc6"
+		"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+		"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+	);
+
 	static constexpr malformed malformed_messages[] =
 	{
 		__turner_test_malformed(length_zero, unexpected_message_length),
@@ -395,6 +467,9 @@ struct msturn
 		__turner_test_malformed(length_cuts_attribute, unexpected_attribute_length),
 		__turner_test_malformed(attribute_exceeds_message, unexpected_attribute_length),
 		__turner_test_malformed(attribute_max_length, unexpected_attribute_length),
+		__turner_test_malformed(integrity_length_16, unexpected_attribute_length),
+		__turner_test_malformed(integrity_not_last, integrity_not_last),
+		__turner_test_malformed(integrity_twice, integrity_not_last),
 	};
 };
 
@@ -559,6 +634,128 @@ TEMPLATE_TEST_CASE("reader", "", stun, turn, msturn)
 
 	auto buffer = make_buffer();
 	std::vector<std::byte> copy;
+
+	SECTION("integrity")
+	{
+		using key_type = typename Protocol::integrity_key;
+
+		auto sha1 = turner_test::sha1_key<Protocol>();
+		auto sha256 = turner_test::sha256_key<Protocol>();
+
+		SECTION("no integrity attribute")
+		{
+			const auto request = parse_as<Protocol, TestType::message>(*request_message, copy);
+			CHECK(request.integrity() == turner::integrity_algorithm::none);
+			CHECK(request.verify(sha1) == failed(turner::errc::integrity_missing));
+			CHECK(request.verify(sha256) == failed(turner::errc::integrity_missing));
+		}
+
+		SECTION("integrity attribute")
+		{
+			const bool use_sha256 = GENERATE(false, true);
+			CAPTURE(use_sha256);
+			auto &key = use_sha256 ? sha256 : sha1;
+			auto &other_algorithm_key = use_sha256 ? sha1 : sha256;
+			auto other_key = use_sha256 ? key_type::sha256("other") : key_type::sha1("other");
+			REQUIRE(other_key);
+
+			auto message_buffer = make_buffer();
+			const auto message = writer_type{message_buffer, TestType::transaction_id}
+				.write(attribute, "abcd")
+				.finish(key);
+			REQUIRE(message);
+			const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+
+			SECTION("algorithm")
+			{
+				const auto expected = use_sha256
+					? turner::integrity_algorithm::sha256
+					: turner::integrity_algorithm::sha1;
+				CHECK(request.integrity() == expected);
+			}
+
+			SECTION("attributes end at integrity")
+			{
+				CHECK(std::ranges::distance(request.wire_attributes()) == 1);
+				CHECK(request.read(attribute) == "abcd");
+			}
+
+			SECTION("verified")
+			{
+				CHECK(request.verify(key).has_value());
+			}
+
+			SECTION("other algorithm")
+			{
+				CHECK(request.verify(other_algorithm_key) == failed(turner::errc::integrity_missing));
+			}
+
+			SECTION("other key")
+			{
+				CHECK(request.verify(*other_key) == failed(turner::errc::integrity_mismatch));
+			}
+
+			SECTION("covered byte changed")
+			{
+				const auto offset = GENERATE(
+					size_t{1},
+					Protocol::transaction_id_offset,
+					attributes_offset + 4
+				);
+				CAPTURE(offset);
+				copy[offset] ^= std::byte{0x01};
+				CHECK(request.verify(key) == failed(turner::errc::integrity_mismatch));
+			}
+
+			SECTION("integrity value changed")
+			{
+				copy.back() ^= std::byte{0x01};
+				CHECK(request.verify(key) == failed(turner::errc::integrity_mismatch));
+			}
+
+			SECTION("key reuse")
+			{
+				CHECK(request.verify(key).has_value());
+				CHECK(request.verify(key).has_value());
+
+				copy.back() ^= std::byte{0x01};
+				CHECK(request.verify(key) == failed(turner::errc::integrity_mismatch));
+				copy.back() ^= std::byte{0x01};
+				CHECK(request.verify(key).has_value());
+
+				CHECK(request.verify(other_algorithm_key) == failed(turner::errc::integrity_missing));
+				CHECK(request.verify(key).has_value());
+			}
+
+			SECTION("response")
+			{
+				auto in_place = parse_in<Protocol, TestType::message>(buffer, *message);
+				const auto response = std::move(in_place).to_success()
+					.write(attribute, "xy")
+					.finish(key);
+				REQUIRE(response);
+
+				std::vector<std::byte> response_copy;
+				const auto success = parse_as<Protocol, TestType::success>(*response, response_copy);
+				CHECK(success.read(attribute) == "xy");
+				CHECK(success.verify(key).has_value());
+				CHECK(request.verify(key).has_value());
+			}
+
+			SECTION("error response")
+			{
+				auto in_place = parse_in<Protocol, TestType::message>(buffer, *message);
+				const auto response = std::move(in_place).to_error(turner::protocol_errc::unauthorized)
+					.finish(key);
+				REQUIRE(response);
+
+				std::vector<std::byte> response_copy;
+				const auto error = parse_as<Protocol, TestType::error>(*response, response_copy);
+				CHECK(error.read(Protocol::error_code) == turner::protocol_errc::unauthorized);
+				CHECK(error.verify(key).has_value());
+			}
+		}
+	}
 
 	SECTION("to_success")
 	{
@@ -726,6 +923,8 @@ TEMPLATE_TEST_CASE("reader", "", stun, turn, msturn)
 
 TEST_CASE("reader/protocol specific")
 {
+	namespace integrity = turner_test::integrity_message;
+
 	SECTION("as: turn")
 	{
 		auto buffer = buffer_of(turner_test::turn_message::allocate_request);
@@ -810,6 +1009,147 @@ TEST_CASE("reader/protocol specific")
 		const auto message = turner::msturn::parse(buffer, buffer.size());
 		REQUIRE_FALSE(message);
 		CHECK(message.error() == turner::errc::invalid_magic_cookie);
+	}
+
+	SECTION("integrity: stun sha1 followed by sha256")
+	{
+		auto buffer = buffer_of(integrity::stun_sha1_sha256);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto sha1 = turner_test::sha1_key<turner::stun>();
+		auto sha256 = turner_test::sha256_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha256);
+		CHECK(request->verify(sha1).has_value());
+		CHECK(request->verify(sha256).has_value());
+		CHECK(std::ranges::distance(request->wire_attributes()) == 1);
+	}
+
+	SECTION("integrity: stun sha256 followed by sha1")
+	{
+		static constexpr auto bytes = turner_test::bytes(
+			"00010044" "2112a442" "01020304" "05060708" "090a0b0c"
+			"001c0020" "00000000" "00000000" "00000000" "00000000"
+			"00000000" "00000000" "00000000" "00000000"
+			"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+			"00060004" "75736572"
+		);
+		auto buffer = buffer_of(bytes);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto sha1 = turner_test::sha1_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha256);
+		CHECK(request->verify(sha1) == failed(turner::errc::integrity_missing));
+		CHECK(std::ranges::distance(request->wire_attributes()) == 0);
+	}
+
+	SECTION("integrity: stun attribute after integrity is ignored")
+	{
+		auto buffer = buffer_of(integrity::stun_sha1_software);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto key = turner_test::sha1_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha1);
+		CHECK(request->verify(key).has_value());
+		CHECK(request->read(turner::stun::username) == "user");
+		CHECK(request->read(turner::stun::software) == failed(turner::errc::attribute_not_found));
+	}
+
+	SECTION("integrity: stun first of several is used")
+	{
+		auto buffer = buffer_of(integrity::stun_sha1_twice);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto key = turner_test::sha1_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha1);
+		CHECK(request->verify(key).has_value());
+		CHECK(std::ranges::distance(request->wire_attributes()) == 1);
+	}
+
+	SECTION("integrity: stun sha256 with bad length after other attribute is ignored")
+	{
+		static constexpr auto bytes = turner_test::bytes(
+			"00010038" "2112a442" "01020304" "05060708" "090a0b0c"
+			"00080014" "00000000" "00000000" "00000000" "00000000" "00000000"
+			"80220004" "74657374"
+			"001c0014" "00000000" "00000000" "00000000" "00000000" "00000000"
+		);
+		auto buffer = buffer_of(bytes);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+		CHECK(request->integrity() == turner::integrity_algorithm::sha1);
+	}
+
+	SECTION("integrity: stun fingerprint")
+	{
+		auto buffer = buffer_of(integrity::stun_sha1_fingerprint);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto key = turner_test::sha1_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha1);
+		CHECK(request->verify(key).has_value());
+		CHECK(std::ranges::distance(request->wire_attributes()) == 1);
+	}
+
+	SECTION("integrity: stun sha256 and fingerprint")
+	{
+		auto buffer = buffer_of(integrity::stun_sha256_fingerprint);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto key = turner_test::sha256_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha256);
+		CHECK(request->verify(key).has_value());
+		CHECK(std::ranges::distance(request->wire_attributes()) == 1);
+	}
+
+	SECTION("integrity: stun fingerprint only")
+	{
+		auto buffer = buffer_of(turner_test::stun_message::binding_request_software_fingerprint);
+		const auto message = turner::stun::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::stun::binding.request);
+		REQUIRE(request);
+
+		auto key = turner_test::sha1_key<turner::stun>();
+		CHECK(request->integrity() == turner::integrity_algorithm::none);
+		CHECK(request->verify(key) == failed(turner::errc::integrity_missing));
+		CHECK(std::ranges::distance(request->wire_attributes()) == 1);
+	}
+
+	SECTION("integrity: msturn hmac input padding")
+	{
+		const auto bytes = GENERATE(
+			std::span<const std::byte>{integrity::msturn_covers_64},
+			std::span<const std::byte>{integrity::msturn_covers_65}
+		);
+		auto buffer = buffer_of(bytes);
+		const auto message = turner::msturn::parse(buffer, buffer.size());
+		REQUIRE(message);
+		const auto request = message->as(turner::msturn::allocate);
+		REQUIRE(request);
+
+		auto key = turner_test::sha1_key<turner::msturn>();
+		CHECK(request->integrity() == turner::integrity_algorithm::sha1);
+		CHECK(request->verify(key).has_value());
 	}
 
 	SECTION("parse: msturn 0x8028 is plain attribute")

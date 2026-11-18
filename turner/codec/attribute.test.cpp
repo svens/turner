@@ -673,7 +673,7 @@ TEST_CASE("attribute/values")
 
 		const std::vector<type_and_size> expected =
 		{
-			{0x8022, 16}, {0x0024, 4}, {0x8029, 8}, {0x0006, 9}, {0x0008, 20}, {0x8028, 4},
+			{0x8022, 16}, {0x0024, 4}, {0x8029, 8}, {0x0006, 9},
 		};
 		CHECK(types_and_sizes(request.wire_attributes()) == expected);
 	}

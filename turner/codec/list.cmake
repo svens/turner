@@ -3,6 +3,8 @@ list(APPEND turner_codec_sources
 	turner/codec/attribute.hpp
 	turner/codec/error.hpp
 	turner/codec/error.cpp
+	turner/codec/integrity.hpp
+	turner/codec/integrity.cpp
 	turner/codec/method.hpp
 	turner/codec/msturn.hpp
 	turner/codec/msturn.cpp
@@ -22,6 +24,7 @@ list(APPEND turner_codec_test_sources
 	turner/codec/test.hpp
 	turner/codec/attribute.test.cpp
 	turner/codec/error.test.cpp
+	turner/codec/integrity.test.cpp
 	turner/codec/method.test.cpp
 	turner/codec/msturn.test.cpp
 	turner/codec/protocol_error.test.cpp

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 namespace turner::__wire
 {
@@ -18,9 +19,25 @@ struct type_and_length
 {
 	pal::big_endian<uint16_t> type;
 	pal::big_endian<uint16_t> length;
+
+	static const type_and_length &read (std::span<const std::byte> bytes) noexcept
+	{
+		return pal::packed_as<type_and_length>(bytes.first<sizeof(type_and_length)>());
+	}
+
+	static void write (std::span<std::byte> bytes, uint16_t type, size_t length) noexcept
+	{
+		pal::packed_as<type_and_length>(bytes.first<sizeof(type_and_length)>()) =
+		{
+			.type = type,
+			.length = static_cast<uint16_t>(length),
+		};
+	}
 };
 
 static_assert(pal::packed_struct<type_and_length>);
+
+inline constexpr size_t attribute_header_size = sizeof(type_and_length);
 
 inline constexpr uint16_t type_reserved_bits = 0b1100'0000'0000'0000;
 

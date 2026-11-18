@@ -8,9 +8,9 @@
 #include <turner/codec/__wire.hpp>
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol.hpp>
-#include <pal/packed_struct.hpp>
 #include <pal/result.hpp>
 #include <algorithm>
 #include <concepts>
@@ -26,15 +26,6 @@ namespace turner
 namespace __writer
 {
 
-inline void write_type_and_length (std::span<std::byte> bytes, uint16_t type, size_t length) noexcept
-{
-	pal::packed_as<__wire::type_and_length>(bytes.first<sizeof(__wire::type_and_length)>()) =
-	{
-		.type = type,
-		.length = static_cast<uint16_t>(length),
-	};
-}
-
 template <typename Protocol>
 void write_header (
 	std::span<std::byte> message,
@@ -42,7 +33,7 @@ void write_header (
 	const typename Protocol::transaction_id &transaction_id) noexcept
 {
 	using id_type = typename Protocol::transaction_id;
-	write_type_and_length(message, type, 0);
+	__wire::type_and_length::write(message, type, 0);
 	std::ranges::copy(
 		Protocol::cookie,
 		message.subspan<Protocol::cookie_offset, Protocol::cookie.size()>().begin()
@@ -108,11 +99,10 @@ public:
 	/// Return written message, or first failure
 	[[nodiscard]] pal::result<std::span<const std::byte>> finish () && noexcept
 	{
-		if (error_ != errc{})
+		return check_room(0).transform([this]() noexcept
 		{
-			return make_unexpected(error_);
-		}
-		return complete(size_);
+			return complete(size_);
+		});
 	}
 
 	/// Append FINGERPRINT as last attribute and return written message, or first failure. Fails with
@@ -121,17 +111,38 @@ public:
 	template <std::same_as<typename protocol_type::fingerprint_type> Fingerprint>
 	[[nodiscard]] pal::result<std::span<const std::byte>> finish (Fingerprint) && noexcept
 	{
-		if (error_ != errc{})
+		return check_room(Fingerprint::size).transform([this]() noexcept
 		{
-			return make_unexpected(error_);
-		}
-		if (size_ + Fingerprint::size > buffer_.size())
+			return append_fingerprint<Fingerprint>();
+		});
+	}
+
+	/// Append integrity attribute matching \a key as last attribute and return written message, or first
+	/// failure. Fails with errc::buffer_too_small if attribute does not fit into buffer or into what message
+	/// length field can express.
+	template <typename P>
+		requires std::derived_from<protocol_type, P>
+	[[nodiscard]] pal::result<std::span<const std::byte>> finish (integrity_key<P> &key) && noexcept
+	{
+		const auto attribute_size = integrity_attribute_size(key.hmac_);
+		return check_room(attribute_size).transform([&]() noexcept
 		{
-			return make_unexpected(errc::buffer_too_small);
-		}
-		const auto message = complete(size_ + Fingerprint::size);
-		Fingerprint::write(buffer_.subspan(size_).first<Fingerprint::size>(), buffer_.first(size_));
-		return message;
+			return append_integrity(key.hmac_, attribute_size);
+		});
+	}
+
+	/// As finish(integrity_key<P> &), followed by FINGERPRINT as last attribute. Available only for protocols
+	/// that define FINGERPRINT (stun::fingerprint).
+	template <typename P, std::same_as<typename protocol_type::fingerprint_type> Fingerprint>
+		requires std::derived_from<protocol_type, P>
+	[[nodiscard]] pal::result<std::span<const std::byte>> finish (integrity_key<P> &key, Fingerprint) && noexcept
+	{
+		const auto attribute_size = integrity_attribute_size(key.hmac_);
+		return check_room(attribute_size + Fingerprint::size).transform([&]() noexcept
+		{
+			append_integrity(key.hmac_, attribute_size);
+			return append_fingerprint<Fingerprint>();
+		});
 	}
 
 private:
@@ -145,13 +156,48 @@ private:
 	explicit basic_message_writer (std::span<std::byte> buffer) noexcept
 		: buffer_{buffer.first((std::min)(buffer.size(), max_message_size))}
 	{
-		__writer::write_type_and_length(buffer_, Message::type, 0);
+		__wire::type_and_length::write(buffer_, Message::type, 0);
+	}
+
+	[[nodiscard]] pal::result<void> check_room (size_t size) const noexcept
+	{
+		if (error_ != errc{})
+		{
+			return make_unexpected(error_);
+		}
+		if (size_ + size > buffer_.size())
+		{
+			return make_unexpected(errc::buffer_too_small);
+		}
+		return {};
 	}
 
 	std::span<const std::byte> complete (size_t size) noexcept
 	{
-		__writer::write_type_and_length(buffer_, Message::type, size - protocol_type::header_size);
+		__wire::type_and_length::write(buffer_, Message::type, size - protocol_type::header_size);
 		return buffer_.first(size);
+	}
+
+	[[nodiscard]] static size_t integrity_attribute_size (const __integrity::hmac &key) noexcept
+	{
+		return __wire::attribute_header_size + key.digest_size();
+	}
+
+	std::span<const std::byte> append_integrity (__integrity::hmac &key, size_t attribute_size) noexcept
+	{
+		const auto message = complete(size_ + attribute_size);
+		protocol_type::integrity_type::write(key, buffer_.first(message.size()), size_);
+		size_ = message.size();
+		return message;
+	}
+
+	template <typename Fingerprint>
+	std::span<const std::byte> append_fingerprint () noexcept
+	{
+		const auto message = complete(size_ + Fingerprint::size);
+		Fingerprint::write(buffer_.subspan(size_).template first<Fingerprint::size>(), buffer_.first(size_));
+		size_ = message.size();
+		return message;
 	}
 
 	void fail (errc error) noexcept
@@ -173,7 +219,7 @@ private:
 			return;
 		}
 
-		constexpr auto attribute_header_size = sizeof(__wire::type_and_length);
+		constexpr auto attribute_header_size = __wire::attribute_header_size;
 		const auto padded_length = __wire::align_up(length, protocol_type::attribute_alignment);
 		if (size_ + attribute_header_size + padded_length > buffer_.size())
 		{
@@ -182,7 +228,7 @@ private:
 		}
 
 		const auto attribute = buffer_.subspan(size_, attribute_header_size + padded_length);
-		__writer::write_type_and_length(attribute, type, length);
+		__wire::type_and_length::write(attribute, type, length);
 		V::write(buffer_.first(size_), attribute.subspan(attribute_header_size, length), value);
 		std::ranges::fill(attribute.subspan(attribute_header_size + length), std::byte{});
 		size_ += attribute_header_size + padded_length;

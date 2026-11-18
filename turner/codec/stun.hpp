@@ -7,6 +7,7 @@
 
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/reader.hpp>
 #include <turner/codec/value.hpp>
@@ -37,6 +38,8 @@ struct algorithm_entry
 };
 
 static_assert(pal::packed_struct<algorithm_entry>);
+
+[[nodiscard]] pal::result<uint16_t> parse (std::span<std::byte> buffer, size_t received) noexcept;
 
 template <password_algorithm... Valid>
 struct basic_password_algorithm_value
@@ -310,12 +313,54 @@ struct stun
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.7
 	static constexpr fingerprint_type fingerprint{};
 
+	/// Wire format of MESSAGE-INTEGRITY and MESSAGE-INTEGRITY-SHA256, used by message reader and writer
+	class integrity_type
+	{
+		[[nodiscard]] static integrity_algorithm algorithm (
+			std::span<const std::byte> message,
+			size_t attributes_end
+		) noexcept;
+
+		[[nodiscard]] static pal::result<void> verify (
+			__integrity::hmac &key,
+			std::span<const std::byte> message,
+			size_t attributes_end
+		) noexcept;
+
+		static void write (
+			__integrity::hmac &key,
+			std::span<std::byte> message,
+			size_t attribute_offset
+		) noexcept;
+
+		template <typename>
+		friend class basic_message_reader;
+
+		template <typename>
+		friend class basic_message_writer;
+	};
+
+	/// Key of MESSAGE-INTEGRITY and MESSAGE-INTEGRITY-SHA256, usable also with \ref turn messages
+	using integrity_key = turner::integrity_key<stun>;
+
+	/// Create HMAC-SHA1 key of long-term \a credentials: MD5(username ":" realm ":" password). Nonce is not used.
+	/// For other combinations of password algorithm and HMAC, use integrity_key::sha1() and
+	/// integrity_key::sha256().
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-9.2.2
+	[[nodiscard]] static pal::result<integrity_key> sha1_key (const integrity_credentials &credentials) noexcept;
+
+	/// Create HMAC-SHA256 key of long-term \a credentials: SHA-256(username ":" realm ":" password). Nonce is not
+	/// used.
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-9.2.2
+	[[nodiscard]] static pal::result<integrity_key> sha256_key (const integrity_credentials &credentials) noexcept;
+
 	/// Validate message in first \a received bytes of \a buffer. \a buffer is whole I/O buffer: response to the
 	/// message is built in it. \a received must not exceed \a buffer size.
 	///
-	/// Checks message structure (header, attribute layout) and FINGERPRINT when present, not whether message
-	/// type or attributes are known. Fails with errc::incomplete if \a received bytes do not hold whole
-	/// message. Bytes following the message are ignored: use parsed_message::size() to find them.
+	/// Checks message structure (header, attribute layout), length of integrity attributes that
+	/// basic_message_reader::integrity() considers, and FINGERPRINT when present, not whether message type or
+	/// attributes are known. Fails with errc::incomplete if \a received bytes do not hold whole message. Bytes
+	/// following the message are ignored: use parsed_message::size() to find them.
 	[[nodiscard]] static pal::result<parsed_message<stun>> parse (
 		std::span<std::byte> buffer,
 		size_t received

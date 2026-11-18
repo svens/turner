@@ -7,6 +7,7 @@
  */
 
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/reader.hpp>
 #include <turner/codec/value.hpp>
 #include <pal/net/ip/address_v4.hpp>
@@ -21,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace turner_test
@@ -343,6 +345,116 @@ inline constexpr auto set_active_destination_request_0x8028 = bytes(
 
 } // namespace msturn_message
 
+namespace integrity_message
+{
+
+inline constexpr std::string_view username = "user";
+inline constexpr std::string_view realm = "realm";
+inline constexpr std::string_view quoted_realm = "\"realm\"";
+inline constexpr std::string_view nonce = "nonce";
+inline constexpr std::string_view password = "pass";
+
+inline constexpr auto stun_sha1 = bytes(
+	"00010020" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "00080014" "0f9187c6" "a30f64fe" "dd9f3783" "46be6e2f"
+	"d8b0fd74"
+);
+
+inline constexpr auto stun_sha256 = bytes(
+	"0001002c" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "001c0020" "28a5a925" "10439ca6" "131e20f2" "1ed8ff29"
+	"7e139904" "c48e2a73" "014b8749" "e984d1be"
+);
+
+inline constexpr auto stun_md5_key_sha256 = bytes(
+	"0001002c" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "001c0020" "bec867be" "c4eac54e" "db695094" "8664b0da"
+	"782548f6" "b0f650ca" "34acea15" "6262a539"
+);
+
+inline constexpr auto stun_sha1_fingerprint = bytes(
+	"00010028" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "00080014" "0f9187c6" "a30f64fe" "dd9f3783" "46be6e2f"
+	"d8b0fd74" "80280004" "25d72cbf"
+);
+
+inline constexpr auto stun_sha256_fingerprint = bytes(
+	"00010034" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "001c0020" "28a5a925" "10439ca6" "131e20f2" "1ed8ff29"
+	"7e139904" "c48e2a73" "014b8749" "e984d1be" "80280004" "17f64d92"
+);
+
+inline constexpr auto stun_sha1_sha256 = bytes(
+	"00010044" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "00080014" "0f9187c6" "a30f64fe" "dd9f3783" "46be6e2f"
+	"d8b0fd74" "001c0020" "fd12618d" "c43388a1" "6dd453c3" "bf9c4f49"
+	"13c8e312" "9837b05a" "d9963811" "7a06c881"
+);
+
+inline constexpr auto stun_sha1_software = bytes(
+	"0001002c" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "00080014" "0f9187c6" "a30f64fe" "dd9f3783" "46be6e2f"
+	"d8b0fd74" "80220005" "68656c6c" "6f000000"
+);
+
+inline constexpr auto stun_sha1_twice = bytes(
+	"00010038" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "00080014" "0f9187c6" "a30f64fe" "dd9f3783" "46be6e2f"
+	"d8b0fd74" "00080014" "00000000" "00000000" "00000000" "00000000"
+	"00000000"
+);
+
+inline constexpr auto stun_empty_realm = bytes(
+	"00010020" "2112a442" "01020304" "05060708" "090a0b0c" "00060004"
+	"75736572" "00080014" "c97297f3" "c08648a5" "4d31f685" "02534374"
+	"0433f663"
+);
+
+inline constexpr auto turn_allocate_sha1 = bytes(
+	"00030020" "2112a442" "01020304" "05060708" "090a0b0c" "00190004"
+	"11000000" "00080014" "719cc079" "2ae2ff1c" "b63f98fd" "2ec2d1a6"
+	"bd50091f"
+);
+
+inline constexpr auto msturn_sha1 = bytes(
+	"0003003c" "2112a442" "01020304" "05060708" "090a0b0c" "000f0004"
+	"72c64bc6" "00060004" "75736572" "00150007" "22726561" "6c6d2200"
+	"1400056e" "6f6e6365" "00080014" "29d22d5f" "0a3f2a55" "bb9046cb"
+	"5b2092d7" "d76cb25e"
+);
+
+inline constexpr auto msturn_sha256 = bytes(
+	"00030048" "2112a442" "01020304" "05060708" "090a0b0c" "000f0004"
+	"72c64bc6" "00060004" "75736572" "00150007" "22726561" "6c6d2200"
+	"1400056e" "6f6e6365" "00080020" "c987d5ef" "152342e9" "ced2eb31"
+	"fe44df65" "38949918" "9269914b" "afab4918" "c0486d62"
+);
+
+inline constexpr auto msturn_covers_64 = bytes(
+	"00030044" "2112a442" "01020304" "05060708" "090a0b0c" "000f0004"
+	"72c64bc6" "00060020" "75757575" "75757575" "75757575" "75757575"
+	"75757575" "75757575" "75757575" "75757575" "00080014" "b136c4d1"
+	"fd2b548a" "2c4b88b5" "2339ff5a" "73a28e03"
+);
+
+inline constexpr auto msturn_covers_65 = bytes(
+	"00030045" "2112a442" "01020304" "05060708" "090a0b0c" "000f0004"
+	"72c64bc6" "00060021" "75757575" "75757575" "75757575" "75757575"
+	"75757575" "75757575" "75757575" "75757575" "75000800" "14eba692"
+	"c5abfeb1" "9efdde74" "df591680" "90b1dedd" "58"
+);
+
+inline constexpr auto msturn_long_nonce = bytes(
+	"00030071" "2112a442" "01020304" "05060708" "090a0b0c" "000f0004"
+	"72c64bc6" "00140041" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e"
+	"6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e"
+	"6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e" "6e6e6e6e"
+	"6e000800" "2021b3e5" "9f6dea7d" "b9a59833" "a0e0f13b" "d6fd4e71"
+	"9a0f6fae" "e815b786" "08584884" "63"
+);
+
+} // namespace integrity_message
+
 inline constexpr std::byte filler{0xff};
 inline constexpr std::byte garbage{0xa5};
 
@@ -399,6 +511,28 @@ template <std::same_as<pal::result<std::span<const std::byte>>> Message>
 std::string hex (const Message &message)
 {
 	return message ? hex(*message) : message.error().message();
+}
+
+inline turner::integrity_credentials integrity_credentials () noexcept
+{
+	namespace m = integrity_message;
+	return {.username = m::username, .realm = m::realm, .nonce = m::nonce, .password = m::password};
+}
+
+template <typename Protocol>
+typename Protocol::integrity_key sha1_key ()
+{
+	auto key = Protocol::sha1_key(integrity_credentials());
+	REQUIRE(key);
+	return std::move(*key);
+}
+
+template <typename Protocol>
+typename Protocol::integrity_key sha256_key ()
+{
+	auto key = Protocol::sha256_key(integrity_credentials());
+	REQUIRE(key);
+	return std::move(*key);
 }
 
 template <typename Protocol, auto Entity>

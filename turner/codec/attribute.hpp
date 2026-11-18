@@ -6,7 +6,6 @@
  */
 
 #include <turner/codec/__wire.hpp>
-#include <pal/packed_struct.hpp>
 #include <pal/result.hpp>
 #include <concepts>
 #include <cstddef>
@@ -248,7 +247,7 @@ public:
 	wire_attribute_iterator &operator++ () noexcept
 	{
 		const auto padded_length = __wire::align_up(header().length, Protocol::attribute_alignment);
-		attributes_ = attributes_.subspan(sizeof(__wire::type_and_length) + padded_length);
+		attributes_ = attributes_.subspan(__wire::attribute_header_size + padded_length);
 		return *this;
 	}
 
@@ -272,7 +271,7 @@ private:
 
 	[[nodiscard]] const __wire::type_and_length &header () const noexcept
 	{
-		return pal::packed_as<__wire::type_and_length>(attributes_.first<sizeof(__wire::type_and_length)>());
+		return __wire::type_and_length::read(attributes_);
 	}
 };
 

@@ -1,7 +1,9 @@
 #include <turner/codec/msturn.hpp>
 #include <turner/codec/__wire.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/reader.hpp>
+#include <pal/crypto/hmac.hpp>
 #include <pal/packed_struct.hpp>
 #include <pal/result.hpp>
 #include <array>
@@ -29,7 +31,103 @@ static_assert(offsetof(header_and_cookie, transaction_id) == msturn::transaction
 static_assert(offsetof(header_and_cookie, cookie) == msturn::cookie_offset);
 static_assert(sizeof(header_and_cookie::cookie) == msturn::cookie.size());
 
+constexpr struct
+{
+	uint16_t type = 0x0008;
+	size_t sha1_size = pal::crypto::sha1_hmac::digest_size;
+	size_t sha256_size = pal::crypto::sha256_hmac::digest_size;
+	size_t hmac_input_alignment = 64;
+} message_integrity;
+
+using __wire::attribute_header_size;
+
+void update_padded (__integrity::hmac &key, std::span<const std::byte> covered) noexcept
+{
+	static constexpr std::array<std::byte, message_integrity.hmac_input_alignment> zeros{};
+	key.update(covered);
+	key.update(
+		std::span{zeros}.first(
+			__wire::align_up(covered.size(), message_integrity.hmac_input_alignment) - covered.size()
+		)
+	);
+}
+
 } // namespace
+
+integrity_algorithm msturn::integrity_type::algorithm (
+	std::span<const std::byte> message,
+	size_t attributes_end) noexcept
+{
+	const auto attribute = msturn::header_size + attributes_end;
+	if (attribute == message.size())
+	{
+		return integrity_algorithm::none;
+	}
+	const auto &header = __wire::type_and_length::read(message.subspan(attribute));
+	return header.length == message_integrity.sha1_size ? integrity_algorithm::sha1 : integrity_algorithm::sha256;
+}
+
+pal::result<void> msturn::integrity_type::verify (
+	__integrity::hmac &key,
+	std::span<const std::byte> message,
+	size_t attributes_end) noexcept
+{
+	if (algorithm(message, attributes_end) != key.algorithm())
+	{
+		return make_unexpected(errc::integrity_missing);
+	}
+	const auto attribute = msturn::header_size + attributes_end;
+	update_padded(key, message.first(attribute));
+	if (!key.finish_matches(message.subspan(attribute + attribute_header_size)))
+	{
+		return make_unexpected(errc::integrity_mismatch);
+	}
+	return {};
+}
+
+void msturn::integrity_type::write (
+	__integrity::hmac &key,
+	std::span<std::byte> message,
+	size_t attribute_offset) noexcept
+{
+	__wire::type_and_length::write(message.subspan(attribute_offset), message_integrity.type, key.digest_size());
+	update_padded(key, message.first(attribute_offset));
+	key.finish(message.subspan(attribute_offset + attribute_header_size));
+}
+
+pal::result<msturn::integrity_key> msturn::sha1_key (const integrity_credentials &credentials) noexcept
+{
+	return __integrity::md5_key(credentials).and_then([](const auto &key) noexcept
+	{
+		return integrity_key::sha1(key);
+	});
+}
+
+pal::result<msturn::integrity_key> msturn::sha256_key (const integrity_credentials &credentials) noexcept
+{
+	using hmac = pal::crypto::sha256_hmac;
+	static constexpr std::array prefix
+	{
+		std::byte{0x01}, std::byte{'T'}, std::byte{'U'}, std::byte{'R'}, std::byte{'N'}, std::byte{0x00},
+	};
+	static constexpr std::array suffix{std::byte{0x00}, std::byte{0x00}, std::byte{0x01}, std::byte{0x00}};
+
+	return hmac::one_shot(credentials.nonce.bytes(), credentials.password.bytes())
+		.and_then([&](const auto &initial_key) noexcept
+		{
+			return hmac::one_shot(
+				initial_key,
+				prefix,
+				credentials.username.bytes(),
+				credentials.realm.bytes(),
+				suffix
+			);
+		})
+		.and_then([](const auto &key) noexcept
+		{
+			return integrity_key::sha256(key);
+		});
+}
 
 pal::result<parsed_message<msturn>> msturn::parse (std::span<std::byte> buffer, size_t received) noexcept
 {
@@ -58,7 +156,8 @@ pal::result<parsed_message<msturn>> msturn::parse (std::span<std::byte> buffer, 
 		return make_unexpected(errc::incomplete);
 	}
 
-	constexpr auto attribute_header_size = sizeof(__wire::type_and_length);
+	uint16_t attributes_end = length;
+
 	auto attributes = buffer.subspan(sizeof(header_and_cookie), length - cookie.size());
 	while (!attributes.empty())
 	{
@@ -66,18 +165,30 @@ pal::result<parsed_message<msturn>> msturn::parse (std::span<std::byte> buffer, 
 		{
 			return make_unexpected(errc::unexpected_attribute_length);
 		}
-		const auto &attribute = pal::packed_as<__wire::type_and_length>(
-			attributes.first<attribute_header_size>()
-		);
+		const auto &attribute = __wire::type_and_length::read(attributes);
 		const size_t attribute_length = attribute.length;
 		if (attribute_length > attributes.size() - attribute_header_size)
 		{
 			return make_unexpected(errc::unexpected_attribute_length);
 		}
-		attributes = attributes.subspan(attribute_header_size + attribute_length);
+		const auto next = attributes.subspan(attribute_header_size + attribute_length);
+		if (attribute.type == message_integrity.type)
+		{
+			if (!next.empty())
+			{
+				return make_unexpected(errc::integrity_not_last);
+			}
+			if (attribute_length != message_integrity.sha1_size
+				&& attribute_length != message_integrity.sha256_size)
+			{
+				return make_unexpected(errc::unexpected_attribute_length);
+			}
+			attributes_end = static_cast<uint16_t>(length - attributes.size());
+		}
+		attributes = next;
 	}
 
-	return parsed_message<msturn>{buffer};
+	return parsed_message<msturn>{buffer, attributes_end};
 }
 
 } // namespace turner

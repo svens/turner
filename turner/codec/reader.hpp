@@ -8,6 +8,7 @@
 #include <turner/codec/__wire.hpp>
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
 #include <turner/codec/method.hpp>
 #include <turner/codec/protocol.hpp>
 #include <turner/codec/protocol_error.hpp>
@@ -34,11 +35,6 @@ class parsed_message;
 
 namespace __reader
 {
-
-inline const __wire::type_and_length &type_and_length (std::span<std::byte> buffer) noexcept
-{
-	return pal::packed_as<__wire::type_and_length>(buffer.first<sizeof(__wire::type_and_length)>());
-}
 
 template <typename Protocol>
 const typename Protocol::transaction_id &transaction_id (std::span<std::byte> buffer) noexcept
@@ -227,11 +223,15 @@ public:
 	template <auto List>
 	using attribute_values = typename __reader::list_values<std::remove_cvref_t<decltype(List)>>::type;
 
-	/// Return message attributes as they appear in message, in message order
+	/// Return message attributes as they appear in message, in message order. Attributes end at first integrity
+	/// attribute or FINGERPRINT: these and anything following them are not returned, here or by other readers
+	/// of attributes.
 	[[nodiscard]] std::ranges::subrange<wire_attribute_iterator> wire_attributes () const noexcept
 	{
-		const auto bytes = message().subspan(__wire::attributes_offset<protocol_type>);
-		return {wire_attribute_iterator{bytes}, wire_attribute_iterator{bytes.last(0)}};
+		const auto bytes = buffer_.first(protocol_type::header_size + attributes_end_)
+			.subspan(__wire::attributes_offset<protocol_type>);
+		const std::span<const std::byte> attributes = bytes;
+		return {wire_attribute_iterator{attributes}, wire_attribute_iterator{attributes.last(0)}};
 	}
 
 	/// Return value of first occurrence of given attribute in message. Fails with errc::attribute_not_found
@@ -332,6 +332,24 @@ public:
 		return types;
 	}
 
+	/// Return algorithm of message integrity attribute. For STUN and TURN, MESSAGE-INTEGRITY counts only as first
+	/// integrity attribute, and MESSAGE-INTEGRITY-SHA256 only as first one or directly following first
+	/// MESSAGE-INTEGRITY, when it is preferred.
+	[[nodiscard]] integrity_algorithm integrity () const noexcept
+	{
+		return protocol_type::integrity_type::algorithm(message(), attributes_end_);
+	}
+
+	/// Verify message integrity attribute with \a key. Fails with errc::integrity_missing if message has no
+	/// integrity attribute of \a key algorithm that counts as described in integrity(), and with
+	/// errc::integrity_mismatch if its value differs.
+	template <typename P>
+		requires std::derived_from<protocol_type, P>
+	[[nodiscard]] pal::result<void> verify (integrity_key<P> &key) const noexcept
+	{
+		return protocol_type::integrity_type::verify(key.hmac_, message(), attributes_end_);
+	}
+
 	/// Return writer of success response built over this request, in whole buffer given to parse: message type
 	/// is replaced and attributes are dropped; Magic Cookie and transaction ID stay. Afterwards parsed_message,
 	/// every reader of this message and every attribute value read from it are dead; only references returned
@@ -360,15 +378,17 @@ public:
 private:
 
 	std::span<std::byte> buffer_;
+	uint16_t attributes_end_;
 
-	explicit basic_message_reader (std::span<std::byte> buffer) noexcept
+	basic_message_reader (std::span<std::byte> buffer, uint16_t attributes_end) noexcept
 		: buffer_{buffer}
+		, attributes_end_{attributes_end}
 	{
 	}
 
 	[[nodiscard]] std::span<const std::byte> message () const noexcept
 	{
-		return buffer_.first(protocol_type::header_size + __reader::type_and_length(buffer_).length);
+		return buffer_.first(protocol_type::header_size + __wire::type_and_length::read(buffer_).length);
 	}
 
 	template <typename>
@@ -391,13 +411,13 @@ public:
 	/// Return message size in bytes, header included
 	[[nodiscard]] size_t size () const noexcept
 	{
-		return Protocol::header_size + __reader::type_and_length(buffer_).length;
+		return Protocol::header_size + __wire::type_and_length::read(buffer_).length;
 	}
 
 	/// Return message type as it appears in message header (host byte order)
 	[[nodiscard]] uint16_t type () const noexcept
 	{
-		return __reader::type_and_length(buffer_).type;
+		return __wire::type_and_length::read(buffer_).type;
 	}
 
 	/// Return message transaction ID. Reference is valid while its bytes in the buffer are unchanged.
@@ -413,7 +433,7 @@ public:
 	{
 		if (type() == message_of<M>::type)
 		{
-			return basic_message_reader<message_of<M>>{buffer_};
+			return basic_message_reader<message_of<M>>{buffer_, attributes_end_};
 		}
 		return std::nullopt;
 	}
@@ -421,9 +441,11 @@ public:
 private:
 
 	std::span<std::byte> buffer_;
+	uint16_t attributes_end_;
 
-	explicit parsed_message (std::span<std::byte> buffer) noexcept
+	parsed_message (std::span<std::byte> buffer, uint16_t attributes_end) noexcept
 		: buffer_{buffer}
+		, attributes_end_{attributes_end}
 	{
 	}
 
