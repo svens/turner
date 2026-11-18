@@ -51,6 +51,11 @@ constexpr size_t align_up (size_t size, size_t alignment) noexcept
 	return (size + alignment - 1) & ~(alignment - 1);
 }
 
+inline size_t offset_of (std::span<const std::byte> part, std::span<const std::byte> whole) noexcept
+{
+	return static_cast<size_t>(part.data() - whole.data());
+}
+
 template <typename Protocol>
 constexpr size_t attributes_offset = (std::max)(
 	Protocol::header_size,

@@ -24,11 +24,6 @@ constexpr uint8_t last_message_first_byte = 3;
 constexpr uint8_t first_channel_first_byte = channel_number_value::first >> 8;
 constexpr uint8_t last_channel_first_byte = channel_number_value::last >> 8;
 
-size_t offset_of (std::span<const std::byte> payload, std::span<const std::byte> buffer) noexcept
-{
-	return static_cast<size_t>(payload.data() - buffer.data());
-}
-
 void zero_padding (std::span<std::byte> padding) noexcept
 {
 	std::ranges::fill(padding, std::byte{});
@@ -105,7 +100,7 @@ std::span<const std::byte> turn::make_channel_data (
 {
 	const auto unpadded_size = attribute_header_size + payload.size();
 	const auto frame = buffer.subspan(
-		offset_of(payload, buffer) - attribute_header_size,
+		__wire::offset_of(payload, buffer) - attribute_header_size,
 		__wire::align_up(unpadded_size, attribute_alignment)
 	);
 	__wire::type_and_length::write(frame, channel, payload.size());
@@ -125,7 +120,10 @@ std::span<const std::byte> turn::make_data_indication (
 	const auto peer_size = peer_value::size(peer);
 	const auto prefix_size = attribute_header_size + peer_size + attribute_header_size;
 	const auto length = prefix_size + __wire::align_up(payload.size(), attribute_alignment);
-	const auto frame = buffer.subspan(offset_of(payload, buffer) - header_size - prefix_size, header_size + length);
+	const auto frame = buffer.subspan(
+		__wire::offset_of(payload, buffer) - header_size - prefix_size,
+		header_size + length
+	);
 
 	__writer::write_header<turn>(frame, data_indication.type, id);
 	__wire::type_and_length::write(frame, data_indication.type, length);

@@ -9,6 +9,7 @@
 #include <turner/codec/attribute.hpp>
 #include <turner/codec/integrity.hpp>
 #include <turner/codec/method.hpp>
+#include <turner/codec/protocol.hpp>
 #include <turner/codec/protocol_error.hpp>
 #include <turner/codec/reader.hpp>
 #include <turner/codec/value.hpp>
@@ -531,6 +532,164 @@ struct msturn
 	[[nodiscard]] static pal::result<parsed_message<msturn>> parse (
 		std::span<std::byte> buffer,
 		size_t received
+	) noexcept;
+
+	/// Size of TCP framing header
+	static constexpr size_t frame_header_size = 4;
+
+	/// Most bytes make_frame() and make_data_indication() together write before payload
+	static constexpr size_t max_headroom =
+		frame_header_size
+		+ header_size + cookie.size()
+		+ __wire::attribute_header_size + decltype(remote_address)::value_type::max_size
+		+ __wire::attribute_header_size;
+
+	/// Most bytes written after payload
+	static constexpr size_t max_tailroom = 0;
+
+	/// Largest payload of make_data_indication() whose message fits make_frame() for every peer address family
+	static constexpr size_t max_payload = 0xffff - (max_headroom - frame_header_size);
+
+	/// Return what \a datagram is: message with Magic Cookie, Multiplexed TURN packet or other, which is raw data
+	/// of any content. \a datagram must be whole, so content::need_more is not returned and empty \a datagram is
+	/// content::other. On TCP, use parse_frame() instead.
+	[[nodiscard]] static content peek (std::span<const std::byte> datagram) noexcept;
+
+	/// Type of data in TCP frame
+	enum class frame_kind: uint8_t
+	{
+		control = 2, ///< TURN control message
+		data = 3, ///< End-to-end data
+	};
+
+	/// Validated TCP frame. Created by parse_frame().
+	class frame
+	{
+	public:
+
+		/// Return type of data in frame
+		[[nodiscard]] frame_kind kind () const noexcept
+		{
+			return kind_;
+		}
+
+		/// Return data following framing header. It refers to bytes of buffer given to parse_frame().
+		[[nodiscard]] std::span<const std::byte> payload () const noexcept
+		{
+			return payload_;
+		}
+
+		/// Return number of received bytes the frame occupies
+		[[nodiscard]] size_t size () const noexcept
+		{
+			return frame_header_size + payload_.size();
+		}
+
+	private:
+
+		std::span<const std::byte> payload_;
+		frame_kind kind_;
+
+		frame (frame_kind kind, std::span<const std::byte> payload) noexcept
+			: payload_{payload}
+			, kind_{kind}
+		{
+		}
+
+		friend msturn;
+	};
+
+	/// Validate TCP frame in first \a received bytes of \a buffer. \a received must not exceed \a buffer size.
+	/// Fails with errc::unexpected_message_type if frame type is not known, and with errc::incomplete if
+	/// \a received bytes do not hold whole frame. Reserved byte is ignored. Bytes following the frame are ignored:
+	/// use frame::size() to find them. Parse control message with parse() over buffer following framing header,
+	/// passing payload size of the frame as received bytes.
+	[[nodiscard]] static pal::result<frame> parse_frame (
+		std::span<const std::byte> buffer,
+		size_t received
+	) noexcept;
+
+	/// Make TCP frame of \a kind around \a payload in \a buffer and return it. \a payload must refer to bytes of
+	/// \a buffer, also when empty, be at most 0xffff bytes and have \ref frame_header_size bytes before it in
+	/// \a buffer. These are not checked.
+	[[nodiscard]] static std::span<const std::byte> make_frame (
+		std::span<std::byte> buffer,
+		std::span<const std::byte> payload,
+		frame_kind kind
+	) noexcept;
+
+	/// Multiplexed TURN session ID: same type as value of \ref multiplexed_session_id. It refers to bytes it does
+	/// not own.
+	using mturn_session_id = std::span<const std::byte, 8>;
+
+	/// Size of Multiplexed TURN packet header: Channel_ID, length and session ID
+	static constexpr size_t mturn_header_size = __wire::attribute_header_size + mturn_session_id::extent;
+
+	/// Validated Multiplexed TURN packet. Created by parse_mturn_data().
+	class mturn_data
+	{
+	public:
+
+		/// Return session ID. It refers to bytes of buffer given to parse_mturn_data().
+		[[nodiscard]] mturn_session_id session_id () const noexcept
+		{
+			return session_id_;
+		}
+
+		/// Return wrapped data. It refers to bytes of buffer given to parse_mturn_data().
+		[[nodiscard]] std::span<const std::byte> payload () const noexcept
+		{
+			return payload_;
+		}
+
+		/// Return number of received bytes the packet occupies
+		[[nodiscard]] size_t size () const noexcept
+		{
+			return mturn_header_size + payload_.size();
+		}
+
+	private:
+
+		mturn_session_id session_id_;
+		std::span<const std::byte> payload_;
+
+		mturn_data (mturn_session_id session_id, std::span<const std::byte> payload) noexcept
+			: session_id_{session_id}
+			, payload_{payload}
+		{
+		}
+
+		friend msturn;
+	};
+
+	/// Validate Multiplexed TURN packet in first \a received bytes of \a buffer. \a received must not exceed
+	/// \a buffer size. Fails with errc::incomplete if \a received bytes do not hold whole packet, with
+	/// errc::unexpected_message_type if it does not start with its Channel_ID, and with
+	/// errc::unexpected_message_length if its length does not cover session ID. Bytes following the packet are
+	/// ignored: use mturn_data::size() to find them.
+	[[nodiscard]] static pal::result<mturn_data> parse_mturn_data (
+		std::span<const std::byte> buffer,
+		size_t received
+	) noexcept;
+
+	/// Make Multiplexed TURN packet of \a session_id around \a payload in \a buffer and return it. \a payload must
+	/// refer to bytes of \a buffer, also when empty, be at most 0xffff - 8 bytes and have \ref mturn_header_size
+	/// bytes before it in \a buffer. These are not checked. \a session_id may refer to those bytes.
+	[[nodiscard]] static std::span<const std::byte> make_mturn_data (
+		std::span<std::byte> buffer,
+		std::span<const std::byte> payload,
+		mturn_session_id session_id
+	) noexcept;
+
+	/// Make Data Indication from \a peer with \a id around \a payload in \a buffer and return it. \a payload must
+	/// refer to bytes of \a buffer, also when empty, be at most \ref max_payload bytes and have
+	/// \ref max_headroom - \ref frame_header_size bytes before it in \a buffer. \a peer and \a id must not refer to
+	/// bytes of \a buffer. These are not checked.
+	[[nodiscard]] static std::span<const std::byte> make_data_indication (
+		std::span<std::byte> buffer,
+		std::span<const std::byte> payload,
+		const transport_address &peer,
+		const transaction_id &id
 	) noexcept;
 };
 
