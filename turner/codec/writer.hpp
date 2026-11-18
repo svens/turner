@@ -13,6 +13,7 @@
 #include <pal/packed_struct.hpp>
 #include <pal/result.hpp>
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -111,11 +112,26 @@ public:
 		{
 			return make_unexpected(error_);
 		}
-		auto &header = pal::packed_as<__wire::type_and_length>(
-			buffer_.first<sizeof(__wire::type_and_length)>()
-		);
-		header.length = static_cast<uint16_t>(size_ - protocol_type::header_size);
-		return buffer_.first(size_);
+		return complete(size_);
+	}
+
+	/// Append FINGERPRINT as last attribute and return written message, or first failure. Fails with
+	/// errc::buffer_too_small if FINGERPRINT does not fit into buffer or into what message length field can
+	/// express. Available only for protocols that define FINGERPRINT (stun::fingerprint).
+	template <std::same_as<typename protocol_type::fingerprint_type> Fingerprint>
+	[[nodiscard]] pal::result<std::span<const std::byte>> finish (Fingerprint) && noexcept
+	{
+		if (error_ != errc{})
+		{
+			return make_unexpected(error_);
+		}
+		if (size_ + Fingerprint::size > buffer_.size())
+		{
+			return make_unexpected(errc::buffer_too_small);
+		}
+		const auto message = complete(size_ + Fingerprint::size);
+		Fingerprint::write(buffer_.subspan(size_).first<Fingerprint::size>(), buffer_.first(size_));
+		return message;
 	}
 
 private:
@@ -130,6 +146,12 @@ private:
 		: buffer_{buffer.first((std::min)(buffer.size(), max_message_size))}
 	{
 		__writer::write_type_and_length(buffer_, Message::type, 0);
+	}
+
+	std::span<const std::byte> complete (size_t size) noexcept
+	{
+		__writer::write_type_and_length(buffer_, Message::type, size - protocol_type::header_size);
+		return buffer_.first(size);
 	}
 
 	void fail (errc error) noexcept

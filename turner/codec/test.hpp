@@ -2,13 +2,24 @@
 
 /**
  * \file turner/codec/test.hpp
- * Test vectors
+ * Test vectors and helpers
  * \internal
  */
 
+#include <turner/codec/error.hpp>
+#include <turner/codec/reader.hpp>
+#include <turner/codec/value.hpp>
+#include <pal/net/ip/address_v4.hpp>
+#include <pal/net/ip/port_type.hpp>
+#include <pal/result.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
+#include <span>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -128,6 +139,17 @@ inline constexpr auto binding_request_many_unknown_attributes = bytes(
 inline constexpr auto binding_error = bytes(
 	"01110014" "2112a442" "01020304" "05060708" "090a0b0c"
 	"00090010" "00000401" "556e6175" "74686f72" "697a6564"
+);
+
+inline constexpr auto binding_request_fingerprint = bytes(
+	"00010008" "2112a442" "01020304" "05060708" "090a0b0c"
+	"80280004" "5b20f9cc"
+);
+
+inline constexpr auto binding_request_software_fingerprint = bytes(
+	"00010014" "2112a442" "01020304" "05060708" "090a0b0c"
+	"80220005" "68656c6c" "6f000000"
+	"80280004" "0a8b9190"
 );
 
 } // namespace stun_message
@@ -313,6 +335,88 @@ inline constexpr auto set_active_destination_error = bytes(
 	"00090010" "00000401" "556e6175" "74686f72" "697a6564"
 );
 
+inline constexpr auto set_active_destination_request_0x8028 = bytes(
+	"00060010" "2112a442" "01020304" "05060708" "090a0b0c"
+	"000f0004" "72c64bc6"
+	"80280004" "deadbeef"
+);
+
 } // namespace msturn_message
+
+inline constexpr std::byte filler{0xff};
+inline constexpr std::byte garbage{0xa5};
+
+inline constexpr std::array<std::byte, 12> stun_id = bytes("0102030405060708090a0b0c");
+inline constexpr std::array<std::byte, 16> msturn_id = bytes("2112a442" "0102030405060708090a0b0c");
+
+inline constexpr auto test_ipv4 = pal::net::ip::make_address_v4(pal::net::ip::address_v4::bytes_type{192, 0, 2, 1});
+inline constexpr turner::transport_address peer_address{test_ipv4, pal::net::ip::port_type{32853}};
+inline constexpr turner::transport_address server_address{test_ipv4, pal::net::ip::port_type{3478}};
+
+inline std::vector<std::byte> make_buffer (size_t size = 256)
+{
+	return std::vector<std::byte>(size, filler);
+}
+
+inline std::vector<std::byte> buffer_of (std::span<const std::byte> bytes, size_t trailing = 0)
+{
+	std::vector<std::byte> buffer{bytes.begin(), bytes.end()};
+	buffer.resize(buffer.size() + trailing, garbage);
+	return buffer;
+}
+
+template <size_t Size>
+std::array<std::byte, Size> make_array () noexcept
+{
+	std::array<std::byte, Size> buffer{};
+	buffer.fill(filler);
+	return buffer;
+}
+
+inline std::span<const std::byte> as_bytes (std::string_view text) noexcept
+{
+	return std::as_bytes(std::span{text});
+}
+
+inline pal::unexpected failed (turner::errc error) noexcept
+{
+	return turner::make_unexpected(error);
+}
+
+inline std::string hex (std::span<const std::byte> bytes)
+{
+	constexpr std::string_view digits = "0123456789abcdef";
+	std::string result;
+	for (const auto byte: bytes)
+	{
+		result += digits[std::to_integer<size_t>(byte) >> 4];
+		result += digits[std::to_integer<size_t>(byte) & 0xf];
+	}
+	return result;
+}
+
+template <std::same_as<pal::result<std::span<const std::byte>>> Message>
+std::string hex (const Message &message)
+{
+	return message ? hex(*message) : message.error().message();
+}
+
+template <typename Protocol, auto Entity>
+turner::message_reader<Entity> parse_in (std::span<std::byte> buffer, std::span<const std::byte> message)
+{
+	std::ranges::copy(message, buffer.begin());
+	const auto parsed = Protocol::parse(buffer, message.size());
+	REQUIRE(parsed);
+	const auto reader = parsed->as(Entity);
+	REQUIRE(reader);
+	return *reader;
+}
+
+template <typename Protocol, auto Entity>
+turner::message_reader<Entity> parse_as (std::span<const std::byte> message, std::vector<std::byte> &buffer)
+{
+	buffer.resize(message.size());
+	return parse_in<Protocol, Entity>(buffer, message);
+}
 
 } // namespace turner_test

@@ -34,6 +34,9 @@ namespace
 {
 
 using namespace std::chrono_literals;
+using turner_test::buffer_of;
+using turner_test::failed;
+using turner_test::garbage;
 
 static_assert(turner::stun::mapped_address.type == 0x0001);
 static_assert(turner::stun::username.type == 0x0006);
@@ -412,15 +415,7 @@ struct msturn
 	static constexpr auto absent = turner::msturn::realm;
 };
 
-constexpr std::byte garbage{0xa5};
 constexpr size_t trailing_size = 7;
-
-std::vector<std::byte> make_buffer (std::span<const std::byte> bytes, size_t trailing = trailing_size)
-{
-	std::vector<std::byte> buffer{bytes.begin(), bytes.end()};
-	buffer.resize(buffer.size() + trailing, garbage);
-	return buffer;
-}
 
 template <typename Protocol>
 void append (std::vector<std::byte> &message, uint16_t type, std::string_view value)
@@ -449,11 +444,6 @@ turner::message_reader<Entity> read_as (std::vector<std::byte> &buffer)
 	const auto reader = message->as(Entity);
 	REQUIRE(reader);
 	return *reader;
-}
-
-pal::unexpected failed (turner::errc error) noexcept
-{
-	return turner::make_unexpected(error);
 }
 
 using type_and_size = std::pair<uint16_t, size_t>;
@@ -651,7 +641,7 @@ TEMPLATE_TEST_CASE("attribute/reader", "", stun, turn, msturn)
 	}
 }
 
-constexpr auto test_ipv4 = pal::net::ip::make_address_v4(0xc000'0201);
+constexpr auto test_ipv4 = pal::net::ip::make_address_v4(pal::net::ip::address_v4::bytes_type{192, 0, 2, 1});
 constexpr pal::net::ip::port_type stun_port{3478};
 constexpr pal::net::ip::port_type rfc5769_port{32853};
 constexpr auto rfc5769_ipv6 = pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
@@ -667,7 +657,7 @@ TEST_CASE("attribute/values")
 {
 	SECTION("stun: rfc5769 request")
 	{
-		auto buffer = make_buffer(turner_test::rfc5769::request);
+		auto buffer = buffer_of(turner_test::rfc5769::request, trailing_size);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
 		const auto software = request.read(turner::stun::software);
@@ -690,7 +680,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("stun: rfc5769 long term request")
 	{
-		auto buffer = make_buffer(turner_test::rfc5769::long_term_request);
+		auto buffer = buffer_of(turner_test::rfc5769::long_term_request, trailing_size);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
 		CHECK(request.read(turner::stun::username)
@@ -703,7 +693,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: allocate request")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_request, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
 		CHECK(request.read(turner::turn::requested_transport) == turner::transport_protocol::udp);
@@ -719,7 +709,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: flag")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_request_dont_fragment);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_request_dont_fragment, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
 		const auto dont_fragment = request.read(turner::turn::dont_fragment);
@@ -737,7 +727,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: invalid enum value")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_request, trailing_size);
 		buffer[turner::turn::header_size + 4] = std::byte{0x07};
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
@@ -753,18 +743,18 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: seconds")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_success);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_success, trailing_size);
 		const auto success = read_as<turner::turn, turner::turn::allocate.success>(buffer);
 		CHECK(success.read(turner::turn::lifetime) == 600s);
 
-		auto refresh_buffer = make_buffer(turner_test::turn_message::refresh_request);
+		auto refresh_buffer = buffer_of(turner_test::turn_message::refresh_request, trailing_size);
 		const auto refresh = read_as<turner::turn, turner::turn::refresh>(refresh_buffer);
 		CHECK(refresh.read(turner::turn::lifetime) == 0s);
 	}
 
 	SECTION("turn: bytes")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::send_indication);
+		auto buffer = buffer_of(turner_test::turn_message::send_indication, trailing_size);
 		const auto indication = read_as<turner::turn, turner::turn::send_indication>(buffer);
 
 		const auto data = indication.read(turner::turn::data);
@@ -777,7 +767,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: stun attributes")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_error);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_error, trailing_size);
 		const auto error = read_as<turner::turn, turner::turn::allocate.error>(buffer);
 
 		CHECK(error.read(turner::turn::realm) == "example.org");
@@ -791,11 +781,11 @@ TEST_CASE("attribute/values")
 
 	SECTION("stun: rfc5769 xor mapped address")
 	{
-		auto ipv4_buffer = make_buffer(turner_test::rfc5769::ipv4_response);
+		auto ipv4_buffer = buffer_of(turner_test::rfc5769::ipv4_response, trailing_size);
 		const auto ipv4 = read_as<turner::stun, turner::stun::binding.success>(ipv4_buffer);
 		CHECK(ipv4.read(turner::stun::xor_mapped_address) == rfc5769_address);
 
-		auto ipv6_buffer = make_buffer(turner_test::rfc5769::ipv6_response);
+		auto ipv6_buffer = buffer_of(turner_test::rfc5769::ipv6_response, trailing_size);
 		const auto ipv6 = read_as<turner::stun, turner::stun::binding.success>(ipv6_buffer);
 		CHECK(ipv6.read(turner::stun::xor_mapped_address)
 			==
@@ -805,19 +795,19 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: addresses")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_success);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_success, trailing_size);
 		const auto success = read_as<turner::turn, turner::turn::allocate.success>(buffer);
 		CHECK(success.read(turner::turn::xor_relayed_address) == rfc5769_address);
 		CHECK(success.read(turner::turn::xor_mapped_address) == rfc5769_address);
 
-		auto indication_buffer = make_buffer(turner_test::turn_message::data_indication);
+		auto indication_buffer = buffer_of(turner_test::turn_message::data_indication, trailing_size);
 		const auto indication = read_as<turner::turn, turner::turn::data_indication>(indication_buffer);
 		CHECK(indication.read(turner::turn::xor_peer_address) == rfc5769_address);
 	}
 
 	SECTION("turn: channel bind")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::channel_bind_request);
+		auto buffer = buffer_of(turner_test::turn_message::channel_bind_request, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::channel_bind>(buffer);
 		CHECK(request.read(turner::turn::channel_number) == 0x4000);
 		CHECK(request.read(turner::turn::xor_peer_address) == rfc5769_address);
@@ -825,7 +815,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: repeated fixed-size attribute")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::refresh_request_repeated_lifetime);
+		auto buffer = buffer_of(turner_test::turn_message::refresh_request_repeated_lifetime, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::refresh>(buffer);
 
 		CHECK(request.read(turner::turn::lifetime) == 10s);
@@ -846,7 +836,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("turn: malformed fixed-size attribute first")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::refresh_request_malformed_lifetime_first);
+		auto buffer = buffer_of(turner_test::turn_message::refresh_request_malformed_lifetime_first, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::refresh>(buffer);
 
 		CHECK(request.read(turner::turn::lifetime) == failed(turner::errc::unexpected_attribute_length));
@@ -856,7 +846,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("msturn: allocate request")
 	{
-		auto buffer = make_buffer(turner_test::msturn_message::allocate_request);
+		auto buffer = buffer_of(turner_test::msturn_message::allocate_request, trailing_size);
 		const auto request = read_as<turner::msturn, turner::msturn::allocate>(buffer);
 
 		CHECK(request.read(turner::msturn::username) == "alice");
@@ -877,7 +867,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("msturn: allocate success")
 	{
-		auto buffer = make_buffer(turner_test::msturn_message::allocate_success);
+		auto buffer = buffer_of(turner_test::msturn_message::allocate_success, trailing_size);
 		const auto success = read_as<turner::msturn, turner::msturn::allocate.success>(buffer);
 
 		CHECK(success.read(turner::msturn::lifetime) == 600s);
@@ -891,7 +881,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("msturn: allocate error")
 	{
-		auto buffer = make_buffer(turner_test::msturn_message::allocate_error);
+		auto buffer = buffer_of(turner_test::msturn_message::allocate_error, trailing_size);
 		const auto error = read_as<turner::msturn, turner::msturn::allocate.error>(buffer);
 
 		CHECK(error.read(turner::msturn::nonce) == "nonce");
@@ -906,14 +896,14 @@ TEST_CASE("attribute/values")
 
 	SECTION("msturn: ipv6 only address")
 	{
-		auto ipv6_buffer = make_buffer(turner_test::msturn_message::allocate_success_ipv6);
+		auto ipv6_buffer = buffer_of(turner_test::msturn_message::allocate_success_ipv6, trailing_size);
 		const auto ipv6 = read_as<turner::msturn, turner::msturn::allocate.success>(ipv6_buffer);
 		CHECK(ipv6.read(turner::msturn::ms_alternate_mapped_address)
 			==
 			turner::transport_address{test_ipv6, stun_port}
 		);
 
-		auto ipv4_buffer = make_buffer(turner_test::msturn_message::allocate_success_ipv4_in_ipv6_only);
+		auto ipv4_buffer = buffer_of(turner_test::msturn_message::allocate_success_ipv4_in_ipv6_only, trailing_size);
 		const auto ipv4 = read_as<turner::msturn, turner::msturn::allocate.success>(ipv4_buffer);
 		CHECK(ipv4.read(turner::msturn::ms_alternate_mapped_address)
 			==
@@ -923,18 +913,18 @@ TEST_CASE("attribute/values")
 
 	SECTION("msturn: addresses")
 	{
-		auto send_buffer = make_buffer(turner_test::msturn_message::send_request);
+		auto send_buffer = buffer_of(turner_test::msturn_message::send_request, trailing_size);
 		const auto send = read_as<turner::msturn, turner::msturn::send_request>(send_buffer);
 		CHECK(send.read(turner::msturn::destination_address) == stun_address);
 
-		auto data_buffer = make_buffer(turner_test::msturn_message::data_indication);
+		auto data_buffer = buffer_of(turner_test::msturn_message::data_indication, trailing_size);
 		const auto data = read_as<turner::msturn, turner::msturn::data_indication>(data_buffer);
 		CHECK(data.read(turner::msturn::remote_address) == stun_address);
 	}
 
 	SECTION("msturn: empty values")
 	{
-		auto buffer = make_buffer(turner_test::msturn_message::allocate_request_empty_attributes);
+		auto buffer = buffer_of(turner_test::msturn_message::allocate_request_empty_attributes, trailing_size);
 		const auto request = read_as<turner::msturn, turner::msturn::allocate>(buffer);
 
 		CHECK(request.read(turner::msturn::username) == "");
@@ -947,7 +937,7 @@ TEST_CASE("attribute/values")
 
 	SECTION("msturn: bytes")
 	{
-		auto buffer = make_buffer(turner_test::msturn_message::send_request);
+		auto buffer = buffer_of(turner_test::msturn_message::send_request, trailing_size);
 		const auto request = read_as<turner::msturn, turner::msturn::send_request>(buffer);
 
 		const auto data = request.read(turner::msturn::data);
@@ -961,7 +951,7 @@ TEST_CASE("attribute/list")
 {
 	SECTION("read: present and missing")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_success);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_success, trailing_size);
 		const auto success = read_as<turner::turn, turner::turn::allocate.success>(buffer);
 
 		constexpr auto list = turner::attributes<
@@ -979,7 +969,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("read: first occurrence")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::refresh_request_repeated_lifetime);
+		auto buffer = buffer_of(turner_test::turn_message::refresh_request_repeated_lifetime, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::refresh>(buffer);
 
 		constexpr auto list = turner::attributes<
@@ -998,7 +988,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("read: single attribute list")
 	{
-		auto buffer = make_buffer(turner_test::rfc5769::request);
+		auto buffer = buffer_of(turner_test::rfc5769::request, trailing_size);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
 		const auto [username] = request.read(turner::attributes<turner::stun::username>);
@@ -1007,7 +997,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("read: nested list")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_error);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_error, trailing_size);
 		const auto error = read_as<turner::turn, turner::turn::allocate.error>(buffer);
 
 		const auto [username, realm, lifetime] = error.read(turn_list);
@@ -1018,7 +1008,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("read: malformed first occurrence")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::refresh_request_malformed_lifetime_first);
+		auto buffer = buffer_of(turner_test::turn_message::refresh_request_malformed_lifetime_first, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::refresh>(buffer);
 
 		constexpr auto list = turner::attributes<turner::turn::lifetime, turner::turn::realm>;
@@ -1029,7 +1019,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("read: flag")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_request_dont_fragment);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_request_dont_fragment, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
 		constexpr auto list = turner::attributes<
@@ -1043,7 +1033,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("read: msturn")
 	{
-		auto buffer = make_buffer(turner_test::msturn_message::allocate_request);
+		auto buffer = buffer_of(turner_test::msturn_message::allocate_request, trailing_size);
 		const auto request = read_as<turner::msturn, turner::msturn::allocate>(buffer);
 
 		constexpr auto list = turner::attributes<
@@ -1059,7 +1049,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("unknown: comprehension-required types not listed, each once")
 	{
-		auto buffer = make_buffer(turner_test::stun_message::binding_request_unknown_attributes);
+		auto buffer = buffer_of(turner_test::stun_message::binding_request_unknown_attributes, trailing_size);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
 		const auto unknown = request.unknown(turner::attributes<turner::stun::username>);
@@ -1069,7 +1059,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("unknown: all known")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_request, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
 		CHECK_FALSE(request.unknown(turner::attributes<turner::turn::requested_transport>));
@@ -1077,7 +1067,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("unknown: declared but not listed")
 	{
-		auto buffer = make_buffer(turner_test::turn_message::allocate_request);
+		auto buffer = buffer_of(turner_test::turn_message::allocate_request, trailing_size);
 		const auto request = read_as<turner::turn, turner::turn::allocate>(buffer);
 
 		CHECK(request.unknown(turner::attributes<turner::turn::lifetime>)
@@ -1088,7 +1078,7 @@ TEST_CASE("attribute/list")
 
 	SECTION("unknown: types beyond capacity are dropped")
 	{
-		auto buffer = make_buffer(turner_test::stun_message::binding_request_many_unknown_attributes);
+		auto buffer = buffer_of(turner_test::stun_message::binding_request_many_unknown_attributes, trailing_size);
 		const auto request = read_as<turner::stun, turner::stun::binding.request>(buffer);
 
 		CHECK(request.unknown(turner::attributes<turner::stun::username>)

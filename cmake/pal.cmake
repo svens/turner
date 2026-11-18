@@ -1,6 +1,6 @@
 include(FetchContent)
 
-get_filename_component(_pal_sibling_dir "${PROJECT_SOURCE_DIR}/../../pal/main" ABSOLUTE)
+get_filename_component(_pal_sibling_dir "${PROJECT_SOURCE_DIR}/../../pal/packed_struct" ABSOLUTE)
 if(NOT DEFINED FETCHCONTENT_SOURCE_DIR_PAL AND IS_DIRECTORY "${_pal_sibling_dir}")
 	set(FETCHCONTENT_SOURCE_DIR_PAL "${_pal_sibling_dir}" CACHE PATH "Local pal source tree")
 endif()

@@ -295,12 +295,27 @@ struct stun
 	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.15
 	static constexpr auto alternate_server = attribute<stun, endpoint_value, 0x8023>;
 
+	/// Type of \ref fingerprint
+	class fingerprint_type
+	{
+		static constexpr size_t size = 8;
+
+		static void write (std::span<std::byte, size> attribute, std::span<const std::byte> covered) noexcept;
+
+		template <typename>
+		friend class basic_message_writer;
+	};
+
+	/// FINGERPRINT: pass to basic_message_writer::finish() to append it as last attribute
+	/// \see https://datatracker.ietf.org/doc/html/rfc8489#section-14.7
+	static constexpr fingerprint_type fingerprint{};
+
 	/// Validate message in first \a received bytes of \a buffer. \a buffer is whole I/O buffer: response to the
 	/// message is built in it. \a received must not exceed \a buffer size.
 	///
-	/// Checks message structure only (header, attribute layout), not whether message type or attributes are
-	/// known. Fails with errc::incomplete if \a received bytes do not hold whole message. Bytes following
-	/// the message are ignored: use parsed_message::size() to find them.
+	/// Checks message structure (header, attribute layout) and FINGERPRINT when present, not whether message
+	/// type or attributes are known. Fails with errc::incomplete if \a received bytes do not hold whole
+	/// message. Bytes following the message are ignored: use parsed_message::size() to find them.
 	[[nodiscard]] static pal::result<parsed_message<stun>> parse (
 		std::span<std::byte> buffer,
 		size_t received

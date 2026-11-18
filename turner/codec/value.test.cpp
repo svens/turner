@@ -253,7 +253,7 @@ struct transport_protocol
 };
 
 constexpr pal::net::ip::port_type stun_port{3478};
-constexpr auto ipv4 = pal::net::ip::make_address_v4(0xc000'0201);
+constexpr auto ipv4 = pal::net::ip::make_address_v4(pal::net::ip::address_v4::bytes_type{192, 0, 2, 1});
 constexpr auto ipv6 = pal::net::ip::make_address_v6(pal::net::ip::address_v6::bytes_type{
 	0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 });
