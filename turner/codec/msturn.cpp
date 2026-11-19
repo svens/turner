@@ -50,6 +50,14 @@ constexpr uint16_t mturn_channel_id = 0xff10;
 constexpr size_t mturn_session_id_size = msturn::mturn_session_id::extent;
 constexpr unsigned frame_kind_shift = 8;
 
+constexpr auto pseudo_tls_hello_start = __msturn::bytes<
+	0x16, 0x03, 0x01, 0x00, 0x2d, 0x01, 0x00, 0x00, 0x29, 0x03, 0x01
+>;
+constexpr size_t pseudo_tls_hello_end_offset = 43;
+constexpr auto pseudo_tls_hello_end = __msturn::bytes<0x00, 0x00, 0x02, 0x00, 0x18, 0x01, 0x00>;
+
+static_assert(pseudo_tls_hello_end_offset + pseudo_tls_hello_end.size() == msturn::pseudo_tls_client_hello_size);
+
 bool starts_with_message (std::span<const std::byte> bytes) noexcept
 {
 	if (bytes.size() < sizeof(header_and_cookie))
@@ -156,6 +164,20 @@ pal::result<msturn::integrity_key> msturn::sha256_key (const integrity_credentia
 		{
 			return integrity_key::sha256(key);
 		});
+}
+
+pal::result<void> msturn::parse_pseudo_tls (std::span<const std::byte> bytes) noexcept
+{
+	if (!__wire::matches_at(bytes, 0, pseudo_tls_hello_start)
+		|| !__wire::matches_at(bytes, pseudo_tls_hello_end_offset, pseudo_tls_hello_end))
+	{
+		return make_unexpected(errc::unexpected_message_type);
+	}
+	if (bytes.size() < pseudo_tls_client_hello_size)
+	{
+		return make_unexpected(errc::incomplete);
+	}
+	return {};
 }
 
 content msturn::peek (std::span<const std::byte> datagram) noexcept

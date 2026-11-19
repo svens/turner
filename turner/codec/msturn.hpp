@@ -60,6 +60,9 @@ struct sequence_number
 
 static_assert(pal::packed_struct<sequence_number>);
 
+template <uint8_t... Byte>
+inline constexpr std::array<std::byte, sizeof...(Byte)> bytes{std::byte{Byte}...};
+
 } // namespace __msturn
 
 /**
@@ -533,6 +536,32 @@ struct msturn
 		std::span<std::byte> buffer,
 		size_t received
 	) noexcept;
+
+	/// Size of pseudo-TLS ClientHello
+	static constexpr size_t pseudo_tls_client_hello_size = 50;
+
+	/// Pseudo-TLS record with ServerHello and ServerHelloDone, the reply to pseudo-TLS ClientHello. It is not
+	/// framed. Time and random value are constant, while specification says server should send current time and
+	/// generated random value.
+	static constexpr auto pseudo_tls_server_hello = __msturn::bytes<
+		0x16, 0x03, 0x01, 0x00, 0x4e, 0x02, 0x00, 0x00,
+		0x46, 0x03, 0x01, 0x94, 0x86, 0xbb, 0x57, 0x42,
+		0xb0, 0x78, 0xd8, 0xc6, 0x2a, 0x0b, 0x59, 0x0b,
+		0x20, 0xad, 0x42, 0xe7, 0x5a, 0xba, 0x9b, 0x5d,
+		0xa7, 0x79, 0xfd, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x20, 0x42, 0xb0, 0x78, 0xd8,
+		0xc6, 0x2a, 0x0b, 0x59, 0x0b, 0x20, 0xad, 0x42,
+		0xe7, 0x5a, 0xba, 0x9b, 0x5d, 0xa7, 0x79, 0xfd,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00, 0x0e,
+		0x00, 0x00, 0x00
+	>;
+
+	/// Check whether \a bytes received first on TCP connection start with pseudo-TLS ClientHello. Fails with
+	/// errc::unexpected_message_type as soon as a field with value required by specification differs, and with
+	/// errc::incomplete if the bytes match so far but do not hold whole ClientHello. Time and random value are not
+	/// checked, and bytes following the ClientHello are ignored. After it, only framed MS-TURN may follow.
+	[[nodiscard]] static pal::result<void> parse_pseudo_tls (std::span<const std::byte> bytes) noexcept;
 
 	/// Size of TCP framing header
 	static constexpr size_t frame_header_size = 4;

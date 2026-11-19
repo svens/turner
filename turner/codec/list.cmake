@@ -12,6 +12,8 @@ list(APPEND turner_codec_sources
 	turner/codec/protocol_error.hpp
 	turner/codec/protocol_error.cpp
 	turner/codec/reader.hpp
+	turner/codec/sniff.hpp
+	turner/codec/sniff.cpp
 	turner/codec/stun.hpp
 	turner/codec/stun.cpp
 	turner/codec/turn.hpp
@@ -29,6 +31,7 @@ list(APPEND turner_codec_test_sources
 	turner/codec/msturn.test.cpp
 	turner/codec/protocol_error.test.cpp
 	turner/codec/reader.test.cpp
+	turner/codec/sniff.test.cpp
 	turner/codec/stun.test.cpp
 	turner/codec/turn.test.cpp
 	turner/codec/value.test.cpp

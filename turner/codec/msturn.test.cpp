@@ -87,6 +87,9 @@ static_assert(turner::usable_with<decltype(msturn::allocate), msturn>);
 static_assert(!turner::usable_with<decltype(turn::allocate), msturn>);
 static_assert(!turner::usable_with<decltype(stun::binding), msturn>);
 
+static_assert(msturn::pseudo_tls_client_hello_size == 50);
+static_assert(msturn::pseudo_tls_server_hello.size() == 5 + 0x4e);
+static_assert(noexcept(msturn::parse_pseudo_tls({})));
 static_assert(msturn::frame_header_size == 4);
 static_assert(msturn::mturn_header_size == 12);
 static_assert(msturn::max_headroom == 60);
@@ -159,8 +162,77 @@ void check_only_frame_written (std::span<const std::byte> buffer, std::span<cons
 	CHECK(std::ranges::count(after, filler) == static_cast<std::ptrdiff_t>(after.size()));
 }
 
+constexpr auto pseudo_tls_client_hello = turner_test::bytes(
+	"16030100" "2d010000" "290301"
+	"11121314"
+	"2122232425262728" "3132333435363738" "4142434445464748" "51525354"
+	"00" "0002" "0018" "01" "00"
+);
+
 TEST_CASE("msturn")
 {
+	SECTION("parse_pseudo_tls")
+	{
+		const std::span<const std::byte> hello{pseudo_tls_client_hello};
+
+		SECTION("whole")
+		{
+			CHECK(msturn::parse_pseudo_tls(hello).has_value());
+		}
+
+		SECTION("following bytes")
+		{
+			auto bytes = buffer_of(hello, 4);
+			CHECK(msturn::parse_pseudo_tls(bytes).has_value());
+		}
+
+		SECTION("prefix")
+		{
+			const auto size = GENERATE(range(size_t{0}, msturn::pseudo_tls_client_hello_size));
+			CAPTURE(size);
+			CHECK(msturn::parse_pseudo_tls(hello.first(size)) == failed(turner::errc::incomplete));
+		}
+
+		SECTION("fixed field changed")
+		{
+			const auto offset = GENERATE(
+				range(size_t{0}, size_t{11}),
+				range(size_t{43}, msturn::pseudo_tls_client_hello_size)
+			);
+			CAPTURE(offset);
+			auto bytes = buffer_of(hello);
+			bytes[offset] ^= std::byte{0x01};
+			CHECK(msturn::parse_pseudo_tls(std::span{bytes}.first(offset + 1))
+				==
+				failed(turner::errc::unexpected_message_type)
+			);
+			CHECK(msturn::parse_pseudo_tls(bytes) == failed(turner::errc::unexpected_message_type));
+		}
+
+		SECTION("time and random value changed")
+		{
+			const auto offset = GENERATE(range(size_t{11}, size_t{43}));
+			CAPTURE(offset);
+			auto bytes = buffer_of(hello);
+			bytes[offset] ^= std::byte{0x01};
+			CHECK(msturn::parse_pseudo_tls(bytes).has_value());
+		}
+
+		SECTION("real TLS ClientHello")
+		{
+			static constexpr auto tls = turner_test::bytes("16030100" "c8010000" "c40303");
+			CHECK(msturn::parse_pseudo_tls(tls) == failed(turner::errc::unexpected_message_type));
+		}
+	}
+
+	SECTION("pseudo_tls_server_hello")
+	{
+		const std::span<const std::byte> hello{msturn::pseudo_tls_server_hello};
+		CHECK(hex(hello.first(11)) == "16030100" "4e020000" "460301");
+		CHECK(hex(hello.subspan(43, 1)) == "20");
+		CHECK(hex(hello.subspan(76)) == "0018" "00" "0e000000");
+	}
+
 	SECTION("peek")
 	{
 		static constexpr auto minimal_message = turner_test::bytes(

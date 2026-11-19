@@ -20,7 +20,6 @@ namespace
 
 using __wire::attribute_header_size;
 
-constexpr uint8_t last_message_first_byte = 3;
 constexpr uint8_t first_channel_first_byte = channel_number_value::first >> 8;
 constexpr uint8_t last_channel_first_byte = channel_number_value::last >> 8;
 
@@ -49,7 +48,7 @@ content turn::peek (std::span<const std::byte> bytes) noexcept
 	}
 
 	const auto first = std::to_integer<uint8_t>(bytes.front());
-	if (first <= last_message_first_byte)
+	if (first <= __wire::stun_first_byte_max)
 	{
 		return content::message;
 	}

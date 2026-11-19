@@ -41,6 +41,8 @@ inline constexpr size_t attribute_header_size = sizeof(type_and_length);
 
 inline constexpr uint16_t type_reserved_bits = 0b1100'0000'0000'0000;
 
+inline constexpr uint8_t stun_first_byte_max = 3;
+
 constexpr bool comprehension_required (uint16_t attribute_type) noexcept
 {
 	return attribute_type < 0x8000;
@@ -49,6 +51,20 @@ constexpr bool comprehension_required (uint16_t attribute_type) noexcept
 constexpr size_t align_up (size_t size, size_t alignment) noexcept
 {
 	return (size + alignment - 1) & ~(alignment - 1);
+}
+
+inline bool matches_at (
+	std::span<const std::byte> bytes,
+	size_t offset,
+	std::span<const std::byte> expected) noexcept
+{
+	if (bytes.size() <= offset)
+	{
+		return true;
+	}
+	const auto present = bytes.subspan(offset);
+	const auto size = (std::min)(present.size(), expected.size());
+	return std::ranges::equal(present.first(size), expected.first(size));
 }
 
 inline size_t offset_of (std::span<const std::byte> part, std::span<const std::byte> whole) noexcept
