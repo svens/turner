@@ -31,16 +31,20 @@ list(APPEND turner_codec_fuzz_sources
 )
 
 list(APPEND turner_codec_test_sources
+	turner/codec/bench.hpp
 	turner/codec/test.hpp
 	turner/codec/attribute.test.cpp
 	turner/codec/error.test.cpp
 	turner/codec/integrity.test.cpp
 	turner/codec/method.test.cpp
+	turner/codec/msturn.bench.cpp
 	turner/codec/msturn.test.cpp
 	turner/codec/protocol_error.test.cpp
 	turner/codec/reader.test.cpp
 	turner/codec/sniff.test.cpp
+	turner/codec/stun.bench.cpp
 	turner/codec/stun.test.cpp
+	turner/codec/turn.bench.cpp
 	turner/codec/turn.test.cpp
 	turner/codec/value.test.cpp
 	turner/codec/writer.test.cpp
