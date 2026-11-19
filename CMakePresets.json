@@ -63,6 +63,16 @@
 			}
 		},
 		{
+			"name": "linux-clang-fuzz",
+			"inherits": "default",
+			"cacheVariables": {
+				"CMAKE_CXX_COMPILER": "clang++",
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_CXX_FLAGS": "-fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer -D_GLIBCXX_ASSERTIONS",
+				"TURNER_FUZZ": "ON"
+			}
+		},
+		{
 			"name": "macos-clang-debug",
 			"inherits": "default",
 			"cacheVariables": {
@@ -94,6 +104,16 @@
 				"CMAKE_CXX_COMPILER": "clang++",
 				"CMAKE_BUILD_TYPE": "Debug",
 				"CMAKE_CXX_FLAGS": "-fprofile-instr-generate -fcoverage-mapping"
+			}
+		},
+		{
+			"name": "macos-clang-fuzz",
+			"inherits": "default",
+			"cacheVariables": {
+				"CMAKE_CXX_COMPILER": "clang++",
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_CXX_FLAGS": "-fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG",
+				"TURNER_FUZZ": "ON"
 			}
 		},
 		{
@@ -161,6 +181,10 @@
 			"configurePreset": "linux-clang-coverage"
 		},
 		{
+			"name": "linux-clang-fuzz",
+			"configurePreset": "linux-clang-fuzz"
+		},
+		{
 			"name": "macos-clang-debug",
 			"configurePreset": "macos-clang-debug"
 		},
@@ -175,6 +199,10 @@
 		{
 			"name": "macos-clang-coverage",
 			"configurePreset": "macos-clang-coverage"
+		},
+		{
+			"name": "macos-clang-fuzz",
+			"configurePreset": "macos-clang-fuzz"
 		},
 		{
 			"name": "macos-gcc-debug",

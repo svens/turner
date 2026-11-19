@@ -41,6 +41,7 @@ foreach(source IN LISTS
     turner_server_test_sources
     turner_simple_client_sources
     turner_simple_client_test_sources
+    turner_codec_fuzz_sources
     turner_app_server_sources
 )
     file(READ "${project_root}/${source}" content)

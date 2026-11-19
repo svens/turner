@@ -9,3 +9,7 @@ list(APPEND turner_codec_test_sources
 include(turner/codec/list.cmake)
 include(turner/server/list.cmake)
 include(turner/simple_client/list.cmake)
+
+list(APPEND turner_fuzz_sources
+	${turner_codec_fuzz_sources}
+)

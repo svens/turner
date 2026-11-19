@@ -22,6 +22,14 @@ list(APPEND turner_codec_sources
 	turner/codec/writer.hpp
 )
 
+list(APPEND turner_codec_fuzz_sources
+	turner/codec/fuzz.hpp
+	turner/codec/msturn.fuzz.cpp
+	turner/codec/sniff.fuzz.cpp
+	turner/codec/stun.fuzz.cpp
+	turner/codec/turn.fuzz.cpp
+)
+
 list(APPEND turner_codec_test_sources
 	turner/codec/test.hpp
 	turner/codec/attribute.test.cpp
