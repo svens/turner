@@ -6,7 +6,7 @@ get_filename_component(_cov_root "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
 
 set(_cov_ignore
     "-ignore-filename-regex=.*(test|bench)\\.cpp$"
-    "-ignore-filename-regex=.*/test\\.(cpp|hpp)$"
+    "-ignore-filename-regex=.*/(test|bench)\\.(cpp|hpp)$"
     "-ignore-filename-regex=.*\\.build/.*"
     "-ignore-filename-regex=.*/pal/.*"
 )
