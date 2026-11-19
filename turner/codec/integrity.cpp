@@ -45,9 +45,9 @@ void hmac::update (std::span<const std::byte> input) noexcept
 	{
 		sha1->update(input);
 	}
-	else if (auto *sha256 = std::get_if<sha256_type>(&impl_))
+	else
 	{
-		sha256->update(input);
+		std::get_if<sha256_type>(&impl_)->update(input);
 	}
 }
 
@@ -57,9 +57,9 @@ void hmac::finish (std::span<std::byte> digest) noexcept
 	{
 		std::ranges::copy(sha1->finish(), digest.begin());
 	}
-	else if (auto *sha256 = std::get_if<sha256_type>(&impl_))
+	else
 	{
-		std::ranges::copy(sha256->finish(), digest.begin());
+		std::ranges::copy(std::get_if<sha256_type>(&impl_)->finish(), digest.begin());
 	}
 }
 

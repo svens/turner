@@ -142,10 +142,7 @@ private:
 
 	constexpr void push_back (password_algorithm algorithm) noexcept
 	{
-		if (size_ < capacity)
-		{
-			algorithms_[size_++] = algorithm;
-		}
+		algorithms_[size_++] = algorithm;
 	}
 
 	friend struct password_algorithms_value;

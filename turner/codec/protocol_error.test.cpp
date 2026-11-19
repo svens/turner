@@ -96,7 +96,7 @@ TEST_CASE("protocol_error")
 
 	SECTION("out of range")
 	{
-		const std::error_code ec{65536 + 400, turner::protocol_error_category()};
+		const std::error_code ec{GENERATE(-1, 65536 + 400), turner::protocol_error_category()};
 		CHECK(ec.message() == "unknown");
 		CHECK(ec != turner::protocol_errc::bad_request);
 	}
