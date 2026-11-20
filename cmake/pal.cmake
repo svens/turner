@@ -7,7 +7,7 @@ endif()
 
 FetchContent_Declare(pal
 	GIT_REPOSITORY https://github.com/svens/pal.git
-	GIT_TAG cc7f387d2b2ceda5a298d783cc2fa702dddba940
+	GIT_TAG 1aaa35b113de187499650d2c1ca98895da43c40c
 )
 FetchContent_MakeAvailable(pal)
 

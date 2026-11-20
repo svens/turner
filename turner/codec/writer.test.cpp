@@ -1,0 +1,1004 @@
+#include <turner/codec/test.hpp>
+#include <turner/codec/writer.hpp>
+#include <turner/codec/__wire.hpp>
+#include <turner/codec/error.hpp>
+#include <turner/codec/integrity.hpp>
+#include <turner/codec/msturn.hpp>
+#include <turner/codec/stun.hpp>
+#include <turner/codec/turn.hpp>
+#include <turner/codec/value.hpp>
+#include <pal/crypto/hash.hpp>
+#include <pal/result.hpp>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <algorithm>
+#include <chrono>
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace
+{
+
+using namespace std::chrono_literals;
+using turner_test::as_bytes;
+using turner_test::failed;
+using turner_test::filler;
+using turner_test::hex;
+using turner_test::make_array;
+using turner_test::make_buffer;
+using turner_test::msturn_id;
+using turner_test::parse_as;
+using turner_test::peer_address;
+using turner_test::server_address;
+using turner_test::stun_id;
+
+template <auto Entity>
+using writer = turner::message_writer<Entity>;
+
+template <auto Entity>
+concept nameable = requires
+{
+	typename writer<Entity>;
+};
+
+static_assert(std::same_as<writer<turner::turn::allocate>, writer<turner::turn::allocate.request>>);
+static_assert(std::same_as<writer<turner::turn::binding.request>, writer<turner::stun::binding.request>>);
+static_assert(std::same_as<writer<turner::turn::allocate>::protocol_type, turner::turn>);
+static_assert(nameable<turner::stun::binding.indication>);
+static_assert(!nameable<turner::stun::binding>);
+
+template <typename Writer>
+concept constructible = std::constructible_from<
+	Writer,
+	std::span<std::byte>,
+	const typename Writer::protocol_type::transaction_id &
+>;
+
+static_assert(constructible<writer<turner::stun::binding.request>>);
+static_assert(constructible<writer<turner::stun::binding.indication>>);
+static_assert(constructible<writer<turner::msturn::send_request>>);
+static_assert(!constructible<writer<turner::turn::allocate.success>>);
+static_assert(!constructible<writer<turner::turn::allocate.error>>);
+static_assert(!std::constructible_from<writer<turner::turn::allocate.success>, std::span<std::byte>>);
+static_assert(!std::constructible_from<writer<turner::turn::allocate>, std::span<std::byte>>);
+static_assert(!std::is_default_constructible_v<writer<turner::turn::allocate>>);
+static_assert(
+	std::is_nothrow_constructible_v<
+		writer<turner::turn::allocate>,
+		std::span<std::byte>,
+		const turner::turn::transaction_id &
+	>
+);
+
+template <typename Writer, auto Attribute, typename Value>
+concept can_write = requires(Writer writer, const Value &value)
+{
+	writer.write(Attribute, value);
+};
+
+template <typename Writer, auto Attribute>
+concept can_write_flag = requires(Writer writer)
+{
+	writer.write(Attribute);
+};
+
+using stun_writer = writer<turner::stun::binding.request>;
+using turn_writer = writer<turner::turn::allocate>;
+using msturn_writer = writer<turner::msturn::allocate>;
+
+static_assert(can_write<stun_writer &, turner::stun::software, std::string_view>);
+static_assert(can_write<stun_writer &&, turner::stun::software, std::string_view>);
+static_assert(can_write<turn_writer &, turner::stun::software, std::string_view>);
+static_assert(can_write<turn_writer &, turner::turn::lifetime, std::chrono::seconds>);
+static_assert(can_write<msturn_writer &, turner::msturn::username, std::string_view>);
+static_assert(!can_write<const stun_writer &, turner::stun::software, std::string_view>);
+static_assert(!can_write<stun_writer &, turner::turn::lifetime, std::chrono::seconds>);
+static_assert(!can_write<msturn_writer &, turner::stun::software, std::string_view>);
+static_assert(!can_write<msturn_writer &, turner::turn::lifetime, std::chrono::seconds>);
+static_assert(!can_write<turn_writer &, turner::turn::dont_fragment, std::true_type>);
+static_assert(can_write_flag<turn_writer &, turner::turn::dont_fragment>);
+static_assert(!can_write_flag<const turn_writer &, turner::turn::dont_fragment>);
+static_assert(!can_write_flag<turn_writer &, turner::turn::lifetime>);
+static_assert(std::same_as<decltype(std::declval<turn_writer &>().write(turner::turn::lifetime, 0s)), turn_writer &>);
+static_assert(std::same_as<decltype(std::declval<turn_writer>().write(turner::turn::lifetime, 0s)), turn_writer &&>);
+static_assert(std::same_as<decltype(std::declval<turn_writer &>().write(turner::turn::dont_fragment)), turn_writer &>);
+static_assert(noexcept(std::declval<turn_writer &>().write(turner::turn::lifetime, std::chrono::seconds{})));
+static_assert(noexcept(std::declval<turn_writer &>().write(turner::turn::dont_fragment)));
+
+template <typename Writer>
+concept can_finish = requires(Writer &&writer)
+{
+	std::forward<Writer>(writer).finish();
+};
+
+template <typename Writer, typename Argument>
+concept can_finish_with = requires(Writer &&writer, const Argument &argument)
+{
+	std::forward<Writer>(writer).finish(argument);
+};
+
+static_assert(can_finish<turn_writer>);
+static_assert(!can_finish<turn_writer &>);
+static_assert(can_finish_with<stun_writer, turner::stun::fingerprint_type>);
+static_assert(can_finish_with<turn_writer, turner::stun::fingerprint_type>);
+static_assert(can_finish_with<writer<turner::turn::allocate.success>, turner::turn::fingerprint_type>);
+static_assert(!can_finish_with<turn_writer &, turner::turn::fingerprint_type>);
+static_assert(!can_finish_with<msturn_writer, turner::stun::fingerprint_type>);
+static_assert(!can_finish_with<stun_writer, int>);
+static_assert(noexcept(std::declval<turn_writer>().finish()));
+static_assert(noexcept(std::declval<turn_writer>().finish(turner::turn::fingerprint)));
+static_assert(std::same_as<decltype(std::declval<turn_writer>().finish()), pal::result<std::span<const std::byte>>>);
+static_assert(
+	std::same_as<
+		decltype(std::declval<turn_writer>().finish(turner::turn::fingerprint)),
+		pal::result<std::span<const std::byte>>
+	>
+);
+
+template <typename Writer, typename Key>
+concept can_finish_with_key = requires(Writer &&writer, Key &key)
+{
+	{ std::forward<Writer>(writer).finish(key) } noexcept -> std::same_as<pal::result<std::span<const std::byte>>>;
+};
+
+template <typename Writer, typename Key>
+concept can_finish_with_key_and_fingerprint = requires(Writer &&writer, Key &key)
+{
+	{
+		std::forward<Writer>(writer).finish(key, turner::stun::fingerprint)
+	} noexcept -> std::same_as<pal::result<std::span<const std::byte>>>;
+};
+
+static_assert(can_finish_with_key<stun_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key<turn_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key<turn_writer, turner::turn::integrity_key>);
+static_assert(can_finish_with_key<msturn_writer, turner::msturn::integrity_key>);
+static_assert(!can_finish_with_key<turn_writer &, turner::stun::integrity_key>);
+static_assert(!can_finish_with_key<turn_writer, const turner::stun::integrity_key>);
+static_assert(!can_finish_with_key<stun_writer, turner::msturn::integrity_key>);
+static_assert(!can_finish_with_key<turn_writer, turner::msturn::integrity_key>);
+static_assert(!can_finish_with_key<msturn_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key_and_fingerprint<stun_writer, turner::stun::integrity_key>);
+static_assert(can_finish_with_key_and_fingerprint<turn_writer, turner::stun::integrity_key>);
+static_assert(!can_finish_with_key_and_fingerprint<turn_writer &, turner::stun::integrity_key>);
+static_assert(!can_finish_with_key_and_fingerprint<msturn_writer, turner::msturn::integrity_key>);
+
+struct stun
+{
+	using protocol_type = turner::stun;
+	static constexpr auto message = turner::stun::binding.request;
+	static constexpr auto &transaction_id = stun_id;
+	static constexpr auto attribute = turner::stun::username;
+	static constexpr auto unknown_attributes = turner::stun::unknown_attributes;
+	static constexpr auto xor_address = turner::stun::xor_mapped_address;
+};
+
+struct turn
+{
+	using protocol_type = turner::turn;
+	static constexpr auto message = turner::turn::allocate;
+	static constexpr auto &transaction_id = stun_id;
+	static constexpr auto attribute = turner::turn::username;
+	static constexpr auto unknown_attributes = turner::turn::unknown_attributes;
+	static constexpr auto xor_address = turner::turn::xor_peer_address;
+	static constexpr auto data = turner::turn::data;
+	static constexpr size_t largest_length = 0xfffc;
+};
+
+struct msturn
+{
+	using protocol_type = turner::msturn;
+	static constexpr auto message = turner::msturn::allocate;
+	static constexpr auto &transaction_id = msturn_id;
+	static constexpr auto attribute = turner::msturn::realm;
+	static constexpr auto unknown_attributes = turner::msturn::unknown_attributes;
+	static constexpr auto xor_address = turner::msturn::xor_mapped_address;
+	static constexpr auto data = turner::msturn::data;
+	static constexpr size_t largest_length = 0xffff;
+};
+
+TEMPLATE_TEST_CASE("writer", "", stun, turn, msturn)
+{
+	using Protocol = typename TestType::protocol_type;
+	using writer_type = writer<TestType::message>;
+	constexpr auto attribute = TestType::attribute;
+	constexpr auto attributes_offset = turner::__wire::attributes_offset<Protocol>;
+	constexpr bool has_fingerprint = requires { Protocol::fingerprint; };
+	const std::string too_long(decltype(attribute)::value_type::max_size + 1, 'u');
+
+	auto buffer = make_buffer();
+	std::vector<std::byte> copy;
+
+	SECTION("write")
+	{
+		SECTION("header")
+		{
+			auto exact = make_array<attributes_offset>();
+			const auto message = writer_type{exact, TestType::transaction_id}.finish();
+			REQUIRE(message);
+			CHECK(message->size() == attributes_offset);
+
+			const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+			CHECK(request.transaction_id() == TestType::transaction_id);
+			CHECK(std::ranges::empty(request.wire_attributes()));
+		}
+
+		SECTION("repeated attribute")
+		{
+			const auto message = writer_type{buffer, TestType::transaction_id}
+				.write(attribute, "a")
+				.write(attribute, "bc")
+				.finish();
+			REQUIRE(message);
+
+			const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+			const auto values = request.read_each(attribute);
+			const std::vector results(values.begin(), values.end());
+			REQUIRE(results.size() == 2);
+			CHECK(results[0] == "a");
+			CHECK(results[1] == "bc");
+		}
+
+		SECTION("xor key")
+		{
+			const auto message = writer_type{buffer, TestType::transaction_id}
+				.write(TestType::xor_address, server_address)
+				.finish();
+			REQUIRE(message);
+			CHECK(std::ranges::equal(message->subspan(attributes_offset + 6, 2), turner_test::bytes("2c84")));
+
+			const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+			CHECK(request.read(TestType::xor_address) == server_address);
+		}
+
+		SECTION("lvalue with conditional attribute")
+		{
+			const auto build = [](std::span<std::byte> into, bool with_attribute)
+			{
+				writer_type request{into, TestType::transaction_id};
+				if (with_attribute)
+				{
+					request.write(TestType::attribute, "a");
+				}
+				return std::move(request).finish();
+			};
+
+			const auto without = build(buffer, false);
+			REQUIRE(without);
+			CHECK(without->size() == attributes_offset);
+
+			const auto with = build(buffer, true);
+			REQUIRE(with);
+			const auto request = parse_as<Protocol, TestType::message>(*with, copy);
+			CHECK(request.read(attribute) == "a");
+		}
+	}
+
+	SECTION("failure")
+	{
+		SECTION("empty buffer")
+		{
+			std::vector<std::byte> empty;
+			CHECK(writer_type{empty, TestType::transaction_id}
+				.write(attribute, "a")
+				.finish()
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+		}
+
+		SECTION("header")
+		{
+			auto small = make_array<attributes_offset - 1>();
+			writer_type request{small, TestType::transaction_id};
+			request.write(attribute, too_long);
+			request.write(attribute, "a");
+			CHECK(std::move(request).finish() == failed(turner::errc::buffer_too_small));
+		}
+
+		SECTION("attribute")
+		{
+			const auto build = [](std::span<std::byte> into)
+			{
+				return writer_type{into, TestType::transaction_id}
+					.write(TestType::attribute, "abcd")
+					.finish();
+			};
+
+			auto exact = make_array<attributes_offset + 8>();
+			const auto message = build(exact);
+			REQUIRE(message);
+			CHECK(message->size() == attributes_offset + 8);
+
+			auto short_value = make_array<attributes_offset + 7>();
+			CHECK(build(short_value) == failed(turner::errc::buffer_too_small));
+
+			auto short_header = make_array<attributes_offset + 3>();
+			CHECK(build(short_header) == failed(turner::errc::buffer_too_small));
+		}
+
+		SECTION("above max_size")
+		{
+			auto large = make_buffer(2 * too_long.size());
+			CHECK(writer_type{large, TestType::transaction_id}
+				.write(attribute, too_long)
+				.finish()
+				==
+				failed(turner::errc::unexpected_attribute_length)
+			);
+		}
+
+		SECTION("below min_size")
+		{
+			CHECK(writer_type{buffer, TestType::transaction_id}
+				.write(TestType::unknown_attributes, turner::attribute_type_list{})
+				.finish()
+				==
+				failed(turner::errc::unexpected_attribute_length)
+			);
+		}
+
+		SECTION("first failure is kept")
+		{
+			auto small = make_array<attributes_offset>();
+			CHECK(writer_type{small, TestType::transaction_id}
+				.write(attribute, "x")
+				.write(attribute, too_long)
+				.finish()
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+			CHECK(writer_type{small, TestType::transaction_id}
+				.write(attribute, too_long)
+				.write(attribute, "x")
+				.finish()
+				==
+				failed(turner::errc::unexpected_attribute_length)
+			);
+
+			auto large = make_buffer(2 * too_long.size());
+			CHECK(writer_type{large, TestType::transaction_id}
+				.write(attribute, too_long)
+				.write(attribute, "x")
+				.finish()
+				==
+				failed(turner::errc::unexpected_attribute_length)
+			);
+
+			auto fits_smaller = make_array<attributes_offset + 8>();
+			CHECK(writer_type{fits_smaller, TestType::transaction_id}
+				.write(attribute, "hello")
+				.write(attribute, "")
+				.finish()
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+			CHECK(fits_smaller[attributes_offset] == filler);
+		}
+	}
+
+	if constexpr (requires { TestType::data; })
+	{
+		SECTION("message size limit")
+		{
+			constexpr size_t largest_data =
+				TestType::largest_length - (attributes_offset - Protocol::header_size) - 4;
+			auto large = make_buffer(Protocol::header_size + 0xffff + 16);
+
+			SECTION("largest message")
+			{
+				const std::vector<std::byte> data(largest_data);
+				const auto message = writer_type{large, TestType::transaction_id}
+					.write(TestType::data, data)
+					.finish();
+				REQUIRE(message);
+				CHECK(message->size() == Protocol::header_size + TestType::largest_length);
+
+				const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+				const auto value = request.read(TestType::data);
+				REQUIRE(value);
+				CHECK(value->size() == largest_data);
+			}
+
+			SECTION("byte beyond largest message")
+			{
+				const std::vector<std::byte> data(largest_data + 1);
+				CHECK(writer_type{large, TestType::transaction_id}
+					.write(TestType::data, data)
+					.finish()
+					==
+					failed(turner::errc::buffer_too_small)
+				);
+			}
+
+			SECTION("largest value")
+			{
+				const std::vector<std::byte> data(0xffff);
+				CHECK(writer_type{large, TestType::transaction_id}
+					.write(TestType::data, data)
+					.finish()
+					==
+					failed(turner::errc::buffer_too_small)
+				);
+			}
+
+			if constexpr (has_fingerprint)
+			{
+				SECTION("largest message with fingerprint")
+				{
+					const std::vector<std::byte> data(largest_data - 8);
+					const auto message = writer_type{large, TestType::transaction_id}
+						.write(TestType::data, data)
+						.finish(Protocol::fingerprint);
+					REQUIRE(message);
+					CHECK(message->size() == Protocol::header_size + TestType::largest_length);
+
+					const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+					const auto value = request.read(TestType::data);
+					REQUIRE(value);
+					CHECK(value->size() == data.size());
+				}
+
+				SECTION("fingerprint beyond largest message")
+				{
+					const std::vector<std::byte> data(largest_data - 7);
+					CHECK(writer_type{large, TestType::transaction_id}
+						.write(TestType::data, data)
+						.finish(Protocol::fingerprint)
+						==
+						failed(turner::errc::buffer_too_small)
+					);
+				}
+			}
+		}
+	}
+
+	if constexpr (has_fingerprint)
+	{
+		SECTION("fingerprint")
+		{
+			SECTION("round trip")
+			{
+				const auto message = writer_type{buffer, TestType::transaction_id}
+					.write(attribute, "abcd")
+					.finish(Protocol::fingerprint);
+				REQUIRE(message);
+				CHECK(message->size() == attributes_offset + 16);
+
+				const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+				CHECK(request.read(attribute) == "abcd");
+			}
+
+			SECTION("buffer size")
+			{
+				auto exact = make_array<attributes_offset + 8>();
+				const auto message = writer_type{exact, TestType::transaction_id}.finish(Protocol::fingerprint);
+				REQUIRE(message);
+				CHECK(message->size() == attributes_offset + 8);
+
+				auto short_buffer = make_array<attributes_offset + 7>();
+				CHECK(writer_type{short_buffer, TestType::transaction_id}
+					.finish(Protocol::fingerprint)
+					==
+					failed(turner::errc::buffer_too_small)
+				);
+			}
+
+			SECTION("header does not fit")
+			{
+				auto small = make_array<attributes_offset - 1>();
+				CHECK(writer_type{small, TestType::transaction_id}
+					.finish(Protocol::fingerprint)
+					==
+					failed(turner::errc::buffer_too_small)
+				);
+			}
+
+			SECTION("first failure is kept")
+			{
+				CHECK(writer_type{buffer, TestType::transaction_id}
+					.write(attribute, too_long)
+					.finish(Protocol::fingerprint)
+					==
+					failed(turner::errc::unexpected_attribute_length)
+				);
+			}
+		}
+	}
+
+	SECTION("integrity")
+	{
+		auto sha1 = turner_test::sha1_key<Protocol>();
+		auto sha256 = turner_test::sha256_key<Protocol>();
+
+		const bool use_sha256 = GENERATE(false, true);
+		CAPTURE(use_sha256);
+		auto &key = use_sha256 ? sha256 : sha1;
+		const size_t attribute_size = use_sha256 ? 36 : 24;
+
+		const auto check_verifies = [&](pal::result<std::span<const std::byte>> message)
+		{
+			REQUIRE(message);
+			const auto request = parse_as<Protocol, TestType::message>(*message, copy);
+			const auto expected = use_sha256
+				? turner::integrity_algorithm::sha256
+				: turner::integrity_algorithm::sha1;
+			CHECK(request.integrity() == expected);
+			CHECK(request.verify(key).has_value());
+		};
+
+		SECTION("round trip")
+		{
+			const auto message = writer_type{buffer, TestType::transaction_id}
+				.write(attribute, "abcd")
+				.finish(key);
+			check_verifies(message);
+			REQUIRE(message);
+			CHECK(message->size() == attributes_offset + 8 + attribute_size);
+		}
+
+		SECTION("key reuse")
+		{
+			check_verifies(
+				writer_type{buffer, TestType::transaction_id}
+					.write(attribute, "abcd")
+					.finish(key)
+			);
+			check_verifies(
+				writer_type{buffer, TestType::transaction_id}
+					.write(attribute, "efgh")
+					.finish(key)
+			);
+		}
+
+		SECTION("buffer size")
+		{
+			auto exact = make_buffer(attributes_offset + attribute_size);
+			const auto message = writer_type{exact, TestType::transaction_id}.finish(key);
+			REQUIRE(message);
+			CHECK(message->size() == exact.size());
+
+			auto short_buffer = make_buffer(attributes_offset + attribute_size - 1);
+			CHECK(writer_type{short_buffer, TestType::transaction_id}.finish(key)
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+			check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+		}
+
+		SECTION("header does not fit")
+		{
+			auto small = make_array<attributes_offset - 1>();
+			CHECK(writer_type{small, TestType::transaction_id}
+				.finish(key)
+				==
+				failed(turner::errc::buffer_too_small)
+			);
+			check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+		}
+
+		SECTION("first failure is kept")
+		{
+			CHECK(writer_type{buffer, TestType::transaction_id}.write(attribute, too_long).finish(key)
+				==
+				failed(turner::errc::unexpected_attribute_length)
+			);
+			check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+		}
+
+		if constexpr (requires { TestType::data; })
+		{
+			SECTION("message size limit")
+			{
+				constexpr size_t cookie_size = attributes_offset - Protocol::header_size;
+				const size_t largest_data = TestType::largest_length - cookie_size - 4 - attribute_size;
+				auto large = make_buffer(Protocol::header_size + 0xffff + 16);
+
+				const std::vector<std::byte> largest(largest_data);
+				const auto message = writer_type{large, TestType::transaction_id}
+					.write(TestType::data, largest)
+					.finish(key);
+				check_verifies(message);
+				REQUIRE(message);
+				CHECK(message->size() == Protocol::header_size + TestType::largest_length);
+
+				const std::vector<std::byte> too_large(largest_data + 1);
+				CHECK(writer_type{large, TestType::transaction_id}
+					.write(TestType::data, too_large)
+					.finish(key)
+					==
+					failed(turner::errc::buffer_too_small)
+				);
+
+				if constexpr (has_fingerprint)
+				{
+					const std::vector<std::byte> largest_with_fingerprint(largest_data - 8);
+					const auto with_fingerprint = writer_type{large, TestType::transaction_id}
+						.write(TestType::data, largest_with_fingerprint)
+						.finish(key, Protocol::fingerprint);
+					check_verifies(with_fingerprint);
+					REQUIRE(with_fingerprint);
+					CHECK(with_fingerprint->size()
+						==
+						Protocol::header_size + TestType::largest_length
+					);
+
+					const std::vector<std::byte> beyond_with_fingerprint(largest_data - 7);
+					CHECK(writer_type{large, TestType::transaction_id}
+						.write(TestType::data, beyond_with_fingerprint)
+						.finish(key, Protocol::fingerprint)
+						==
+						failed(turner::errc::buffer_too_small)
+					);
+				}
+			}
+		}
+
+		if constexpr (has_fingerprint)
+		{
+			SECTION("fingerprint")
+			{
+				SECTION("round trip")
+				{
+					const auto message = writer_type{buffer, TestType::transaction_id}
+						.write(attribute, "abcd")
+						.finish(key, Protocol::fingerprint);
+					check_verifies(message);
+					REQUIRE(message);
+					CHECK(message->size() == attributes_offset + 8 + attribute_size + 8);
+				}
+
+				SECTION("buffer size")
+				{
+					auto exact = make_buffer(attributes_offset + attribute_size + 8);
+					const auto message = writer_type{exact, TestType::transaction_id}
+						.finish(key, Protocol::fingerprint);
+					REQUIRE(message);
+					CHECK(message->size() == exact.size());
+
+					auto short_buffer = make_buffer(attributes_offset + attribute_size + 7);
+					CHECK(writer_type{short_buffer, TestType::transaction_id}
+						.finish(key, Protocol::fingerprint)
+						==
+						failed(turner::errc::buffer_too_small)
+					);
+					check_verifies(writer_type{buffer, TestType::transaction_id}.finish(key));
+				}
+
+				SECTION("first failure is kept")
+				{
+					CHECK(writer_type{buffer, TestType::transaction_id}
+						.write(attribute, too_long)
+						.finish(key, Protocol::fingerprint)
+						==
+						failed(turner::errc::unexpected_attribute_length)
+					);
+				}
+			}
+		}
+	}
+}
+
+TEST_CASE("writer/protocol specific")
+{
+	namespace integrity = turner_test::integrity_message;
+
+	auto buffer = make_buffer();
+	std::vector<std::byte> copy;
+
+	SECTION("stun: binding indication")
+	{
+		const auto message = writer<turner::stun::binding.indication>{buffer, stun_id}.finish();
+		CHECK(hex(message) == hex(turner_test::stun_message::binding_indication));
+	}
+
+	SECTION("stun: binding request with fingerprint")
+	{
+		const auto message = writer<turner::stun::binding.request>{buffer, stun_id}
+			.finish(turner::stun::fingerprint);
+		CHECK(hex(message) == hex(turner_test::stun_message::binding_request_fingerprint));
+	}
+
+	SECTION("stun: binding request with attribute and fingerprint")
+	{
+		const auto message = writer<turner::stun::binding.request>{buffer, stun_id}
+			.write(turner::stun::software, "hello")
+			.finish(turner::stun::fingerprint);
+		CHECK(hex(message) == hex(turner_test::stun_message::binding_request_software_fingerprint));
+	}
+
+	SECTION("stun: padding is zeroed")
+	{
+		const auto message = writer<turner::stun::binding.request>{buffer, stun_id}
+			.write(turner::stun::software, "hello")
+			.write(turner::stun::software, "abc")
+			.write(turner::stun::software, "abcd")
+			.finish();
+		CHECK(hex(message)
+			==
+			"0001001c" "2112a442" "0102030405060708090a0b0c"
+			"80220005" "68656c6c" "6f000000"
+			"80220003" "61626300"
+			"80220004" "61626364"
+		);
+		CHECK(buffer[48] == filler);
+	}
+
+	SECTION("stun: padding does not fit")
+	{
+		auto small = make_array<29>();
+		CHECK(writer<turner::stun::binding.request>{small, stun_id}
+			.write(turner::stun::software, "hello")
+			.finish()
+			==
+			failed(turner::errc::buffer_too_small)
+		);
+	}
+
+	SECTION("turn: allocate request")
+	{
+		const auto message = writer<turner::turn::allocate>{buffer, stun_id}
+			.write(turner::turn::requested_transport, turner::transport_protocol::udp)
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::allocate_request));
+
+		REQUIRE(message);
+		const auto request = parse_as<turner::turn, turner::turn::allocate>(*message, copy);
+		CHECK(request.transaction_id() == stun_id);
+		CHECK(request.read(turner::turn::requested_transport) == turner::transport_protocol::udp);
+	}
+
+	SECTION("turn: allocate request with flag")
+	{
+		const auto message = writer<turner::turn::allocate>{buffer, stun_id}
+			.write(turner::turn::dont_fragment)
+			.write(turner::turn::requested_transport, turner::transport_protocol::udp)
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::allocate_request_dont_fragment));
+
+		REQUIRE(message);
+		const auto request = parse_as<turner::turn, turner::turn::allocate>(*message, copy);
+		CHECK(request.read(turner::turn::dont_fragment));
+	}
+
+	SECTION("turn: refresh request")
+	{
+		const auto message = writer<turner::turn::refresh>{buffer, stun_id}
+			.write(turner::turn::lifetime, 0s)
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::refresh_request));
+
+		REQUIRE(message);
+		const auto request = parse_as<turner::turn, turner::turn::refresh>(*message, copy);
+		CHECK(request.read(turner::turn::lifetime) == 0s);
+	}
+
+	SECTION("turn: send indication")
+	{
+		const auto message = writer<turner::turn::send_indication>{buffer, stun_id}
+			.write(turner::turn::xor_peer_address, peer_address)
+			.write(turner::turn::data, as_bytes("hello"))
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::send_indication));
+
+		REQUIRE(message);
+		const auto indication = parse_as<turner::turn, turner::turn::send_indication>(*message, copy);
+		CHECK(indication.read(turner::turn::xor_peer_address) == peer_address);
+		const auto data = indication.read(turner::turn::data);
+		REQUIRE(data);
+		CHECK(std::ranges::equal(*data, as_bytes("hello")));
+	}
+
+	SECTION("turn: data indication")
+	{
+		const auto message = writer<turner::turn::data_indication>{buffer, stun_id}
+			.write(turner::turn::xor_peer_address, peer_address)
+			.write(turner::turn::data, as_bytes("hello"))
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::data_indication));
+	}
+
+	SECTION("turn: create permission request")
+	{
+		const auto message = writer<turner::turn::create_permission>{buffer, stun_id}
+			.write(turner::turn::xor_peer_address, peer_address)
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::create_permission_request));
+	}
+
+	SECTION("turn: channel bind request")
+	{
+		const auto message = writer<turner::turn::channel_bind>{buffer, stun_id}
+			.write(turner::turn::channel_number, uint16_t{0x4000})
+			.write(turner::turn::xor_peer_address, peer_address)
+			.finish();
+		CHECK(hex(message) == hex(turner_test::turn_message::channel_bind_request));
+
+		REQUIRE(message);
+		const auto request = parse_as<turner::turn, turner::turn::channel_bind>(*message, copy);
+		CHECK(request.read(turner::turn::channel_number) == 0x4000);
+		CHECK(request.read(turner::turn::xor_peer_address) == peer_address);
+	}
+
+	SECTION("msturn: allocate request")
+	{
+		const auto message = writer<turner::msturn::allocate>{buffer, msturn_id}
+			.write(turner::msturn::ms_version, turner::msturn::protocol_version::v4)
+			.write(
+				turner::msturn::ms_service_quality,
+				{
+					.stream = turner::msturn::stream_type::audio,
+					.quality = turner::msturn::delivery::best_effort,
+				}
+			)
+			.write(turner::msturn::username, "alice")
+			.finish();
+		CHECK(hex(message) == hex(turner_test::msturn_message::allocate_request));
+
+		REQUIRE(message);
+		const auto request = parse_as<turner::msturn, turner::msturn::allocate>(*message, copy);
+		CHECK(request.transaction_id() == msturn_id);
+		CHECK(request.read(turner::msturn::ms_version) == turner::msturn::protocol_version::v4);
+		CHECK(request.read(turner::msturn::username) == "alice");
+	}
+
+	SECTION("msturn: allocate request with empty attributes")
+	{
+		const auto message = writer<turner::msturn::allocate>{buffer, msturn_id}
+			.write(turner::msturn::username, "")
+			.write(turner::msturn::ms_version, turner::msturn::protocol_version::v4)
+			.write(turner::msturn::realm, "")
+			.finish();
+		CHECK(hex(message) == hex(turner_test::msturn_message::allocate_request_empty_attributes));
+	}
+
+	SECTION("msturn: send request")
+	{
+		const auto message = writer<turner::msturn::send_request>{buffer, msturn_id}
+			.write(turner::msturn::ms_version, turner::msturn::protocol_version::v4)
+			.write(turner::msturn::data, as_bytes("abc"))
+			.write(turner::msturn::destination_address, server_address)
+			.write(turner::msturn::username, "alice")
+			.finish();
+		CHECK(hex(message) == hex(turner_test::msturn_message::send_request));
+
+		REQUIRE(message);
+		const auto request = parse_as<turner::msturn, turner::msturn::send_request>(*message, copy);
+		CHECK(request.read(turner::msturn::destination_address) == server_address);
+	}
+
+	SECTION("msturn: data indication")
+	{
+		const auto message = writer<turner::msturn::data_indication>{buffer, msturn_id}
+			.write(turner::msturn::remote_address, server_address)
+			.write(turner::msturn::data, as_bytes("abc"))
+			.finish();
+		CHECK(hex(message) == hex(turner_test::msturn_message::data_indication));
+	}
+
+	SECTION("msturn: set active destination request")
+	{
+		const auto message = writer<turner::msturn::set_active_destination>{buffer, msturn_id}
+			.write(turner::msturn::destination_address, server_address)
+			.finish();
+		CHECK(hex(message) == hex(turner_test::msturn_message::set_active_destination_request));
+	}
+
+	SECTION("stun: integrity")
+	{
+		auto sha1 = turner_test::sha1_key<turner::stun>();
+		auto sha256 = turner_test::sha256_key<turner::stun>();
+		const auto request = [&]
+		{
+			return writer<turner::stun::binding.request>{buffer, stun_id}
+				.write(turner::stun::username, "user");
+		};
+
+		CHECK(hex(request().finish(sha1)) == hex(integrity::stun_sha1));
+		CHECK(hex(request().finish(sha256)) == hex(integrity::stun_sha256));
+		CHECK(hex(request().finish(sha1, turner::stun::fingerprint)) == hex(integrity::stun_sha1_fingerprint));
+		CHECK(hex(request().finish(sha256, turner::stun::fingerprint))
+			==
+			hex(integrity::stun_sha256_fingerprint)
+		);
+	}
+
+	SECTION("stun: integrity with md5 key and sha256")
+	{
+		const auto md5 = pal::crypto::md5_hash::one_shot(std::string_view{"user:realm:pass"});
+		REQUIRE(md5);
+		auto key = turner::stun::integrity_key::sha256(*md5);
+		REQUIRE(key);
+		CHECK(hex(
+				writer<turner::stun::binding.request>{buffer, stun_id}
+					.write(turner::stun::username, "user")
+					.finish(*key)
+			)
+			==
+			hex(integrity::stun_md5_key_sha256)
+		);
+	}
+
+	SECTION("turn: integrity with stun key")
+	{
+		auto key = turner_test::sha1_key<turner::stun>();
+		CHECK(hex(
+				writer<turner::turn::allocate>{buffer, stun_id}
+					.write(turner::turn::requested_transport, turner::transport_protocol::udp)
+					.finish(key)
+			)
+			==
+			hex(integrity::turn_allocate_sha1)
+		);
+	}
+
+	SECTION("msturn: integrity")
+	{
+		auto sha1 = turner_test::sha1_key<turner::msturn>();
+		auto sha256 = turner_test::sha256_key<turner::msturn>();
+		const auto request = [&]
+		{
+			return writer<turner::msturn::allocate>{buffer, msturn_id}
+				.write(turner::msturn::username, integrity::username)
+				.write(turner::msturn::realm, integrity::quoted_realm)
+				.write(turner::msturn::nonce, integrity::nonce);
+		};
+
+		CHECK(hex(request().finish(sha1)) == hex(integrity::msturn_sha1));
+		CHECK(hex(request().finish(sha256)) == hex(integrity::msturn_sha256));
+	}
+
+	SECTION("msturn: integrity hmac input padding")
+	{
+		auto key = turner_test::sha1_key<turner::msturn>();
+		const auto request = [&](size_t username_size)
+		{
+			return writer<turner::msturn::allocate>{buffer, msturn_id}
+				.write(turner::msturn::username, std::string(username_size, 'u'))
+				.finish(key);
+		};
+
+		CHECK(hex(request(32)) == hex(integrity::msturn_covers_64));
+		CHECK(hex(request(33)) == hex(integrity::msturn_covers_65));
+	}
+
+	SECTION("msturn: integrity with nonce longer than hmac block")
+	{
+		const std::string nonce(65, 'n');
+		auto key = turner::msturn::sha256_key({
+			.username = integrity::username,
+			.realm = integrity::realm,
+			.nonce = nonce,
+			.password = integrity::password,
+		});
+		REQUIRE(key);
+		CHECK(hex(
+				writer<turner::msturn::allocate>{buffer, msturn_id}
+					.write(turner::msturn::nonce, nonce)
+					.finish(*key)
+			)
+			==
+			hex(integrity::msturn_long_nonce)
+		);
+	}
+
+	SECTION("msturn: IPv4 below min_size of IPv6-only endpoint")
+	{
+		CHECK(writer<turner::msturn::allocate>{buffer, msturn_id}
+			.write(turner::msturn::ms_alternate_mapped_address, server_address)
+			.finish()
+			==
+			failed(turner::errc::unexpected_attribute_length)
+		);
+	}
+}
+
+} // namespace

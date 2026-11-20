@@ -1,0 +1,20 @@
+name: Fuzz
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  fuzz:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-22 g++-15
+          sudo ln -sf /usr/bin/clang++-22 /usr/bin/clang++
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 15
+      - run: ninja fuzz-check

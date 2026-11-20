@@ -8,11 +8,26 @@ rule action
 build all: action
   name = all
 
+build bench: action
+  name = bench
+
 build coverage-html: action
   name = coverage-html
 
 build coverage-lcov: action
   name = coverage-lcov
+
+build fuzz-check: action
+  name = fuzz-check
+
+build fuzz-list: action
+  name = fuzz-list
+
+build fuzz-reduce: action
+  name = fuzz-reduce
+
+build fuzz-run: action
+  name = fuzz-run
 
 build help: action
   name = help
@@ -31,5 +46,22 @@ build style-check: action
 
 build tidy: action
   name = tidy
+
+rule fuzz-action
+  command = cmake -DTURNER_FUZZ_SOURCE=$fuzz_source -P cmake/fuzz.cmake
+  description = $out
+  pool = console
+
+build fuzz/turner/codec/msturn: fuzz-action
+  fuzz_source = turner/codec/msturn.fuzz.cpp
+
+build fuzz/turner/codec/sniff: fuzz-action
+  fuzz_source = turner/codec/sniff.fuzz.cpp
+
+build fuzz/turner/codec/stun: fuzz-action
+  fuzz_source = turner/codec/stun.fuzz.cpp
+
+build fuzz/turner/codec/turn: fuzz-action
+  fuzz_source = turner/codec/turn.fuzz.cpp
 
 default all
