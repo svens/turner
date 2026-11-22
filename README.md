@@ -24,6 +24,8 @@ C++23 STUN/TURN/MS-TURN/MTURN library and server.
 2. [RFC 8656](https://datatracker.ietf.org/doc/html/rfc8656): TURN
    1. [RFC 6062](https://datatracker.ietf.org/doc/html/rfc6062): TCP allocations (planned)
 3. [MS-TURN](https://learn.microsoft.com/openspecs/office_protocols/ms-turn): MS-TURN/MTURN
+4. [RFC 7064](https://datatracker.ietf.org/doc/html/rfc7064): STUN URI
+5. [RFC 7065](https://datatracker.ietf.org/doc/html/rfc7065): TURN URI
 
 ## Dependencies
 
