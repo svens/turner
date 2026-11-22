@@ -52,6 +52,9 @@ rule fuzz-action
   description = $out
   pool = console
 
+build fuzz/turner/uri: fuzz-action
+  fuzz_source = turner/uri.fuzz.cpp
+
 build fuzz/turner/codec/msturn: fuzz-action
   fuzz_source = turner/codec/msturn.fuzz.cpp
 
